@@ -1,7 +1,7 @@
-import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
+import tablesRouter from './routes/tables'
 
 const app = new Hono()
 
@@ -21,7 +21,7 @@ app.get('/health', (c) => {
   })
 })
 
-// API routes will be added here
+// API routes
 app.get('/api', (c) => {
   return c.json({ 
     message: 'PostgreSQL Test Helper API',
@@ -29,13 +29,7 @@ app.get('/api', (c) => {
   })
 })
 
-const port = Number(process.env.PORT) || 3001
-
-console.log(`🚀 Server is running on http://localhost:${port}`)
-
-serve({
-  fetch: app.fetch,
-  port
-})
+// Tables API
+app.route('/api/tables', tablesRouter)
 
 export default app
