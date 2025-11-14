@@ -48,3 +48,105 @@ export async function proxyRequest(data: {
     body: JSON.stringify(data),
   })
 }
+
+// Mock API Types
+export interface MockEndpoint {
+  id: string
+  name?: string
+  enabled: boolean
+  priority: number
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
+  path: string
+  requestMatch?: {
+    query?: Record<string, string>
+    body?: any
+    headers?: Record<string, string>
+  }
+  response: {
+    status: number
+    headers?: Record<string, string>
+    body: any
+    delay?: number
+  }
+  createdAt: string
+  updatedAt: string
+}
+
+// Mock API - エンドポイント一覧取得
+export async function getMockEndpoints() {
+  return fetchAPI<{
+    success: boolean
+    data: MockEndpoint[]
+    count: number
+  }>('/api/mock/endpoints')
+}
+
+// Mock API - エンドポイント作成
+export async function createMockEndpoint(
+  data: Omit<MockEndpoint, 'id' | 'createdAt' | 'updatedAt'>
+) {
+  return fetchAPI<{
+    success: boolean
+    data: MockEndpoint
+    message: string
+  }>('/api/mock/endpoints', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+// Mock API - エンドポイント更新
+export async function updateMockEndpoint(
+  id: string,
+  data: Partial<Omit<MockEndpoint, 'id' | 'createdAt' | 'updatedAt'>>
+) {
+  return fetchAPI<{
+    success: boolean
+    data: MockEndpoint
+    message: string
+  }>(`/api/mock/endpoints/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+}
+
+// Mock API - エンドポイント削除
+export async function deleteMockEndpoint(id: string) {
+  return fetchAPI<{
+    success: boolean
+    message: string
+  }>(`/api/mock/endpoints/${id}`, {
+    method: 'DELETE',
+  })
+}
+
+// Mock API - 全エンドポイント削除
+export async function deleteAllMockEndpoints() {
+  return fetchAPI<{
+    success: boolean
+    message: string
+  }>('/api/mock/endpoints', {
+    method: 'DELETE',
+  })
+}
+
+// Mock API - エクスポート
+export async function exportMockEndpoints() {
+  return fetchAPI<{
+    success: boolean
+    data: MockEndpoint[]
+    exportedAt: string
+  }>('/api/mock/export')
+}
+
+// Mock API - インポート
+export async function importMockEndpoints(endpoints: MockEndpoint[]) {
+  return fetchAPI<{
+    success: boolean
+    message: string
+    count: number
+  }>('/api/mock/import', {
+    method: 'POST',
+    body: JSON.stringify(endpoints),
+  })
+}

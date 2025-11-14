@@ -3,6 +3,7 @@ import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
 import tablesRouter from './routes/tables'
 import databaseRouter from './routes/database'
+import mockRouter from './routes/mock'
 
 const app = new Hono()
 
@@ -35,5 +36,8 @@ app.route('/api/tables', tablesRouter)
 
 // Database API
 app.route('/api/database', databaseRouter)
+
+// Mock API
+app.route('/api/mock', mockRouter)
 
 export default app
