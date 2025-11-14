@@ -13,40 +13,41 @@ Spring Boot + PostgreSQL APIバックエンドサーバーのローカル環境�
 
 - **フロントエンド**: Next.js 15 + TypeScript + React 19 + shadcn/ui
 - **バックエンド**: Hono (最新) + Node.js 22 + TypeScript
-- **データベース**: PostgreSQL 16+
+- **データベース**: IndexedDB (Dexie.js)
 - **パッケージマネージャー**: pnpm 9+
+- **モノレポ**: TurboRepo
 - **テスト**: vitest
 
 ## 📋 前提条件
 
 - Node.js 22+
 - pnpm 9+
-- Docker & Docker Compose
 
 ## 🛠️ セットアップ
 
-### 1. PostgreSQL起動
+### クイックスタート
 
 ```bash
-docker-compose up -d
+# 依存関係のインストール
+pnpm install
+
+# フロントエンドとバックエンドを同時に起動
+pnpm dev
 ```
 
-### 2. バックエンドセットアップ
+- フロントエンド: http://localhost:3000
+- バックエンドAPI: http://localhost:3001
+
+### 個別起動
 
 ```bash
+# バックエンドのみ
 cd backend
-pnpm install
 pnpm dev
-# http://localhost:3001 で起動
-```
 
-### 3. フロントエンドセットアップ
-
-```bash
+# フロントエンドのみ
 cd frontend
-pnpm install
 pnpm dev
-# http://localhost:3000 で起動
 ```
 
 ## 📁 プロジェクト構造
@@ -55,9 +56,11 @@ pnpm dev
 postgres-test-helper/
 ├── README.md
 ├── PROJECT_PLAN.md
-├── docker-compose.yml
-├── backend/          # Hono APIサーバー
-└── frontend/         # Next.js アプリケーション
+├── package.json          # ルートワークスペース
+├── pnpm-workspace.yaml   # pnpmワークスペース設定
+├── turbo.json            # TurboRepo設定
+├── backend/              # Hono APIサーバー
+└── frontend/             # Next.js アプリケーション
 ```
 
 ## 📖 ドキュメント
@@ -68,13 +71,22 @@ postgres-test-helper/
 ## 🧪 テスト実行
 
 ```bash
-# バックエンドテスト
-cd backend
+# 全プロジェクトのテスト実行
 pnpm test
 
-# フロントエンドテスト
-cd frontend
-pnpm test
+# 個別実行
+cd backend && pnpm test
+cd frontend && pnpm test
+```
+
+## 🏗️ ビルド
+
+```bash
+# 全プロジェクトのビルド
+pnpm build
+
+# クリーン
+pnpm clean
 ```
 
 ## 📝 ライセンス

@@ -1,4 +1,4 @@
-import Link from "next/image";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Database, FileJson, Settings, TestTube } from "lucide-react";
