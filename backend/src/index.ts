@@ -4,6 +4,7 @@ import { logger } from 'hono/logger'
 import tablesRouter from './routes/tables'
 import databaseRouter from './routes/database'
 import mockRouter from './routes/mock'
+import proxyRouter from './routes/proxy'
 
 const app = new Hono()
 
@@ -39,5 +40,8 @@ app.route('/api/database', databaseRouter)
 
 // Mock API
 app.route('/api/mock', mockRouter)
+
+// Proxy API
+app.route('/api/proxy', proxyRouter)
 
 export default app

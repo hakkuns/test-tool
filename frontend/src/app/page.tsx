@@ -59,9 +59,9 @@ export default function Home() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button className="w-full" variant="outline" disabled>
-              近日公開
-            </Button>
+            <Link href="/mock">
+              <Button className="w-full">モックAPIを開く</Button>
+            </Link>
           </CardContent>
         </Card>
 
@@ -76,9 +76,9 @@ export default function Home() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button className="w-full" variant="outline" disabled>
-              近日公開
-            </Button>
+            <Link href="/api-test">
+              <Button className="w-full">APIテストを開く</Button>
+            </Link>
           </CardContent>
         </Card>
       </div>
