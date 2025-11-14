@@ -22,7 +22,7 @@ const createMockEndpointSchema = z.object({
   response: z.object({
     status: z.number().int().min(100).max(599).default(200),
     headers: z.record(z.string()).optional(),
-    body: z.any(),
+    body: z.any().default({}),
     delay: z.number().int().min(0).optional(),
   }),
 })
@@ -88,7 +88,7 @@ mockRouter.post('/endpoints', async (c) => {
     const body = await c.req.json()
     const validatedData = createMockEndpointSchema.parse(body)
 
-    const newEndpoint = mockService.createEndpoint(validatedData)
+    const newEndpoint = mockService.createEndpoint(validatedData as any)
 
     return c.json(
       {
@@ -130,7 +130,7 @@ mockRouter.put('/endpoints/:id', async (c) => {
     const body = await c.req.json()
     const validatedData = updateMockEndpointSchema.parse(body)
 
-    const updatedEndpoint = mockService.updateEndpoint(id, validatedData)
+    const updatedEndpoint = mockService.updateEndpoint(id, validatedData as any)
 
     if (!updatedEndpoint) {
       return c.json(
@@ -271,7 +271,7 @@ mockRouter.post('/import', async (c) => {
     }
 
     const validatedData = importMockEndpointsSchema.parse(body)
-    mockService.importEndpoints(validatedData)
+    mockService.importEndpoints(validatedData as any)
 
     return c.json({
       success: true,
@@ -376,7 +376,7 @@ mockRouter.all('/serve/*', async (c) => {
       }
     }
 
-    return c.json(interpolatedBody, mockEndpoint.response.status)
+    return c.json(interpolatedBody, mockEndpoint.response.status as any)
   } catch (error) {
     console.error('Error serving mock endpoint:', error)
     return c.json(

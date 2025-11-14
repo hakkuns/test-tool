@@ -37,12 +37,19 @@ export async function proxyRequest(data: {
   timeout?: number
 }) {
   return fetchAPI<{
-    status: number
-    statusText: string
-    headers: Record<string, string>
-    body: any
-    duration: number
-    timestamp: string
+    success: boolean
+    response?: {
+      status: number
+      statusText: string
+      headers: Record<string, string>
+      body: any
+      duration: number
+      timestamp: string
+    }
+    error?: string
+    message?: string
+    duration?: number
+    timestamp?: string
   }>('/api/proxy/request', {
     method: 'POST',
     body: JSON.stringify(data),

@@ -1,73 +1,117 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Plus, Trash2 } from 'lucide-react'
+} from '@/components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Plus, Trash2, Download, Upload } from 'lucide-react';
+import type { TestScenario } from '@/types/scenario';
 
 interface HeaderEntry {
-  key: string
-  value: string
+  key: string;
+  value: string;
 }
 
 interface RequestFormProps {
   onSubmit: (data: {
-    method: string
-    url: string
-    headers: Record<string, string>
-    body?: string
-    timeout?: number
-  }) => Promise<void>
-  isLoading?: boolean
+    method: string;
+    url: string;
+    headers: Record<string, string>;
+    body?: string;
+    timeout?: number;
+  }) => Promise<void>;
+  isLoading?: boolean;
+  onExport?: () => void;
+  onImport?: () => void;
+  initialData?: TestScenario;
 }
 
-export function RequestForm({ onSubmit, isLoading }: RequestFormProps) {
-  const [method, setMethod] = useState('GET')
-  const [url, setUrl] = useState('http://localhost:8080/api/')
+export function RequestForm({
+  onSubmit,
+  isLoading,
+  onExport,
+  onImport,
+  initialData,
+}: RequestFormProps) {
+  const [method, setMethod] = useState('GET');
+  const [url, setUrl] = useState('http://localhost:8080/api/');
   const [headers, setHeaders] = useState<HeaderEntry[]>([
     { key: 'Content-Type', value: 'application/json' },
-  ])
-  const [body, setBody] = useState('{\n  \n}')
-  const [timeout, setTimeout] = useState('30000')
+  ]);
+  const [body, setBody] = useState('{\n  \n}');
+  const [timeout, setTimeout] = useState('30000');
+
+  // シナリオから初期値を設定
+  useEffect(() => {
+    if (initialData) {
+      setMethod(initialData.targetApi.method);
+      setUrl(initialData.targetApi.url);
+
+      // testSettingsからヘッダーとボディを設定
+      if (initialData.testSettings) {
+        if (initialData.testSettings.headers) {
+          const headerEntries = Object.entries(
+            initialData.testSettings.headers
+          ).map(([key, value]) => ({ key, value }));
+          setHeaders(
+            headerEntries.length > 0
+              ? headerEntries
+              : [{ key: 'Content-Type', value: 'application/json' }]
+          );
+        }
+        if (initialData.testSettings.body) {
+          setBody(initialData.testSettings.body);
+        }
+      } else {
+        // testSettingsがない場合はデフォルト
+        setHeaders([{ key: 'Content-Type', value: 'application/json' }]);
+        setBody('{\n  \n}');
+      }
+    }
+  }, [initialData]);
 
   const handleAddHeader = () => {
-    setHeaders([...headers, { key: '', value: '' }])
-  }
+    setHeaders([...headers, { key: '', value: '' }]);
+  };
 
   const handleRemoveHeader = (index: number) => {
-    setHeaders(headers.filter((_, i) => i !== index))
-  }
+    setHeaders(headers.filter((_, i) => i !== index));
+  };
 
-  const handleHeaderChange = (index: number, field: 'key' | 'value', value: string) => {
-    const newHeaders = [...headers]
-    newHeaders[index][field] = value
-    setHeaders(newHeaders)
-  }
+  const handleHeaderChange = (
+    index: number,
+    field: 'key' | 'value',
+    value: string
+  ) => {
+    const newHeaders = [...headers];
+    newHeaders[index][field] = value;
+    setHeaders(newHeaders);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     // ヘッダーをオブジェクトに変換
-    const headersObj: Record<string, string> = {}
+    const headersObj: Record<string, string> = {};
     for (const header of headers) {
       if (header.key && header.value) {
-        headersObj[header.key] = header.value
+        headersObj[header.key] = header.value;
       }
     }
 
     // ボディはGET/HEADでは送信しない
-    const requestBody = method !== 'GET' && method !== 'HEAD' ? body : undefined
+    const requestBody =
+      method !== 'GET' && method !== 'HEAD' ? body : undefined;
 
     await onSubmit({
       method,
@@ -75,13 +119,41 @@ export function RequestForm({ onSubmit, isLoading }: RequestFormProps) {
       headers: headersObj,
       body: requestBody,
       timeout: Number.parseInt(timeout),
-    })
-  }
+    });
+  };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>リクエスト設定</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle>リクエスト設定</CardTitle>
+          <div className="flex gap-2">
+            {onExport && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onExport}
+                className="flex items-center gap-1"
+              >
+                <Download className="h-4 w-4" />
+                Export
+              </Button>
+            )}
+            {onImport && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onImport}
+                className="flex items-center gap-1"
+              >
+                <Upload className="h-4 w-4" />
+                Import
+              </Button>
+            )}
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -147,13 +219,17 @@ export function RequestForm({ onSubmit, isLoading }: RequestFormProps) {
                     <Input
                       placeholder="Key"
                       value={header.key}
-                      onChange={(e) => handleHeaderChange(index, 'key', e.target.value)}
+                      onChange={(e) =>
+                        handleHeaderChange(index, 'key', e.target.value)
+                      }
                       className="flex-1"
                     />
                     <Input
                       placeholder="Value"
                       value={header.value}
-                      onChange={(e) => handleHeaderChange(index, 'value', e.target.value)}
+                      onChange={(e) =>
+                        handleHeaderChange(index, 'value', e.target.value)
+                      }
                       className="flex-1"
                     />
                     <Button
@@ -215,5 +291,5 @@ export function RequestForm({ onSubmit, isLoading }: RequestFormProps) {
         </form>
       </CardContent>
     </Card>
-  )
+  );
 }

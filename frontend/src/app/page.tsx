@@ -1,7 +1,19 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Database, FileJson, Settings, TestTube } from "lucide-react";
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  TestTube,
+  FlaskConical,
+  Database,
+  FileJson,
+  Settings,
+} from 'lucide-react';
 
 export default function Home() {
   return (
@@ -13,20 +25,34 @@ export default function Home() {
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
+      <div className="grid gap-6 md:grid-cols-2 max-w-4xl mx-auto">
+        <Card className="border-primary border-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Database className="h-5 w-5" />
-              テーブル管理
+              <FlaskConical className="h-6 w-6" />
+              テストシナリオ
             </CardTitle>
             <CardDescription>
-              DDLを解析してテーブル定義を管理
+              テーブル定義・データ・モックAPIを統合管理してテストシナリオを作成
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Link href="/tables">
-              <Button className="w-full">テーブル管理を開く</Button>
+          <CardContent className="space-y-3">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Database className="h-4 w-4" />
+              <span>テーブル定義（DDL）</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <FileJson className="h-4 w-4" />
+              <span>テストデータ</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Settings className="h-4 w-4" />
+              <span>モックAPI設定</span>
+            </div>
+            <Link href="/scenarios">
+              <Button className="w-full mt-4" size="lg">
+                シナリオ管理を開く
+              </Button>
             </Link>
           </CardContent>
         </Card>
@@ -34,53 +60,29 @@ export default function Home() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <FileJson className="h-5 w-5" />
-              データ入力
-            </CardTitle>
-            <CardDescription>
-              テストデータの作成と管理
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link href="/data">
-              <Button className="w-full">データ入力を開く</Button>
-            </Link>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5" />
-              モック API
-            </CardTitle>
-            <CardDescription>
-              外部APIのモック設定
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link href="/mock">
-              <Button className="w-full">モックAPIを開く</Button>
-            </Link>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TestTube className="h-5 w-5" />
+              <TestTube className="h-6 w-6" />
               API テスト
             </CardTitle>
             <CardDescription>
-              Spring Boot APIのテスト実行
+              Spring Boot APIのテスト実行とリクエスト履歴管理
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Link href="/api-test">
-              <Button className="w-full">APIテストを開く</Button>
+              <Button className="w-full" variant="outline" size="lg">
+                APIテストを開く
+              </Button>
             </Link>
           </CardContent>
         </Card>
+      </div>
+
+      <div className="text-center text-sm text-muted-foreground max-w-2xl mx-auto">
+        <p>
+          💡 <strong>ヒント:</strong>{' '}
+          シナリオ機能では、テーブル定義・テストデータ・モックAPIを一括管理できます。
+          個別の設定もGUIとJSONの両方でインポート可能です。
+        </p>
       </div>
     </div>
   );

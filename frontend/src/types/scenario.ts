@@ -1,20 +1,10 @@
+// フロントエンド用の型定義
+
 export interface DDLTable {
   name: string;
   ddl: string;
   dependencies: string[];
   order: number;
-}
-
-export interface ParsedColumn {
-  name: string;
-  type: string;
-  nullable: boolean;
-  defaultValue?: string;
-  isPrimaryKey: boolean;
-  references?: {
-    table: string;
-    column: string;
-  };
 }
 
 export interface MockEndpoint {
@@ -38,28 +28,6 @@ export interface MockEndpoint {
   createdAt: string;
   updatedAt: string;
 }
-
-export interface ApiRequest {
-  id: string;
-  name?: string;
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
-  url: string;
-  headers: Record<string, string>;
-  queryParams: Record<string, string>;
-  body?: string;
-  createdAt: string;
-}
-
-export interface ApiResponse {
-  status: number;
-  statusText: string;
-  headers: Record<string, string>;
-  body: any;
-  duration: number;
-  timestamp: string;
-}
-
-// テストシナリオ管理用の型定義
 
 export interface ApiTestConfig {
   id?: string;
@@ -103,4 +71,48 @@ export interface ScenarioExport {
   version: string;
   exportedAt: string;
   scenario: TestScenario;
+}
+
+export interface CreateScenarioInput {
+  name: string;
+  description?: string;
+  targetApi: ApiTestConfig;
+  tables: DDLTable[];
+  tableData: TableData[];
+  mockApis: MockEndpoint[];
+  testSettings?: {
+    headers?: Record<string, string>;
+    body?: string;
+  };
+  expectedResponse?: {
+    status?: number;
+    body?: any;
+    headers?: Record<string, string>;
+  };
+  tags: string[];
+}
+
+export interface UpdateScenarioInput {
+  name?: string;
+  description?: string;
+  targetApi?: ApiTestConfig;
+  tables?: DDLTable[];
+  tableData?: TableData[];
+  mockApis?: MockEndpoint[];
+  testSettings?: {
+    headers?: Record<string, string>;
+    body?: string;
+  };
+  expectedResponse?: {
+    status?: number;
+    body?: any;
+    headers?: Record<string, string>;
+  };
+  tags?: string[];
+}
+
+export interface ApplyScenarioResult {
+  tablesCreated: number;
+  dataInserted: number;
+  mocksConfigured: number;
 }

@@ -1,12 +1,19 @@
-'use client'
+'use client';
 
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { Database, FileJson, Settings, TestTube, Home } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import {
+  Database,
+  FileJson,
+  Settings,
+  TestTube,
+  Home,
+  FlaskConical,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export function Navigation() {
-  const pathname = usePathname()
+  const pathname = usePathname();
 
   const links = [
     {
@@ -15,26 +22,16 @@ export function Navigation() {
       icon: Home,
     },
     {
-      href: '/tables',
-      label: 'Tables',
-      icon: Database,
-    },
-    {
-      href: '/data',
-      label: 'Data',
-      icon: FileJson,
-    },
-    {
-      href: '/mock',
-      label: 'Mock API',
-      icon: Settings,
+      href: '/scenarios',
+      label: 'Scenarios',
+      icon: FlaskConical,
     },
     {
       href: '/api-test',
       label: 'API Test',
       icon: TestTube,
     },
-  ]
+  ];
 
   return (
     <nav className="border-b bg-background">
@@ -47,8 +44,8 @@ export function Navigation() {
 
           <div className="flex items-center space-x-1">
             {links.map((link) => {
-              const Icon = link.icon
-              const isActive = pathname === link.href
+              const Icon = link.icon;
+              const isActive = pathname === link.href;
 
               return (
                 <Link
@@ -64,11 +61,11 @@ export function Navigation() {
                   <Icon className="h-4 w-4" />
                   <span className="hidden sm:inline">{link.label}</span>
                 </Link>
-              )
+              );
             })}
           </div>
         </div>
       </div>
     </nav>
-  )
+  );
 }

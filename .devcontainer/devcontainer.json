@@ -2,7 +2,7 @@
   "name": "PostgreSQL Test Helper",
   "dockerComposeFile": "../docker-compose.yml",
   "service": "devcontainer",
-  "workspaceFolder": "/workspace",
+  "workspaceFolder": "/workspace/test-tool",
   "customizations": {
     "vscode": {
       "extensions": [

@@ -96,7 +96,7 @@ export function EndpointList({
               <div className="flex items-center gap-2">
                 <Switch
                   checked={endpoint.enabled}
-                  onCheckedChange={(checked) => onToggle(endpoint.id, checked)}
+                  onCheckedChange={(checked: boolean) => onToggle(endpoint.id, checked)}
                 />
               </div>
             </div>

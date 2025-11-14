@@ -1,20 +1,18 @@
-import { DDLUploader } from '@/components/tables/DDLUploader'
-import { TableList } from '@/components/tables/TableList'
+'use client'
 
-export default function TablesPage() {
-  return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">テーブル管理</h1>
-        <p className="text-muted-foreground">
-          PostgreSQL の CREATE TABLE 文を解析してテーブル定義を管理します
-        </p>
-      </div>
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <DDLUploader />
-        <TableList />
-      </div>
-    </div>
-  )
+export default function TablesRedirect() {
+	const router = useRouter()
+
+	useEffect(() => {
+		router.replace('/scenarios')
+	}, [router])
+
+	return (
+		<div className="container mx-auto py-8 text-center">
+			<p className="text-muted-foreground">シナリオページにリダイレクトしています...</p>
+		</div>
+	)
 }

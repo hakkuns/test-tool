@@ -13,7 +13,7 @@ describe('Tables API', () => {
       })
 
       expect(res.status).toBe(200)
-      const data = await res.json()
+      const data = await res.json() as any
       expect(data.success).toBe(true)
       expect(data.table.name).toBe('users')
       expect(data.table.columns).toHaveLength(2)
@@ -29,7 +29,7 @@ describe('Tables API', () => {
       })
 
       expect(res.status).toBe(400)
-      const data = await res.json()
+      const data = await res.json() as any
       expect(data.success).toBe(false)
       expect(data.error).toBeDefined()
     })
@@ -50,7 +50,7 @@ describe('Tables API', () => {
       })
 
       expect(res.status).toBe(200)
-      const data = await res.json()
+      const data = await res.json() as any
       expect(data.success).toBe(true)
       expect(data.tables).toHaveLength(3)
       expect(data.order).toEqual(['users', 'posts', 'comments'])
@@ -72,7 +72,7 @@ describe('Tables API', () => {
       })
 
       expect(res.status).toBe(400)
-      const data = await res.json()
+      const data = await res.json() as any
       expect(data.success).toBe(false)
       expect(data.error).toContain('Circular dependency')
     })
@@ -83,7 +83,7 @@ describe('Tables API', () => {
       const res = await app.request('/api/tables/health')
       
       expect(res.status).toBe(200)
-      const data = await res.json()
+      const data = await res.json() as any
       expect(data.status).toBe('ok')
     })
   })

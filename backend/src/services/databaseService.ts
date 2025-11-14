@@ -1,15 +1,16 @@
-import { pool } from '../db/pool'
-import type { PoolClient } from 'pg'
+import { pool } from '../db/pool';
+import type { PoolClient } from 'pg';
+import type { TableData } from '../types';
 
 /**
  * DDLを実行する
  */
 export async function executeDDL(ddl: string): Promise<void> {
-  const client = await pool.connect()
+  const client = await pool.connect();
   try {
-    await client.query(ddl)
+    await client.query(ddl);
   } finally {
-    client.release()
+    client.release();
   }
 }
 
@@ -17,20 +18,20 @@ export async function executeDDL(ddl: string): Promise<void> {
  * 複数のDDLを順番に実行する（トランザクション内）
  */
 export async function executeDDLs(ddls: string[]): Promise<void> {
-  const client = await pool.connect()
+  const client = await pool.connect();
   try {
-    await client.query('BEGIN')
-    
+    await client.query('BEGIN');
+
     for (const ddl of ddls) {
-      await client.query(ddl)
+      await client.query(ddl);
     }
-    
-    await client.query('COMMIT')
+
+    await client.query('COMMIT');
   } catch (error) {
-    await client.query('ROLLBACK')
-    throw error
+    await client.query('ROLLBACK');
+    throw error;
   } finally {
-    client.release()
+    client.release();
   }
 }
 
@@ -50,10 +51,10 @@ export async function getTableColumns(tableName: string) {
     FROM information_schema.columns
     WHERE table_schema = 'public' AND table_name = $1
     ORDER BY ordinal_position
-  `
-  
-  const result = await pool.query(query, [tableName])
-  return result.rows
+  `;
+
+  const result = await pool.query(query, [tableName]);
+  return result.rows;
 }
 
 /**
@@ -71,10 +72,10 @@ export async function getTables() {
     FROM information_schema.tables
     WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
     ORDER BY table_name
-  `
-  
-  const result = await pool.query(query)
-  return result.rows
+  `;
+
+  const result = await pool.query(query);
+  return result.rows;
 }
 
 /**
@@ -85,36 +86,36 @@ export async function insertData(
   data: Record<string, any>[]
 ): Promise<number> {
   if (data.length === 0) {
-    return 0
+    return 0;
   }
 
-  const client = await pool.connect()
+  const client = await pool.connect();
   try {
-    await client.query('BEGIN')
+    await client.query('BEGIN');
 
-    let insertedCount = 0
+    let insertedCount = 0;
 
     for (const row of data) {
-      const columns = Object.keys(row)
-      const values = Object.values(row)
-      const placeholders = values.map((_, i) => `$${i + 1}`).join(', ')
+      const columns = Object.keys(row);
+      const values = Object.values(row);
+      const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
 
       const query = `
-        INSERT INTO "${tableName}" (${columns.map(c => `"${c}"`).join(', ')})
+        INSERT INTO "${tableName}" (${columns.map((c) => `"${c}"`).join(', ')})
         VALUES (${placeholders})
-      `
+      `;
 
-      await client.query(query, values)
-      insertedCount++
+      await client.query(query, values);
+      insertedCount++;
     }
 
-    await client.query('COMMIT')
-    return insertedCount
+    await client.query('COMMIT');
+    return insertedCount;
   } catch (error) {
-    await client.query('ROLLBACK')
-    throw error
+    await client.query('ROLLBACK');
+    throw error;
   } finally {
-    client.release()
+    client.release();
   }
 }
 
@@ -122,12 +123,123 @@ export async function insertData(
  * テーブルのデータを全削除する
  */
 export async function truncateTable(tableName: string): Promise<void> {
-  await pool.query(`TRUNCATE TABLE "${tableName}" CASCADE`)
+  await pool.query(`TRUNCATE TABLE "${tableName}" CASCADE`);
 }
 
 /**
  * テーブルを削除する
  */
 export async function dropTable(tableName: string): Promise<void> {
-  await pool.query(`DROP TABLE IF EXISTS "${tableName}" CASCADE`)
+  await pool.query(`DROP TABLE IF EXISTS "${tableName}" CASCADE`);
+}
+
+/**
+ * テーブルのデータをエクスポートする
+ */
+export async function exportTableData(tableName: string): Promise<TableData> {
+  const query = `SELECT * FROM "${tableName}"`;
+  const result = await pool.query(query);
+
+  return {
+    tableName,
+    rows: result.rows,
+    truncateBefore: false,
+  };
+}
+
+/**
+ * 全テーブルのデータをエクスポートする
+ */
+export async function exportAllTableData(): Promise<TableData[]> {
+  const tables = await getTables();
+  const tableData: TableData[] = [];
+
+  for (const table of tables) {
+    const data = await exportTableData(table.table_name);
+    tableData.push(data);
+  }
+
+  return tableData;
+}
+
+/**
+ * テーブルデータをインポートする
+ */
+export async function importTableData(data: TableData): Promise<number> {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // truncateBeforeがtrueの場合、テーブルをクリア
+    if (data.truncateBefore) {
+      await client.query(`TRUNCATE TABLE "${data.tableName}" CASCADE`);
+    }
+
+    let insertedCount = 0;
+
+    // データを挿入
+    for (const row of data.rows) {
+      const columns = Object.keys(row);
+      const values = Object.values(row);
+      const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
+
+      const query = `
+        INSERT INTO "${data.tableName}" (${columns
+        .map((c) => `"${c}"`)
+        .join(', ')})
+        VALUES (${placeholders})
+      `;
+
+      await client.query(query, values);
+      insertedCount++;
+    }
+
+    await client.query('COMMIT');
+    return insertedCount;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * 複数テーブルのデータをインポートする
+ */
+export async function importAllTableData(dataList: TableData[]): Promise<void> {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    for (const data of dataList) {
+      // truncateBeforeがtrueの場合、テーブルをクリア
+      if (data.truncateBefore) {
+        await client.query(`TRUNCATE TABLE "${data.tableName}" CASCADE`);
+      }
+
+      // データを挿入
+      for (const row of data.rows) {
+        const columns = Object.keys(row);
+        const values = Object.values(row);
+        const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
+
+        const query = `
+          INSERT INTO "${data.tableName}" (${columns
+          .map((c) => `"${c}"`)
+          .join(', ')})
+          VALUES (${placeholders})
+        `;
+
+        await client.query(query, values);
+      }
+    }
+
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 }
