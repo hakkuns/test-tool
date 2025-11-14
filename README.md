@@ -1,36 +1,51 @@
 # PostgreSQL Test Helper
 
-Spring Boot + PostgreSQL APIバックエンドサーバーのローカル環境テストを支援するWebツール。
+Spring Boot + PostgreSQL API バックエンドサーバーのローカル環境テストを支援する Web ツール。
 
 ## 🎯 主要機能
 
-### 1. テーブル作成機能
-- DDLファイルの解析と自動テーブル作成
-- FOREIGN KEY依存関係の自動解決
+### 1. テストシナリオ管理 🆕
+
+- テーブル定義、データ、モック API、テスト設定を統合管理
+- シナリオの作成・編集・削除
+- シナリオの適用（環境の自動セットアップ）
+- JSON 形式でのエクスポート/インポート
+- タグによる検索・分類
+- API Test ページからシナリオを選択・適用
+- テスト設定（Headers/Body）のデフォルト値管理
+
+### 2. テーブル作成機能
+
+- DDL ファイルの解析と自動テーブル作成
+- FOREIGN KEY 依存関係の自動解決
 - テーブル作成順序の最適化
-- DDL設定のJSON エクスポート/インポート
+- DDL 設定の JSON エクスポート/インポート
 
-### 2. データ入力機能
-- GUI/JSONでのテストデータ管理
+### 3. データ入力機能
+
+- GUI/JSON でのテストデータ管理
 - テーブルスキーマの自動取得
-- データのCRUD操作
-- データのJSON エクスポート/インポート
+- データの CRUD 操作
+- データの JSON エクスポート/インポート
 
-### 3. モックAPI機能
-- 外部APIのモック化
+### 4. モック API 機能
+
+- 外部 API のモック化
 - パスパラメータ対応 (`/users/:id`)
 - レスポンスパラメータ埋め込み (`{{id}}`)
 - リクエスト条件マッチング（クエリ、ヘッダー、ボディ）
 - レスポンス遅延設定
 - 優先度管理
 
-### 4. APIテスト機能
-- Spring Boot APIエンドポイントのテスト
-- HTTPメソッド対応（GET/POST/PUT/DELETE/PATCH/HEAD/OPTIONS）
+### 5. API テスト機能
+
+- Spring Boot API エンドポイントのテスト
+- HTTP メソッド対応（GET/POST/PUT/DELETE/PATCH/HEAD/OPTIONS）
 - カスタムヘッダー設定
 - リクエストボディ編集
 - レスポンス表示（ステータス、ヘッダー、ボディ）
 - リクエスト履歴管理
+- シナリオからの設定適用
 
 ## 🚀 技術スタック
 
@@ -46,7 +61,7 @@ Spring Boot + PostgreSQL APIバックエンドサーバーのローカル環境�
 
 - Node.js 22+
 - pnpm 9+
-- Docker & Docker Compose (PostgreSQL用)
+- Docker & Docker Compose (PostgreSQL 用)
 
 ## 🛠️ セットアップ
 
@@ -66,17 +81,19 @@ pnpm install
 ### 3. 環境変数の設定
 
 #### バックエンド (`backend/.env`)
+
 ```env
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/testdb
 PORT=3001
 ```
 
 #### フロントエンド (`frontend/.env.local`)
+
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:3001
 ```
 
-### 4. PostgreSQLの起動
+### 4. PostgreSQL の起動
 
 ```bash
 docker-compose up -d
@@ -90,7 +107,7 @@ pnpm dev
 ```
 
 - **フロントエンド**: http://localhost:3000
-- **バックエンドAPI**: http://localhost:3001
+- **バックエンド API**: http://localhost:3001
 - **Health Check**: http://localhost:3001/health
 
 ### 個別起動
@@ -107,52 +124,78 @@ pnpm dev
 
 ## 📖 使い方
 
-### テーブル作成
+### テストシナリオ作成（推奨ワークフロー） 🆕
+
+1. トップページから「シナリオ」を開く
+2. 「新規作成」ボタンをクリック
+3. 基本情報を入力（名前、説明、タグ）
+4. 対象 API を設定（HTTP メソッド、URL）
+5. テスト設定でデフォルトの Headers/Body を設定
+6. テーブル定義を追加（DDL）
+7. テーブルデータを設定
+8. 必要に応じてモック API を設定
+9. 「作成」ボタンで保存
+10. API Test ページでシナリオを選択して「適用」
+11. テスト設定が自動入力されるので、必要に応じて変更して実行
+
+### シナリオの適用とテスト実行
+
+1. API Test ページを開く
+2. シナリオドロップダウンから使用するシナリオを選択
+3. 「適用」ボタンをクリック（テーブル作成、データ投入、モック設定が自動実行）
+4. リクエストフォームにテスト設定が自動入力される
+5. 必要に応じて Headers/Body を動的に変更
+6. 「Send Request」でテスト実行
+
+### テーブル作成（個別操作）
 
 1. トップページから「テーブル管理」を開く
-2. DDLテキストを入力またはファイルをアップロード
-3. 「Parse DDL」でDDLを解析
+2. DDL テキストを入力またはファイルをアップロード
+3. 「Parse DDL」で DDL を解析
 4. 依存関係グラフを確認
 5. 「Create Tables」でテーブルを作成
 
-### データ入力
+### データ入力（個別操作）
 
 1. トップページから「データ入力」を開く
 2. テーブルを選択
 3. データグリッドでデータを追加・編集・削除
-4. JSON形式でのインポート/エクスポートも可能
+4. JSON 形式でのインポート/エクスポートも可能
 
-### モックAPI設定
+### モック API 設定（個別操作）
 
-1. トップページから「モックAPI」を開く
+1. トップページから「モック API」を開く
 2. 「Create Endpoint」で新しいモックを作成
-3. HTTPメソッド、パス、レスポンスを設定
+3. HTTP メソッド、パス、レスポンスを設定
 4. パスパラメータ: `/users/:id`
 5. レスポンス埋め込み: `{{id}}`
-6. モックAPIのURL: `http://localhost:3001/api/mock/serve/your/path`
+6. モック API の URL: `http://localhost:3001/api/mock/serve/your/path`
 
-### APIテスト
+### API テスト（個別操作）
 
-1. トップページから「APIテスト」を開く
-2. HTTPメソッドとURLを設定
+1. トップページから「API テスト」を開く
+2. HTTP メソッドと URL を設定
 3. ヘッダーやリクエストボディを編集
 4. 「Send Request」でリクエスト送信
 5. レスポンスを確認
 6. 履歴から過去のリクエストを再実行可能
+
 ```
 
 ## 📁 プロジェクト構造
 
 ```
+
 postgres-test-helper/
 ├── README.md
 ├── PROJECT_PLAN.md
-├── package.json          # ルートワークスペース
-├── pnpm-workspace.yaml   # pnpmワークスペース設定
-├── turbo.json            # TurboRepo設定
-├── backend/              # Hono APIサーバー
-└── frontend/             # Next.js アプリケーション
-```
+├── package.json # ルートワークスペース
+├── pnpm-workspace.yaml # pnpm ワークスペース設定
+├── turbo.json # TurboRepo 設定
+├── backend/ # Hono API サーバー
+└── frontend/ # Next.js アプリケーション
+
+````
 
 ## 📖 ドキュメント
 
@@ -176,7 +219,7 @@ pnpm test
 
 # カバレッジ付き
 pnpm test:coverage
-```
+````
 
 ## 📁 プロジェクト構造
 
@@ -205,19 +248,35 @@ test-tool/
 
 ## 🔌 API エンドポイント
 
+### シナリオ管理 🆕
+
+- `GET /api/scenarios` - シナリオ一覧取得
+- `GET /api/scenarios/:id` - シナリオ詳細取得
+- `POST /api/scenarios` - シナリオ作成
+- `PUT /api/scenarios/:id` - シナリオ更新
+- `DELETE /api/scenarios/:id` - シナリオ削除
+- `GET /api/scenarios/:id/export` - シナリオエクスポート
+- `GET /api/scenarios/export/all` - 全シナリオエクスポート
+- `POST /api/scenarios/import` - シナリオインポート
+- `POST /api/scenarios/:id/apply` - シナリオ適用
+- `GET /api/scenarios/search` - タグ検索
+
 ### テーブル管理
-- `POST /api/tables/parse` - DDL解析
+
+- `POST /api/tables/parse` - DDL 解析
 - `POST /api/tables/create` - テーブル作成
 - `GET /api/tables` - テーブル一覧
 - `DELETE /api/tables` - 全テーブル削除
-- `GET /api/tables/export` - DDLエクスポート
+- `GET /api/tables/export` - DDL エクスポート
 
 ### データベース管理
+
 - `GET /api/database/tables` - テーブル一覧取得
 - `GET /api/database/schema/:tableName` - スキーマ取得
-- `POST /api/database/query` - SQLクエリ実行
+- `POST /api/database/query` - SQL クエリ実行
 
-### モックAPI
+### モック API
+
 - `GET /api/mock/endpoints` - エンドポイント一覧
 - `POST /api/mock/endpoints` - エンドポイント作成
 - `PUT /api/mock/endpoints/:id` - エンドポイント更新
@@ -226,10 +285,11 @@ test-tool/
 - `POST /api/mock/import` - モック設定インポート
 - `ANY /api/mock/serve/*` - モックエンドポイント
 
-### APIプロキシ
+### API プロキシ
+
 - `POST /api/proxy/request` - リクエストプロキシ
 
-詳細は [API仕様書](./docs/API.md) を参照してください。
+詳細は [API 仕様書](./docs/API.md) を参照してください。
 
 ## 🤝 コントリビューション
 
@@ -251,10 +311,11 @@ hakkuns
 
 ## 🙏 謝辞
 
-- [Hono](https://hono.dev/) - 高速Webフレームワーク
-- [Next.js](https://nextjs.org/) - Reactフレームワーク
-- [shadcn/ui](https://ui.shadcn.com/) - UIコンポーネント
+- [Hono](https://hono.dev/) - 高速 Web フレームワーク
+- [Next.js](https://nextjs.org/) - React フレームワーク
+- [shadcn/ui](https://ui.shadcn.com/) - UI コンポーネント
 - [TurboRepo](https://turbo.build/) - モノレポツール
+
 ## 🏗️ ビルド
 
 ```bash

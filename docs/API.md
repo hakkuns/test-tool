@@ -1,8 +1,8 @@
-# API仕様書
+# API 仕様書
 
-PostgreSQL Test Helper バックエンドAPIの仕様書
+PostgreSQL Test Helper バックエンド API の仕様書
 
-## ベースURL
+## ベース URL
 
 ```
 http://localhost:3001
@@ -11,6 +11,7 @@ http://localhost:3001
 ## 共通レスポンス形式
 
 ### 成功レスポンス
+
 ```json
 {
   "success": true,
@@ -20,6 +21,7 @@ http://localhost:3001
 ```
 
 ### エラーレスポンス
+
 ```json
 {
   "success": false,
@@ -38,6 +40,7 @@ http://localhost:3001
 サーバーの稼働状態を確認します。
 
 **レスポンス**
+
 ```json
 {
   "status": "ok",
@@ -48,13 +51,14 @@ http://localhost:3001
 
 ---
 
-## テーブル管理API
+## テーブル管理 API
 
 ### POST /api/tables/parse
 
-DDL文を解析してテーブル定義を取得します。
+DDL 文を解析してテーブル定義を取得します。
 
 **リクエストボディ**
+
 ```json
 {
   "ddl": "CREATE TABLE users (id SERIAL PRIMARY KEY, name VARCHAR(100));"
@@ -62,6 +66,7 @@ DDL文を解析してテーブル定義を取得します。
 ```
 
 **レスポンス**
+
 ```json
 {
   "success": true,
@@ -80,9 +85,10 @@ DDL文を解析してテーブル定義を取得します。
 
 ### POST /api/tables/create
 
-解析済みDDLからテーブルを作成します。
+解析済み DDL からテーブルを作成します。
 
 **リクエストボディ**
+
 ```json
 {
   "tables": [
@@ -97,6 +103,7 @@ DDL文を解析してテーブル定義を取得します。
 ```
 
 **レスポンス**
+
 ```json
 {
   "success": true,
@@ -110,6 +117,7 @@ DDL文を解析してテーブル定義を取得します。
 作成済みテーブル一覧を取得します。
 
 **レスポンス**
+
 ```json
 {
   "success": true,
@@ -124,6 +132,7 @@ DDL文を解析してテーブル定義を取得します。
 すべてのテーブルを削除します（依存関係を考慮）。
 
 **レスポンス**
+
 ```json
 {
   "success": true,
@@ -134,9 +143,10 @@ DDL文を解析してテーブル定義を取得します。
 
 ### GET /api/tables/export
 
-DDL設定をJSONでエクスポートします。
+DDL 設定を JSON でエクスポートします。
 
 **レスポンス**
+
 ```json
 {
   "success": true,
@@ -149,13 +159,14 @@ DDL設定をJSONでエクスポートします。
 
 ---
 
-## データベース管理API
+## データベース管理 API
 
 ### GET /api/database/tables
 
 データベース内のテーブル一覧を取得します。
 
 **レスポンス**
+
 ```json
 {
   "success": true,
@@ -168,9 +179,11 @@ DDL設定をJSONでエクスポートします。
 指定したテーブルのスキーマ情報を取得します。
 
 **パラメータ**
+
 - `tableName`: テーブル名
 
 **レスポンス**
+
 ```json
 {
   "success": true,
@@ -190,9 +203,10 @@ DDL設定をJSONでエクスポートします。
 
 ### POST /api/database/query
 
-SQLクエリを実行します。
+SQL クエリを実行します。
 
 **リクエストボディ**
+
 ```json
 {
   "query": "SELECT * FROM users LIMIT 10"
@@ -200,6 +214,7 @@ SQLクエリを実行します。
 ```
 
 **レスポンス**
+
 ```json
 {
   "success": true,
@@ -212,13 +227,14 @@ SQLクエリを実行します。
 
 ---
 
-## モックAPI
+## モック API
 
 ### GET /api/mock/endpoints
 
 すべてのモックエンドポイントを取得します。
 
 **レスポンス**
+
 ```json
 {
   "success": true,
@@ -232,7 +248,7 @@ SQLクエリを実行します。
       "path": "/api/users/:id",
       "response": {
         "status": 200,
-        "body": {"id": "{{id}}"},
+        "body": { "id": "{{id}}" },
         "delay": 0
       },
       "createdAt": "2025-11-14T06:00:00.000Z",
@@ -248,6 +264,7 @@ SQLクエリを実行します。
 新しいモックエンドポイントを作成します。
 
 **リクエストボディ**
+
 ```json
 {
   "name": "Get User Mock",
@@ -256,20 +273,21 @@ SQLクエリを実行します。
   "method": "GET",
   "path": "/api/users/:id",
   "requestMatch": {
-    "query": {"status": "active"},
-    "headers": {"Authorization": "Bearer token"},
-    "body": {"type": "user"}
+    "query": { "status": "active" },
+    "headers": { "Authorization": "Bearer token" },
+    "body": { "type": "user" }
   },
   "response": {
     "status": 200,
-    "headers": {"Content-Type": "application/json"},
-    "body": {"id": "{{id}}", "name": "Test User"},
+    "headers": { "Content-Type": "application/json" },
+    "body": { "id": "{{id}}", "name": "Test User" },
     "delay": 500
   }
 }
 ```
 
 **レスポンス**
+
 ```json
 {
   "success": true,
@@ -283,9 +301,11 @@ SQLクエリを実行します。
 モックエンドポイントを更新します。
 
 **パラメータ**
-- `id`: モックエンドポイントID
+
+- `id`: モックエンドポイント ID
 
 **リクエストボディ**
+
 ```json
 {
   "enabled": false,
@@ -294,6 +314,7 @@ SQLクエリを実行します。
 ```
 
 **レスポンス**
+
 ```json
 {
   "success": true,
@@ -307,9 +328,11 @@ SQLクエリを実行します。
 指定したモックエンドポイントを削除します。
 
 **パラメータ**
-- `id`: モックエンドポイントID
+
+- `id`: モックエンドポイント ID
 
 **レスポンス**
+
 ```json
 {
   "success": true,
@@ -322,6 +345,7 @@ SQLクエリを実行します。
 すべてのモックエンドポイントを削除します。
 
 **レスポンス**
+
 ```json
 {
   "success": true,
@@ -334,6 +358,7 @@ SQLクエリを実行します。
 モック設定をエクスポートします。
 
 **レスポンス**
+
 ```json
 {
   "success": true,
@@ -347,6 +372,7 @@ SQLクエリを実行します。
 モック設定をインポートします。
 
 **リクエストボディ**
+
 ```json
 [
   {
@@ -358,6 +384,7 @@ SQLクエリを実行します。
 ```
 
 **レスポンス**
+
 ```json
 {
   "success": true,
@@ -366,11 +393,12 @@ SQLクエリを実行します。
 }
 ```
 
-### ANY /api/mock/serve/*
+### ANY /api/mock/serve/\*
 
 モックエンドポイントとして動作します。
 
 **例**
+
 ```bash
 # モック作成: GET /api/users/:id -> {"id": "{{id}}"}
 # アクセス
@@ -385,13 +413,14 @@ GET http://localhost:3001/api/mock/serve/api/users/123
 
 ---
 
-## APIプロキシ
+## API プロキシ
 
 ### POST /api/proxy/request
 
-外部APIへのリクエストをプロキシします。
+外部 API へのリクエストをプロキシします。
 
 **リクエストボディ**
+
 ```json
 {
   "method": "GET",
@@ -400,12 +429,13 @@ GET http://localhost:3001/api/mock/serve/api/users/123
     "Authorization": "Bearer token",
     "Content-Type": "application/json"
   },
-  "body": {"key": "value"},
+  "body": { "key": "value" },
   "timeout": 30000
 }
 ```
 
 **レスポンス (成功)**
+
 ```json
 {
   "success": true,
@@ -421,6 +451,7 @@ GET http://localhost:3001/api/mock/serve/api/users/123
 ```
 
 **レスポンス (エラー)**
+
 ```json
 {
   "success": false,
@@ -433,17 +464,285 @@ GET http://localhost:3001/api/mock/serve/api/users/123
 
 ---
 
+## シナリオ管理 API
+
+### GET /api/scenarios
+
+全テストシナリオを取得します。
+
+**レスポンス**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "scenario_123",
+      "name": "ユーザー登録テスト",
+      "description": "新規ユーザー登録のテストシナリオ",
+      "targetApi": {
+        "method": "POST",
+        "url": "http://localhost:8080/api/users",
+        "headers": {"Content-Type": "application/json"},
+        "body": {"name": "Test User"}
+      },
+      "tables": [...],
+      "tableData": [...],
+      "mockApis": [...],
+      "testSettings": {
+        "headers": {"Authorization": "Bearer token"},
+        "body": "{\"email\":\"test@example.com\"}"
+      },
+      "tags": ["user", "registration"],
+      "createdAt": "2025-11-14T06:00:00.000Z",
+      "updatedAt": "2025-11-14T06:00:00.000Z"
+    }
+  ],
+  "count": 1
+}
+```
+
+### GET /api/scenarios/:id
+
+指定したシナリオの詳細を取得します。
+
+**パラメータ**
+
+- `id`: シナリオ ID
+
+**レスポンス**
+
+```json
+{
+  "success": true,
+  "data": {...}
+}
+```
+
+### POST /api/scenarios
+
+新しいテストシナリオを作成します。
+
+**リクエストボディ**
+
+```json
+{
+  "name": "ユーザー登録テスト",
+  "description": "新規ユーザー登録のテストシナリオ",
+  "targetApi": {
+    "method": "POST",
+    "url": "http://localhost:8080/api/users",
+    "headers": {"Content-Type": "application/json"},
+    "body": {"name": "Test User"}
+  },
+  "tables": [
+    {
+      "name": "users",
+      "ddl": "CREATE TABLE users ...",
+      "dependencies": [],
+      "order": 0
+    }
+  ],
+  "tableData": [
+    {
+      "tableName": "users",
+      "rows": [{"id": 1, "name": "Existing User"}]
+    }
+  ],
+  "mockApis": [...],
+  "testSettings": {
+    "headers": {"Authorization": "Bearer token"},
+    "body": "{\"email\":\"test@example.com\"}"
+  },
+  "tags": ["user", "registration"]
+}
+```
+
+**レスポンス**
+
+```json
+{
+  "success": true,
+  "data": {...},
+  "message": "Scenario created successfully"
+}
+```
+
+### PUT /api/scenarios/:id
+
+シナリオを更新します。
+
+**パラメータ**
+
+- `id`: シナリオ ID
+
+**リクエストボディ**
+
+```json
+{
+  "name": "更新されたシナリオ名",
+  "description": "更新された説明",
+  "tags": ["updated"]
+}
+```
+
+**レスポンス**
+
+```json
+{
+  "success": true,
+  "data": {...},
+  "message": "Scenario updated successfully"
+}
+```
+
+### DELETE /api/scenarios/:id
+
+指定したシナリオを削除します。
+
+**パラメータ**
+
+- `id`: シナリオ ID
+
+**レスポンス**
+
+```json
+{
+  "success": true,
+  "message": "Scenario deleted successfully"
+}
+```
+
+### GET /api/scenarios/:id/export
+
+シナリオを JSON 形式でエクスポートします。
+
+**パラメータ**
+
+- `id`: シナリオ ID
+
+**レスポンス**
+
+```json
+{
+  "version": "1.0.0",
+  "exportedAt": "2025-11-14T06:00:00.000Z",
+  "scenario": {...}
+}
+```
+
+### GET /api/scenarios/export/all
+
+全シナリオをエクスポートします。
+
+**レスポンス**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "version": "1.0.0",
+      "exportedAt": "2025-11-14T06:00:00.000Z",
+      "scenario": {...}
+    }
+  ],
+  "count": 10
+}
+```
+
+### POST /api/scenarios/import
+
+シナリオをインポートします。
+
+**リクエストボディ**
+
+```json
+{
+  "version": "1.0.0",
+  "exportedAt": "2025-11-14T06:00:00.000Z",
+  "scenario": {...}
+}
+```
+
+または配列形式：
+
+```json
+[
+  {"version": "1.0.0", "scenario": {...}},
+  {"version": "1.0.0", "scenario": {...}}
+]
+```
+
+**レスポンス**
+
+```json
+{
+  "success": true,
+  "data": {...},
+  "message": "Successfully imported 5 scenarios"
+}
+```
+
+### POST /api/scenarios/:id/apply
+
+シナリオを適用します（テーブル作成、データ投入、モック API 設定を実行）。
+
+**パラメータ**
+
+- `id`: シナリオ ID
+
+**レスポンス**
+
+```json
+{
+  "success": true,
+  "data": {
+    "tablesCreated": 3,
+    "dataInserted": 10,
+    "mocksConfigured": 2
+  },
+  "message": "Scenario applied successfully"
+}
+```
+
+### GET /api/scenarios/search
+
+タグでシナリオを検索します。
+
+**クエリパラメータ**
+
+- `tags`: カンマ区切りのタグリスト
+
+**例**
+
+```
+GET /api/scenarios/search?tags=user,registration
+```
+
+**レスポンス**
+
+```json
+{
+  "success": true,
+  "data": [...],
+  "count": 5
+}
+```
+
+---
+
 ## エラーコード
 
-| ステータスコード | 説明 |
-|---------|------|
-| 200 | 成功 |
-| 201 | 作成成功 |
-| 400 | バリデーションエラー |
-| 404 | リソースが見つからない |
-| 408 | リクエストタイムアウト |
-| 500 | サーバーエラー |
-| 502 | ネットワークエラー |
+| ステータスコード | 説明                   |
+| ---------------- | ---------------------- |
+| 200              | 成功                   |
+| 201              | 作成成功               |
+| 400              | バリデーションエラー   |
+| 404              | リソースが見つからない |
+| 408              | リクエストタイムアウト |
+| 500              | サーバーエラー         |
+| 502              | ネットワークエラー     |
 
 ## 認証
 
