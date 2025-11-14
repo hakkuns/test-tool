@@ -72,7 +72,7 @@ const db = new Dexie('PostgresTestHelperDB') as Dexie & {
 
 // スキーマ定義
 db.version(1).stores({
-  ddlTables: '++id, name, createdAt',
+  ddlTables: '++id, name, order, createdAt',
   tableData: '++id, tableName, createdAt',
   mockEndpoints: '++id, path, method, priority, enabled, createdAt',
   apiHistory: '++id, method, url, createdAt',

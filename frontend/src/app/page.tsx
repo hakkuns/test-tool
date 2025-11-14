@@ -42,9 +42,9 @@ export default function Home() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button className="w-full" variant="outline" disabled>
-              近日公開
-            </Button>
+            <Link href="/data">
+              <Button className="w-full">データ入力を開く</Button>
+            </Link>
           </CardContent>
         </Card>
 

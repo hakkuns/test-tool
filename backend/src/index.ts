@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
 import tablesRouter from './routes/tables'
+import databaseRouter from './routes/database'
 
 const app = new Hono()
 
@@ -31,5 +32,8 @@ app.get('/api', (c) => {
 
 // Tables API
 app.route('/api/tables', tablesRouter)
+
+// Database API
+app.route('/api/database', databaseRouter)
 
 export default app

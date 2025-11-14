@@ -1,12 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { FileText, Upload, AlertCircle } from 'lucide-react'
+import { FileText, Upload, AlertCircle, Database } from 'lucide-react'
 import { toast } from 'sonner'
 import { API_URL } from '@/lib/api'
 import { db } from '@/lib/db'
@@ -38,6 +38,7 @@ interface ParsedTable {
 export function DDLUploader() {
   const [ddlText, setDdlText] = useState('')
   const [parsedTables, setParsedTables] = useState<ParsedTable[]>([])
+  const queryClient = useQueryClient()
 
   const parseMutation = useMutation({
     mutationFn: async (ddls: string[]) => {
@@ -62,7 +63,7 @@ export function DDLUploader() {
         await db.ddlTables.put({
           name: table.name,
           ddl: ddlText, // 元のDDLを保存
-          dependencies: table.foreignKeys.map(fk => fk.references.table),
+          dependencies: table.foreignKeys.map((fk: ParsedTable['foreignKeys'][0]) => fk.references.table),
           order: table.order,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -95,6 +96,47 @@ export function DDLUploader() {
     }
 
     parseMutation.mutate(ddls)
+  }
+
+  // PostgreSQLにDDLを実行
+  const executeDDLMutation = useMutation({
+    mutationFn: async (ddls: string[]) => {
+      const response = await fetch(`${API_URL}/api/database/execute-ddls`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ddls }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to execute DDL')
+      }
+
+      return response.json()
+    },
+    onSuccess: (data) => {
+      toast.success('DDLをPostgreSQLで実行しました')
+      queryClient.invalidateQueries({ queryKey: ['database-tables'] })
+    },
+    onError: (error: Error) => {
+      toast.error(`DDL実行エラー: ${error.message}`)
+    },
+  })
+
+  const handleExecuteDDL = () => {
+    if (parsedTables.length === 0) {
+      toast.error('先にDDLを解析してください')
+      return
+    }
+
+    // 解析済みのDDLを実行（依存順に並んでいる）
+    const ddls = ddlText
+      .split(';')
+      .map(ddl => ddl.trim())
+      .filter(ddl => ddl.length > 0)
+      .map(ddl => ddl + ';')
+
+    executeDDLMutation.mutate(ddls)
   }
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -148,13 +190,25 @@ export function DDLUploader() {
           />
         </div>
 
-        <Button 
-          onClick={handleParse} 
-          disabled={parseMutation.isPending}
-          className="w-full"
-        >
-          {parseMutation.isPending ? '解析中...' : 'テーブルを解析'}
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={handleParse} 
+            disabled={parseMutation.isPending}
+            className="flex-1"
+          >
+            {parseMutation.isPending ? '解析中...' : 'テーブルを解析'}
+          </Button>
+
+          <Button 
+            onClick={handleExecuteDDL} 
+            disabled={executeDDLMutation.isPending || parsedTables.length === 0}
+            variant="default"
+            className="flex-1"
+          >
+            <Database className="mr-2 h-4 w-4" />
+            {executeDDLMutation.isPending ? '実行中...' : 'PostgreSQLで実行'}
+          </Button>
+        </div>
 
         {parsedTables.length > 0 && (
           <Alert>
