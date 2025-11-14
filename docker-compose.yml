@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  devcontainer:
+    image: mcr.microsoft.com/devcontainers/typescript-node:22
+    command: sleep infinity
+    volumes:
+      - ..:/workspace:cached
+      - node_modules_backend:/workspace/backend/node_modules
+      - node_modules_frontend:/workspace/frontend/node_modules
+    working_dir: /workspace
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:3001
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  node_modules_backend:
+  node_modules_frontend:
