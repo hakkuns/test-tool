@@ -1,13 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { RequestForm } from '@/components/api-test/RequestForm';
 import { ResponseViewer } from '@/components/api-test/ResponseViewer';
 import {
   RequestHistory,
   type HistoryItem,
 } from '@/components/api-test/RequestHistory';
-import { proxyRequest } from '@/lib/api';
+import { MockEndpointList } from '@/components/api-test/MockEndpointList';
+import { TableList } from '@/components/api-test/TableList';
+import { proxyRequest, getMockEndpoints } from '@/lib/api';
 import { scenariosApi } from '@/lib/api/scenarios';
 import type { TestScenario } from '@/types/scenario';
 import { toast } from 'sonner';
@@ -37,14 +40,54 @@ export default function ApiTestPage() {
   const router = useRouter();
   const [response, setResponse] = useState<any>(null);
   const [error, setError] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [history, setHistory] = useState<HistoryItem[]>([]);
 
   // シナリオ関連
-  const [scenarios, setScenarios] = useState<TestScenario[]>([]);
   const [selectedScenarioId, setSelectedScenarioId] = useState<string>('');
-  const [isApplying, setIsApplying] = useState(false);
   const [isApplied, setIsApplied] = useState(false);
+
+  // シナリオ一覧を取得（useQuery）
+  const { data: scenarios = [], isLoading: isScenariosLoading } = useQuery<
+    TestScenario[]
+  >({
+    queryKey: ['scenarios'],
+    queryFn: async () => {
+      const data = await scenariosApi.getAll();
+      return data;
+    },
+  });
+
+  // モックエンドポイント一覧を取得（useQuery）
+  const { data: mockEndpointsData } = useQuery({
+    queryKey: ['mock-endpoints'],
+    queryFn: async () => {
+      const result = await getMockEndpoints();
+      return result;
+    },
+    refetchInterval: 10000, // 10秒ごとに自動更新
+  });
+
+  const mockEndpoints = mockEndpointsData?.data || [];
+
+  // テーブル一覧を取得（useQuery）
+  const { data: tablesData } = useQuery({
+    queryKey: ['database-tables'],
+    queryFn: async () => {
+      const response = await fetch(
+        `${
+          process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+        }/api/database/tables`
+      );
+      if (!response.ok) {
+        throw new Error('Failed to fetch tables');
+      }
+      const result = await response.json();
+      return result;
+    },
+    refetchInterval: 10000, // 10秒ごとに自動更新
+  });
+
+  const tables = tablesData?.tables || [];
 
   // 履歴をLocalStorageから読み込み
   useEffect(() => {
@@ -56,28 +99,29 @@ export default function ApiTestPage() {
         console.error('Failed to load history:', e);
       }
     }
+
+    // 適用中のシナリオを確認
+    const appliedScenarioId = localStorage.getItem('appliedScenarioId');
+    if (appliedScenarioId) {
+      setSelectedScenarioId(appliedScenarioId);
+      setIsApplied(true);
+    }
   }, []);
 
-  // シナリオ一覧を読み込み
+  // シナリオが読み込まれた後、選択されたシナリオが存在するか確認
   useEffect(() => {
-    const loadScenarios = async () => {
-      try {
-        const data = await scenariosApi.getAll();
-        setScenarios(data);
-
-        // 適用中のシナリオを確認
-        const appliedScenarioId = localStorage.getItem('appliedScenarioId');
-        if (appliedScenarioId) {
-          setSelectedScenarioId(appliedScenarioId);
-          setIsApplied(true);
-        }
-      } catch (error) {
-        console.error('Failed to load scenarios:', error);
-        toast.error('シナリオの読み込みに失敗しました');
+    // シナリオのロードが完了した後にチェック
+    if (!isScenariosLoading && selectedScenarioId) {
+      const scenarioExists = scenarios.some((s) => s.id === selectedScenarioId);
+      if (!scenarioExists) {
+        // シナリオが存在しない場合、リセット
+        setSelectedScenarioId('');
+        setIsApplied(false);
+        localStorage.removeItem('appliedScenarioId');
+        toast.error('適用されていたシナリオが削除されました');
       }
-    };
-    loadScenarios();
-  }, []);
+    }
+  }, [scenarios, selectedScenarioId, isScenariosLoading]);
 
   // 履歴をLocalStorageに保存
   const saveHistory = (newHistory: HistoryItem[]) => {
@@ -85,19 +129,15 @@ export default function ApiTestPage() {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(newHistory));
   };
 
-  // リクエスト送信
-  const handleSubmit = async (data: {
-    method: string;
-    url: string;
-    headers: Record<string, string>;
-    body?: string;
-    timeout?: number;
-  }) => {
-    setIsLoading(true);
-    setResponse(null);
-    setError(null);
-
-    try {
+  // リクエスト送信（useMutation）
+  const requestMutation = useMutation({
+    mutationFn: async (data: {
+      method: string;
+      url: string;
+      headers: Record<string, string>;
+      body?: string;
+      timeout?: number;
+    }) => {
       // ボディをパース
       let parsedBody: any = undefined;
       if (data.body) {
@@ -108,14 +148,15 @@ export default function ApiTestPage() {
         }
       }
 
-      const result = await proxyRequest({
+      return await proxyRequest({
         method: data.method,
         url: data.url,
         headers: data.headers,
         body: parsedBody,
         timeout: data.timeout,
       });
-
+    },
+    onSuccess: (result, variables) => {
       if (result.success && result.response) {
         setResponse(result.response);
         toast.success('Request completed successfully');
@@ -123,11 +164,11 @@ export default function ApiTestPage() {
         // 履歴に追加
         const historyItem: HistoryItem = {
           id: `req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-          method: data.method,
-          url: data.url,
-          headers: data.headers,
-          body: data.body,
-          timeout: data.timeout,
+          method: variables.method,
+          url: variables.url,
+          headers: variables.headers,
+          body: variables.body,
+          timeout: variables.timeout,
           timestamp: new Date().toISOString(),
           response: {
             status: result.response.status,
@@ -141,7 +182,8 @@ export default function ApiTestPage() {
         setError(result);
         toast.error('Request failed');
       }
-    } catch (err) {
+    },
+    onError: (err) => {
       console.error('Request error:', err);
       const errorData = {
         error: 'Request failed',
@@ -151,9 +193,20 @@ export default function ApiTestPage() {
       };
       setError(errorData);
       toast.error('Request failed');
-    } finally {
-      setIsLoading(false);
-    }
+    },
+  });
+
+  // リクエスト送信
+  const handleSubmit = async (data: {
+    method: string;
+    url: string;
+    headers: Record<string, string>;
+    body?: string;
+    timeout?: number;
+  }) => {
+    setResponse(null);
+    setError(null);
+    requestMutation.mutate(data);
   };
 
   // 履歴から再実行
@@ -182,19 +235,14 @@ export default function ApiTestPage() {
     }
   };
 
-  // シナリオ適用
-  const handleApplyScenario = async () => {
-    if (!selectedScenarioId) {
-      toast.error('シナリオを選択してください');
-      return;
-    }
-
-    setIsApplying(true);
-    try {
-      const result = await scenariosApi.apply(selectedScenarioId);
-
+  // シナリオ適用（useMutation）
+  const applyScenarioMutation = useMutation({
+    mutationFn: async (scenarioId: string) => {
+      return await scenariosApi.apply(scenarioId);
+    },
+    onSuccess: (result, scenarioId) => {
       // 適用成功後、LocalStorageに保存
-      localStorage.setItem('appliedScenarioId', selectedScenarioId);
+      localStorage.setItem('appliedScenarioId', scenarioId);
       setIsApplied(true);
 
       toast.success(
@@ -202,19 +250,28 @@ export default function ApiTestPage() {
       );
 
       // 選択されたシナリオを取得
-      const scenario = scenarios.find((s) => s.id === selectedScenarioId);
+      const scenario = scenarios.find((s) => s.id === scenarioId);
       if (scenario?.testSettings) {
         toast.info('フォームにテスト設定を適用しました');
       }
-    } catch (error) {
+    },
+    onError: (error) => {
       console.error('Failed to apply scenario:', error);
       toast.error(
         error instanceof Error ? error.message : 'シナリオの適用に失敗しました'
       );
       setIsApplied(false);
-    } finally {
-      setIsApplying(false);
+    },
+  });
+
+  // シナリオ適用
+  const handleApplyScenario = async () => {
+    if (!selectedScenarioId) {
+      toast.error('シナリオを選択してください');
+      return;
     }
+
+    applyScenarioMutation.mutate(selectedScenarioId);
   };
 
   return (
@@ -275,9 +332,11 @@ export default function ApiTestPage() {
                 </Button>
                 <Button
                   onClick={handleApplyScenario}
-                  disabled={!selectedScenarioId || isApplying}
+                  disabled={
+                    !selectedScenarioId || applyScenarioMutation.isPending
+                  }
                 >
-                  {isApplying ? (
+                  {applyScenarioMutation.isPending ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       適用中...
@@ -310,13 +369,15 @@ export default function ApiTestPage() {
 
           <RequestForm
             onSubmit={handleSubmit}
-            isLoading={isLoading}
+            isLoading={requestMutation.isPending}
             initialData={
               selectedScenarioId && isApplied
                 ? scenarios.find((s) => s.id === selectedScenarioId)
                 : undefined
             }
           />
+          <TableList tables={tables} />
+          <MockEndpointList endpoints={mockEndpoints} />
           <RequestHistory
             history={history}
             onReplay={handleReplay}

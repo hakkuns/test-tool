@@ -56,7 +56,9 @@ export function ScenarioMocksEditor({
     method: 'GET',
     response: {
       status: 200,
-      headers: {},
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: null,
     },
     createdAt: '',
@@ -75,7 +77,9 @@ export function ScenarioMocksEditor({
       method: 'GET',
       response: {
         status: 200,
-        headers: {},
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: null,
       },
       createdAt: '',
@@ -170,7 +174,9 @@ export function ScenarioMocksEditor({
       method: 'GET',
       response: {
         status: 200,
-        headers: {},
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: null,
       },
       createdAt: '',
@@ -195,7 +201,9 @@ export function ScenarioMocksEditor({
       method: 'GET',
       response: {
         status: 200,
-        headers: {},
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: null,
       },
       createdAt: '',
