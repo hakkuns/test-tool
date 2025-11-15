@@ -92,7 +92,9 @@ export default function ScenarioDetailPage() {
         setTestBody(data.testSettings?.body || '');
       } catch (error) {
         console.error('Failed to load scenario:', error);
-        toast.error('シナリオの読み込みに失敗しました');
+        toast.error('シナリオが見つかりません');
+        // シナリオが見つからない場合はホームに戻る
+        router.push('/');
       } finally {
         setIsLoading(false);
       }
@@ -234,7 +236,7 @@ export default function ScenarioDetailPage() {
 
       await scenariosApi.update(id, update);
       toast.success('シナリオを更新しました');
-      router.push('/scenarios');
+      router.push('/');
     } catch (error) {
       console.error('Failed to update scenario:', error);
       toast.error('シナリオの更新に失敗しました');

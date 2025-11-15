@@ -1,5 +1,13 @@
 // フロントエンド用の型定義
 
+export interface ScenarioGroup {
+  id: string;
+  name: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface DDLTable {
   name: string;
   ddl: string;
@@ -47,6 +55,8 @@ export interface TableData {
 
 export interface TestScenario {
   id: string;
+  groupId?: string;
+  groupName?: string;
   name: string;
   description?: string;
   targetApi: ApiTestConfig;
@@ -74,6 +84,7 @@ export interface ScenarioExport {
 }
 
 export interface CreateScenarioInput {
+  groupId?: string;
   name: string;
   description?: string;
   targetApi: ApiTestConfig;
@@ -93,6 +104,7 @@ export interface CreateScenarioInput {
 }
 
 export interface UpdateScenarioInput {
+  groupId?: string;
   name?: string;
   description?: string;
   targetApi?: ApiTestConfig;

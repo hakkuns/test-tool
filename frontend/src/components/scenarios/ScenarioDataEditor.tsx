@@ -56,6 +56,8 @@ export function ScenarioDataEditor({
         setDbTables(tableNames);
       } catch (error) {
         console.error('Failed to load tables:', error);
+        // データベース接続エラーの場合は警告のみ表示
+        // シナリオ作成は続行可能
       }
     };
     loadDatabaseTables();

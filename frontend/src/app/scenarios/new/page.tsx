@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,23 +24,26 @@ import { ScenarioTablesEditor } from '@/components/scenarios/ScenarioTablesEdito
 import { ScenarioDataEditor } from '@/components/scenarios/ScenarioDataEditor';
 import { ScenarioMocksEditor } from '@/components/scenarios/ScenarioMocksEditor';
 import { TestSettingsEditor } from '@/components/scenarios/TestSettingsEditor';
-import { scenariosApi } from '@/lib/api/scenarios';
+import { scenariosApi, groupsApi } from '@/lib/api/scenarios';
 import { FileJson, Upload } from 'lucide-react';
 import type {
   CreateScenarioInput,
   DDLTable,
   TableData,
   MockEndpoint,
+  ScenarioGroup,
 } from '@/types/scenario';
 import { toast } from 'sonner';
 
 export default function NewScenarioPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [groups, setGroups] = useState<ScenarioGroup[]>([]);
 
   // Basic info
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [groupId, setGroupId] = useState<string>('');
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
 
@@ -63,6 +66,19 @@ export default function NewScenarioPage() {
   // Test settings
   const [testHeaders, setTestHeaders] = useState<Record<string, string>>({});
   const [testBody, setTestBody] = useState('');
+
+  // グループ一覧を取得
+  useEffect(() => {
+    const fetchGroups = async () => {
+      try {
+        const data = await groupsApi.getAll();
+        setGroups(data);
+      } catch (error) {
+        console.error('Failed to fetch groups:', error);
+      }
+    };
+    fetchGroups();
+  }, []);
 
   const handleAddTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
@@ -87,23 +103,30 @@ export default function NewScenarioPage() {
         const text = await file.text();
         const data = JSON.parse(text);
 
+        // エクスポート形式（scenario プロパティを持つ）かどうかチェック
+        const scenarioData = data.scenario || data;
+
         // シナリオ全体のインポート
-        if (data.name) setName(data.name);
-        if (data.description) setDescription(data.description);
-        if (data.tags) setTags(data.tags);
-        if (data.targetApi) {
-          if (data.targetApi.method) setTargetApiMethod(data.targetApi.method);
-          if (data.targetApi.url) setTargetApiUrl(data.targetApi.url);
-          if (data.targetApi.headers)
-            setTargetApiHeaders(data.targetApi.headers);
-          if (data.targetApi.body) setTargetApiBody(data.targetApi.body);
+        if (scenarioData.name) setName(scenarioData.name);
+        if (scenarioData.description) setDescription(scenarioData.description);
+        if (scenarioData.groupId) setGroupId(scenarioData.groupId);
+        if (scenarioData.tags) setTags(scenarioData.tags);
+        if (scenarioData.targetApi) {
+          if (scenarioData.targetApi.method)
+            setTargetApiMethod(scenarioData.targetApi.method);
+          if (scenarioData.targetApi.url)
+            setTargetApiUrl(scenarioData.targetApi.url);
+          if (scenarioData.targetApi.headers)
+            setTargetApiHeaders(scenarioData.targetApi.headers);
+          if (scenarioData.targetApi.body)
+            setTargetApiBody(scenarioData.targetApi.body);
         }
-        if (data.tables) setTables(data.tables);
-        if (data.tableData) setTableData(data.tableData);
-        if (data.mockApis) setMockApis(data.mockApis);
-        if (data.testSettings) {
-          setTestHeaders(data.testSettings.headers || {});
-          setTestBody(data.testSettings.body || '');
+        if (scenarioData.tables) setTables(scenarioData.tables);
+        if (scenarioData.tableData) setTableData(scenarioData.tableData);
+        if (scenarioData.mockApis) setMockApis(scenarioData.mockApis);
+        if (scenarioData.testSettings) {
+          setTestHeaders(scenarioData.testSettings.headers || {});
+          setTestBody(scenarioData.testSettings.body || '');
         }
 
         toast.success('シナリオをインポートしました');
@@ -172,6 +195,7 @@ export default function NewScenarioPage() {
       const scenario: CreateScenarioInput = {
         name,
         description: description || undefined,
+        groupId: groupId || undefined,
         targetApi: {
           method: targetApiMethod,
           url: targetApiUrl,
@@ -197,7 +221,7 @@ export default function NewScenarioPage() {
 
       await scenariosApi.create(scenario);
       toast.success('シナリオを作成しました');
-      router.push('/scenarios');
+      router.push('/');
     } catch (error) {
       console.error('Failed to create scenario:', error);
       toast.error('シナリオの作成に失敗しました');
@@ -253,6 +277,27 @@ export default function NewScenarioPage() {
                 placeholder="このシナリオの概要を入力..."
                 rows={3}
               />
+            </div>
+            <div>
+              <Label htmlFor="group">グループ</Label>
+              <Select
+                value={groupId || 'none'}
+                onValueChange={(value) =>
+                  setGroupId(value === 'none' ? '' : value)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="グループを選択（任意）" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">なし（未分類）</SelectItem>
+                  {groups.map((group) => (
+                    <SelectItem key={group.id} value={group.id}>
+                      {group.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label>タグ</Label>

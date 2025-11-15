@@ -4,6 +4,7 @@ import type {
   DDLTable,
   TableData,
   MockEndpoint,
+  ScenarioGroup,
 } from '../types/index.js';
 import * as databaseService from './databaseService.js';
 import { mockService } from './mockService.js';
@@ -13,6 +14,7 @@ import { mockService } from './mockService.js';
  */
 class ScenarioService {
   private scenarios: Map<string, TestScenario> = new Map();
+  private groups: Map<string, ScenarioGroup> = new Map();
 
   /**
    * すべてのシナリオを取得
@@ -210,6 +212,87 @@ class ScenarioService {
    */
   private generateId(): string {
     return `scenario_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  /**
+   * グループIDを生成
+   */
+  private generateGroupId(): string {
+    return `group_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  /**
+   * すべてのグループを取得
+   */
+  getAllGroups(): ScenarioGroup[] {
+    return Array.from(this.groups.values()).sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }
+
+  /**
+   * IDでグループを取得
+   */
+  getGroupById(id: string): ScenarioGroup | undefined {
+    return this.groups.get(id);
+  }
+
+  /**
+   * グループを作成
+   */
+  createGroup(
+    group: Omit<ScenarioGroup, 'id' | 'createdAt' | 'updatedAt'>
+  ): ScenarioGroup {
+    const id = this.generateGroupId();
+    const now = new Date().toISOString();
+    const newGroup: ScenarioGroup = {
+      ...group,
+      id,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.groups.set(id, newGroup);
+    return newGroup;
+  }
+
+  /**
+   * グループを更新
+   */
+  updateGroup(
+    id: string,
+    updates: Partial<Omit<ScenarioGroup, 'id' | 'createdAt' | 'updatedAt'>>
+  ): ScenarioGroup | null {
+    const group = this.groups.get(id);
+    if (!group) {
+      return null;
+    }
+    const updated: ScenarioGroup = {
+      ...group,
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
+    this.groups.set(id, updated);
+    return updated;
+  }
+
+  /**
+   * グループを削除
+   */
+  deleteGroup(id: string): boolean {
+    // グループに属するシナリオのgroupIdをクリア
+    const scenarios = this.getScenariosByGroup(id);
+    for (const scenario of scenarios) {
+      this.updateScenario(scenario.id, { groupId: undefined, groupName: undefined });
+    }
+    return this.groups.delete(id);
+  }
+
+  /**
+   * グループに属するシナリオを取得
+   */
+  getScenariosByGroup(groupId: string): TestScenario[] {
+    return this.getAllScenarios().filter((s) => s.groupId === groupId);
   }
 }
 

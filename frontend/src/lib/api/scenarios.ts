@@ -6,6 +6,7 @@ import type {
   UpdateScenarioInput,
   ScenarioExport,
   ApplyScenarioResult,
+  ScenarioGroup,
 } from '@/types/scenario';
 
 // UUIDを生成するヘルパー関数
@@ -122,8 +123,21 @@ export const scenariosApi = {
     const imported: TestScenario[] = [];
 
     for (const { scenario } of dataArray) {
-      const { id, createdAt, updatedAt, ...rest } = scenario;
-      const created = await scenariosApi.create(rest);
+      // 既存のID関連フィールドをすべて除外し、新しいシナリオとして作成
+      const { id, createdAt, updatedAt, groupId, groupName, ...rest } =
+        scenario;
+
+      // scenarioIdはランタイムでのみ存在する可能性があるため、除外
+      if ('scenarioId' in rest) {
+        delete (rest as any).scenarioId;
+      }
+
+      // インポート時は常に新しいシナリオとして作成（複製を許可）
+      const created = await scenariosApi.create({
+        ...rest,
+        name: rest.name + ' (コピー)',
+        groupId: groupId, // グループ情報は保持
+      });
       imported.push(created);
     }
 
@@ -319,5 +333,90 @@ export const scenariosApi = {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  },
+};
+
+/**
+ * グループ管理API
+ */
+export const groupsApi = {
+  /**
+   * 全グループを取得
+   */
+  getAll: async (): Promise<ScenarioGroup[]> => {
+    const response = await fetch(`${API_URL}/api/scenarios/groups`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch groups');
+    }
+    const result = await response.json();
+    return result.data;
+  },
+
+  /**
+   * グループを作成
+   */
+  create: async (input: {
+    name: string;
+    description?: string;
+  }): Promise<ScenarioGroup> => {
+    const response = await fetch(`${API_URL}/api/scenarios/groups`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(input),
+    });
+    if (!response.ok) {
+      throw new Error('Failed to create group');
+    }
+    const result = await response.json();
+    return result.data;
+  },
+
+  /**
+   * グループを更新
+   */
+  update: async (
+    id: string,
+    input: { name?: string; description?: string }
+  ): Promise<ScenarioGroup> => {
+    const response = await fetch(`${API_URL}/api/scenarios/groups/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(input),
+    });
+    if (!response.ok) {
+      throw new Error('Failed to update group');
+    }
+    const result = await response.json();
+    return result.data;
+  },
+
+  /**
+   * グループを削除
+   */
+  delete: async (id: string): Promise<void> => {
+    const response = await fetch(`${API_URL}/api/scenarios/groups/${id}`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) {
+      throw new Error('Failed to delete group');
+    }
+  },
+
+  /**
+   * グループに属するシナリオを取得
+   */
+  getScenarios: async (groupId: string): Promise<TestScenario[]> => {
+    const response = await fetch(
+      `${API_URL}/api/scenarios/groups/${groupId}/scenarios`
+    );
+    if (!response.ok) {
+      throw new Error('Failed to fetch scenarios in group');
+    }
+    const result = await response.json();
+    return result.data;
   },
 };

@@ -61,6 +61,14 @@ export interface ApiResponse {
 
 // テストシナリオ管理用の型定義
 
+export interface ScenarioGroup {
+  id: string;
+  name: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ApiTestConfig {
   id?: string;
   name?: string;
@@ -79,6 +87,8 @@ export interface TableData {
 
 export interface TestScenario {
   id: string;
+  groupId?: string;
+  groupName?: string;
   name: string;
   description?: string;
   targetApi: ApiTestConfig;

@@ -5,6 +5,8 @@ import {
   createScenarioSchema,
   updateScenarioSchema,
   scenarioExportSchema,
+  createGroupSchema,
+  updateGroupSchema,
 } from '../types/schemas.js';
 import { z } from 'zod';
 
@@ -24,6 +26,157 @@ scenariosRouter.get('/', (c) => {
     });
   } catch (error) {
     console.error('Error fetching scenarios:', error);
+    return c.json(
+      {
+        success: false,
+        error: 'Failed to fetch scenarios',
+      },
+      500
+    );
+  }
+});
+
+/**
+ * グループ一覧取得
+ * GET /api/scenarios/groups
+ */
+scenariosRouter.get('/groups', (c) => {
+  try {
+    const groups = scenarioService.getAllGroups();
+    return c.json({
+      success: true,
+      data: groups,
+      count: groups.length,
+    });
+  } catch (error) {
+    console.error('Error fetching groups:', error);
+    return c.json(
+      {
+        success: false,
+        error: 'Failed to fetch groups',
+      },
+      500
+    );
+  }
+});
+
+/**
+ * グループ作成
+ * POST /api/scenarios/groups
+ */
+scenariosRouter.post('/groups', zValidator('json', createGroupSchema), (c) => {
+  try {
+    const data = c.req.valid('json');
+    const group = scenarioService.createGroup(data);
+    return c.json(
+      {
+        success: true,
+        data: group,
+      },
+      201
+    );
+  } catch (error) {
+    console.error('Error creating group:', error);
+    return c.json(
+      {
+        success: false,
+        error: 'Failed to create group',
+      },
+      500
+    );
+  }
+});
+
+/**
+ * グループ更新
+ * PUT /api/scenarios/groups/:id
+ */
+scenariosRouter.put(
+  '/groups/:id',
+  zValidator('json', updateGroupSchema),
+  (c) => {
+    try {
+      const id = c.req.param('id');
+      const data = c.req.valid('json');
+      const group = scenarioService.updateGroup(id, data);
+
+      if (!group) {
+        return c.json(
+          {
+            success: false,
+            error: 'Group not found',
+          },
+          404
+        );
+      }
+
+      return c.json({
+        success: true,
+        data: group,
+      });
+    } catch (error) {
+      console.error('Error updating group:', error);
+      return c.json(
+        {
+          success: false,
+          error: 'Failed to update group',
+        },
+        500
+      );
+    }
+  }
+);
+
+/**
+ * グループ削除
+ * DELETE /api/scenarios/groups/:id
+ */
+scenariosRouter.delete('/groups/:id', (c) => {
+  try {
+    const id = c.req.param('id');
+    const success = scenarioService.deleteGroup(id);
+
+    if (!success) {
+      return c.json(
+        {
+          success: false,
+          error: 'Group not found',
+        },
+        404
+      );
+    }
+
+    return c.json({
+      success: true,
+      message: 'Group deleted successfully',
+    });
+  } catch (error) {
+    console.error('Error deleting group:', error);
+    return c.json(
+      {
+        success: false,
+        error: 'Failed to delete group',
+      },
+      500
+    );
+  }
+});
+
+/**
+ * グループ内のシナリオ取得
+ * GET /api/scenarios/groups/:id/scenarios
+ */
+scenariosRouter.get('/groups/:id/scenarios', (c) => {
+  try {
+    const groupId = c.req.param('id');
+    const scenarios = scenarioService.getScenariosByGroup(groupId);
+    return c.json({
+      success: true,
+      data: scenarios,
+      count: scenarios.length,
+    });
+  } catch (error) {
+    console.error('Error fetching scenarios by group:', error);
     return c.json(
       {
         success: false,

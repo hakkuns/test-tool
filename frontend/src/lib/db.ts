@@ -95,4 +95,74 @@ db.version(2).stores({
   apiHistory: '++id, method, url, createdAt',
 });
 
+// バージョン3: scenarioIdにユニーク制約を追加
+db.version(3)
+  .stores({
+    scenarios: '++id, &scenarioId, name, createdAt, updatedAt',
+    ddlTables: '++id, name, order, createdAt',
+    tableData: '++id, tableName, createdAt',
+    mockEndpoints: '++id, path, method, priority, enabled, createdAt',
+    apiHistory: '++id, method, url, createdAt',
+  })
+  .upgrade(async (trans) => {
+    // 既存のシナリオから重複を削除
+    const scenarios = await trans.table('scenarios').toArray();
+    const seen = new Set<string>();
+    const toDelete: number[] = [];
+
+    for (const scenario of scenarios) {
+      if (seen.has(scenario.scenarioId)) {
+        // 重複している場合は削除対象に追加
+        if (scenario.id) {
+          toDelete.push(scenario.id);
+        }
+      } else {
+        seen.add(scenario.scenarioId);
+      }
+    }
+
+    // 重複レコードを削除
+    for (const id of toDelete) {
+      await trans.table('scenarios').delete(id);
+    }
+
+    console.log(`Removed ${toDelete.length} duplicate scenarios`);
+  });
+
+// バージョン4: 強制的にクリーンアップ
+db.version(4)
+  .stores({
+    scenarios: '++id, &scenarioId, name, createdAt, updatedAt',
+    ddlTables: '++id, name, order, createdAt',
+    tableData: '++id, tableName, createdAt',
+    mockEndpoints: '++id, path, method, priority, enabled, createdAt',
+    apiHistory: '++id, method, url, createdAt',
+  })
+  .upgrade(async (trans) => {
+    // 再度重複チェック
+    const scenarios = await trans.table('scenarios').toArray();
+    const seen = new Set<string>();
+    const toDelete: number[] = [];
+
+    for (const scenario of scenarios) {
+      if (seen.has(scenario.scenarioId)) {
+        if (scenario.id) {
+          toDelete.push(scenario.id);
+        }
+      } else {
+        seen.add(scenario.scenarioId);
+      }
+    }
+
+    for (const id of toDelete) {
+      await trans.table('scenarios').delete(id);
+    }
+
+    if (toDelete.length > 0) {
+      console.log(
+        `Version 4: Removed ${toDelete.length} remaining duplicate scenarios`
+      );
+    }
+  });
+
 export { db };

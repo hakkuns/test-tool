@@ -1,5 +1,14 @@
 import { z } from 'zod';
 
+// シナリオグループスキーマ
+export const scenarioGroupSchema = z.object({
+  id: z.string(),
+  name: z.string().min(1),
+  description: z.string().optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
 // APIテスト設定スキーマ
 export const apiTestConfigSchema = z.object({
   id: z.string().optional(),
@@ -54,6 +63,8 @@ export const mockEndpointSchema = z.object({
 // テストシナリオスキーマ
 export const testScenarioSchema = z.object({
   id: z.string(),
+  groupId: z.string().optional(),
+  groupName: z.string().optional(),
   name: z.string().min(1),
   description: z.string().optional(),
   targetApi: apiTestConfigSchema,
@@ -88,6 +99,19 @@ export const createScenarioSchema = testScenarioSchema.omit({
 
 // 更新時の入力スキーマ
 export const updateScenarioSchema = testScenarioSchema.partial().omit({
+  id: true,
+  createdAt: true,
+});
+
+// グループ作成スキーマ
+export const createGroupSchema = scenarioGroupSchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// グループ更新スキーマ
+export const updateGroupSchema = scenarioGroupSchema.partial().omit({
   id: true,
   createdAt: true,
 });

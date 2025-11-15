@@ -1,4 +1,4 @@
-# PostgreSQL Test Helper
+# Testing Assistant Suite
 
 Spring Boot + PostgreSQL API バックエンドサーバーのローカル環境テストを支援する Web ツール。
 

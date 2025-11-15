@@ -22,11 +22,6 @@ export function Navigation() {
       icon: Home,
     },
     {
-      href: '/scenarios',
-      label: 'Scenarios',
-      icon: FlaskConical,
-    },
-    {
       href: '/api-test',
       label: 'API Test',
       icon: TestTube,
@@ -39,7 +34,7 @@ export function Navigation() {
         <div className="flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center space-x-2">
             <Database className="h-6 w-6" />
-            <span className="font-bold text-xl">PostgreSQL Test Helper</span>
+            <span className="font-bold text-xl">Testing Assistant Suite</span>
           </Link>
 
           <div className="flex items-center space-x-1">
