@@ -29,6 +29,7 @@ import {
 import { Plus, Trash2, FileText } from 'lucide-react';
 import type { TableData } from '@/types/scenario';
 import { toast } from 'sonner';
+import { getDatabaseTables, getTableSchema } from '@/lib/api';
 
 interface ScenarioDataEditorProps {
   tableData: TableData[];
@@ -44,58 +45,59 @@ export function ScenarioDataEditor({
   const [selectedTable, setSelectedTable] = useState<string>('');
   const [columns, setColumns] = useState<string[]>([]);
   const [rows, setRows] = useState<Record<string, any>[]>([]);
+  const [dbTables, setDbTables] = useState<string[]>([]);
+
+  // コンポーネントマウント時にデータベースからテーブル一覧を取得
+  useEffect(() => {
+    const loadDatabaseTables = async () => {
+      try {
+        const result = await getDatabaseTables();
+        const tableNames = result.tables.map((t) => t.table_name);
+        setDbTables(tableNames);
+      } catch (error) {
+        console.error('Failed to load tables:', error);
+      }
+    };
+    loadDatabaseTables();
+  }, []);
+
+  // DDLテーブルとDBテーブルをマージ
+  const allTables = Array.from(new Set([...availableTables, ...dbTables]));
 
   // 選択されたテーブルのデータを読み込む
   useEffect(() => {
-    if (selectedTable) {
-      const data = tableData.find((d) => d.tableName === selectedTable);
-      if (data && data.rows.length > 0) {
-        // rowsから列名を推測
-        const cols = Object.keys(data.rows[0]);
-        setColumns(cols);
-        setRows(data.rows);
+    const loadTableData = async () => {
+      if (selectedTable) {
+        const data = tableData.find((d) => d.tableName === selectedTable);
+        if (data && data.rows.length > 0) {
+          // 既存データがある場合、そのカラムを使用
+          const cols = Object.keys(data.rows[0]);
+          setColumns(cols);
+          setRows(data.rows);
+        } else {
+          // データがない場合、データベースからスキーマを取得
+          try {
+            const schema = await getTableSchema(selectedTable);
+            const cols = schema.columns.map((c) => c.column_name);
+            setColumns(cols);
+            setRows([]);
+          } catch (error) {
+            console.error('Failed to load schema:', error);
+            // スキーマ取得に失敗した場合は空にする
+            setColumns([]);
+            setRows([]);
+          }
+        }
       } else {
         setColumns([]);
         setRows([]);
       }
-    } else {
-      setColumns([]);
-      setRows([]);
-    }
+    };
+    loadTableData();
   }, [selectedTable, tableData]);
+
   const handleTableSelect = (table: string) => {
     setSelectedTable(table);
-  };
-
-  const handleAddColumn = () => {
-    const newCol = `column_${columns.length + 1}`;
-    setColumns([...columns, newCol]);
-    setRows(rows.map((row) => ({ ...row, [newCol]: '' })));
-  };
-
-  const handleRemoveColumn = (index: number) => {
-    const colToRemove = columns[index];
-    setColumns(columns.filter((_, i) => i !== index));
-    setRows(
-      rows.map((row) => {
-        const { [colToRemove]: _, ...rest } = row;
-        return rest;
-      })
-    );
-  };
-
-  const handleColumnNameChange = (index: number, newName: string) => {
-    const oldName = columns[index];
-    const newColumns = [...columns];
-    newColumns[index] = newName;
-
-    const newRows = rows.map((row) => {
-      const { [oldName]: value, ...rest } = row;
-      return { ...rest, [newName]: value };
-    });
-
-    setColumns(newColumns);
-    setRows(newRows);
   };
 
   const handleAddRow = () => {
@@ -239,7 +241,12 @@ export function ScenarioDataEditor({
               <SelectValue placeholder="テーブルを選択..." />
             </SelectTrigger>
             <SelectContent>
-              {availableTables.map((table) => (
+              {allTables.length === 0 && (
+                <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                  DDLをアップロードするか、「DBテーブル取得」ボタンを押してください
+                </div>
+              )}
+              {allTables.map((table) => (
                 <SelectItem key={table} value={table}>
                   {table}
                 </SelectItem>
@@ -253,52 +260,14 @@ export function ScenarioDataEditor({
           <div className="space-y-4 border rounded-lg p-4">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold">{selectedTable} のデータ</h3>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={handleAddColumn}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  カラム
-                </Button>
-                <Button type="button" size="sm" onClick={handleAddRow}>
-                  <Plus className="h-4 w-4 mr-2" />行
-                </Button>
-              </div>
+              <Button type="button" size="sm" onClick={handleAddRow}>
+                <Plus className="h-4 w-4 mr-2" />
+                行を追加
+              </Button>
             </div>
 
-            {/* カラム名編集 */}
-            {columns.length > 0 && (
-              <div className="space-y-2">
-                <Label>カラム</Label>
-                <div className="flex flex-wrap gap-2">
-                  {columns.map((col, index) => (
-                    <div key={index} className="flex items-center gap-1">
-                      <Input
-                        value={col}
-                        onChange={(e) =>
-                          handleColumnNameChange(index, e.target.value)
-                        }
-                        className="w-32 h-8"
-                      />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        onClick={() => handleRemoveColumn(index)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* データ行 */}
-            {rows.length > 0 && columns.length > 0 && (
+            {columns.length > 0 && (
               <div className="border rounded-lg overflow-auto">
                 <Table>
                   <TableHeader>

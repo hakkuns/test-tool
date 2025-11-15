@@ -95,14 +95,22 @@ export function ApiTestSection({
         setResponse(result.response);
         toast.success('テストが成功しました');
       } else {
-        setError(result);
-        toast.error('テストが失敗しました');
+        // エラーレスポンスの詳細を含める
+        const errorDetail = {
+          ...result,
+          requestUrl: targetApi.url,
+          requestMethod: targetApi.method,
+        };
+        setError(errorDetail);
+        toast.error(result.message || 'テストが失敗しました');
       }
     } catch (err) {
       console.error('Test error:', err);
       const errorData = {
         error: 'Request failed',
         message: err instanceof Error ? err.message : 'Unknown error',
+        requestUrl: targetApi.url,
+        requestMethod: targetApi.method,
       };
       setError(errorData);
       toast.error('テストの実行に失敗しました');
@@ -248,11 +256,13 @@ export function ApiTestSection({
                         </pre>
                       </div>
                     )}
-                    {response.data && (
+                    {response.body && (
                       <div>
                         <span className="font-semibold">レスポンスボディ:</span>
                         <pre className="mt-1 p-2 bg-white rounded text-xs overflow-auto max-h-64">
-                          {JSON.stringify(response.data, null, 2)}
+                          {typeof response.body === 'string'
+                            ? response.body
+                            : JSON.stringify(response.body, null, 2)}
                         </pre>
                       </div>
                     )}
@@ -267,14 +277,54 @@ export function ApiTestSection({
                 <AlertDescription>
                   <div className="space-y-2">
                     <div className="font-semibold">エラー</div>
+                    {error.requestUrl && (
+                      <div className="text-sm">
+                        <span className="font-semibold">リクエスト先: </span>
+                        <span className="font-mono">
+                          {error.requestMethod} {error.requestUrl}
+                        </span>
+                      </div>
+                    )}
                     {error.error && <div>{error.error}</div>}
                     {error.message && (
-                      <div className="text-sm">{error.message}</div>
+                      <div className="text-sm mt-1">{error.message}</div>
+                    )}
+                    {error.error === 'Network error' &&
+                      error.requestUrl?.includes('localhost') && (
+                        <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
+                          <span className="font-semibold">💡 ヒント:</span>
+                          <p className="mt-1">
+                            dev container内から
+                            <code className="bg-yellow-100 px-1 rounded">
+                              localhost
+                            </code>
+                            にアクセスしようとしています。
+                            バックエンドが自動的に
+                            <code className="bg-yellow-100 px-1 rounded">
+                              host.docker.internal
+                            </code>
+                            に変換を試みましたが、 接続に失敗しました。
+                          </p>
+                          <p className="mt-1">以下を確認してください：</p>
+                          <ul className="list-disc list-inside mt-1 space-y-1">
+                            <li>テスト対象のAPIが起動しているか</li>
+                            <li>ポート番号が正しいか</li>
+                            <li>ファイアウォール設定</li>
+                          </ul>
+                        </div>
+                      )}
+                    {error.duration && (
+                      <div className="text-sm text-muted-foreground">
+                        所要時間: {error.duration}ms
+                      </div>
                     )}
                     {error.response && (
-                      <pre className="mt-1 p-2 bg-white/10 rounded text-xs overflow-auto max-h-32">
-                        {JSON.stringify(error.response, null, 2)}
-                      </pre>
+                      <div className="mt-2">
+                        <span className="font-semibold text-sm">詳細:</span>
+                        <pre className="mt-1 p-2 bg-white/10 rounded text-xs overflow-auto max-h-32">
+                          {JSON.stringify(error.response, null, 2)}
+                        </pre>
+                      </div>
                     )}
                   </div>
                 </AlertDescription>

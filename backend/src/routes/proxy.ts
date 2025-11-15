@@ -1,7 +1,7 @@
-import { Hono } from 'hono'
-import { z } from 'zod'
+import { Hono } from 'hono';
+import { z } from 'zod';
 
-const proxyRouter = new Hono()
+const proxyRouter = new Hono();
 
 // Zodスキーマ定義
 const proxyRequestSchema = z.object({
@@ -10,7 +10,7 @@ const proxyRequestSchema = z.object({
   headers: z.record(z.string()).optional().default({}),
   body: z.any().optional(),
   timeout: z.number().int().min(0).max(300000).optional().default(30000), // デフォルト30秒
-})
+});
 
 /**
  * リクエストプロキシエンドポイント
@@ -18,17 +18,61 @@ const proxyRequestSchema = z.object({
  * Spring Boot APIへのリクエストを転送
  */
 proxyRouter.post('/request', async (c) => {
-  const startTime = Date.now()
+  const startTime = Date.now();
 
   try {
-    const body = await c.req.json()
-    const validatedData = proxyRequestSchema.parse(body)
+    const body = await c.req.json();
+    const validatedData = proxyRequestSchema.parse(body);
 
-    const { method, url, headers, body: requestBody, timeout } = validatedData
+    const { method, url, headers, body: requestBody, timeout } = validatedData;
+
+    // dev container環境の場合、URLを変換
+    let targetUrl = url;
+    if (process.env.NODE_ENV !== 'production') {
+      // 環境変数でターゲットコンテナ名が指定されている場合
+      const targetContainer = process.env.TARGET_API_CONTAINER;
+
+      if (targetContainer) {
+        // localhost:ポート を <container-name>:ポート に変換
+        targetUrl = url.replace(
+          /^(https?:\/\/)?localhost(:\d+)?/i,
+          (match, protocol = 'http://', port = '') => {
+            const actualProtocol = protocol || 'http://';
+            return `${actualProtocol}${targetContainer}${port}`;
+          }
+        );
+      } else {
+        // host.docker.internal または ゲートウェイIPを使用
+        // 環境変数でホストIPが指定されている場合はそれを使用
+        const hostIp = process.env.DOCKER_HOST_IP || 'host.docker.internal';
+
+        targetUrl = url.replace(
+          /^(https?:\/\/)?localhost(:\d+)?/i,
+          (match, protocol = 'http://', port = '') => {
+            const actualProtocol = protocol || 'http://';
+            return `${actualProtocol}${hostIp}${port}`;
+          }
+        );
+      }
+
+      if (targetUrl !== url) {
+        console.log(`URL converted: ${url} -> ${targetUrl}`);
+      }
+    }
+
+    // リクエスト情報をログ出力
+    console.log('Proxy request:', {
+      method,
+      url: targetUrl,
+      originalUrl: url !== targetUrl ? url : undefined,
+      headers: Object.keys(headers),
+      hasBody: !!requestBody,
+      timeout,
+    });
 
     // AbortControllerでタイムアウト設定
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), timeout)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
 
     try {
       // リクエストオプション構築
@@ -37,53 +81,57 @@ proxyRouter.post('/request', async (c) => {
         headers: {
           ...headers,
           // Content-Typeが設定されていない場合はデフォルト設定
-          ...(requestBody && !headers['Content-Type'] && !headers['content-type']
+          ...(requestBody &&
+          !headers['Content-Type'] &&
+          !headers['content-type']
             ? { 'Content-Type': 'application/json' }
             : {}),
         },
         signal: controller.signal,
-      }
+      };
 
       // リクエストボディがある場合は追加
       if (requestBody && method !== 'GET' && method !== 'HEAD') {
         if (typeof requestBody === 'string') {
-          fetchOptions.body = requestBody
+          fetchOptions.body = requestBody;
         } else {
-          fetchOptions.body = JSON.stringify(requestBody)
+          fetchOptions.body = JSON.stringify(requestBody);
         }
       }
 
       // リクエスト実行
-      const response = await fetch(url, fetchOptions)
+      console.log('Attempting to fetch:', targetUrl);
+      const response = await fetch(targetUrl, fetchOptions);
+      console.log('Fetch successful, status:', response.status);
 
-      clearTimeout(timeoutId)
+      clearTimeout(timeoutId);
 
       // レスポンスヘッダーを取得
-      const responseHeaders: Record<string, string> = {}
+      const responseHeaders: Record<string, string> = {};
       response.headers.forEach((value, key) => {
-        responseHeaders[key] = value
-      })
+        responseHeaders[key] = value;
+      });
 
       // レスポンスボディを取得
-      const contentType = response.headers.get('content-type') || ''
-      let responseBody: any
+      const contentType = response.headers.get('content-type') || '';
+      let responseBody: any;
 
       if (contentType.includes('application/json')) {
         try {
-          responseBody = await response.json()
+          responseBody = await response.json();
         } catch {
-          responseBody = await response.text()
+          responseBody = await response.text();
         }
       } else if (contentType.includes('text/')) {
-        responseBody = await response.text()
+        responseBody = await response.text();
       } else {
         // バイナリデータの場合はBase64エンコード
-        const buffer = await response.arrayBuffer()
-        responseBody = Buffer.from(buffer).toString('base64')
+        const buffer = await response.arrayBuffer();
+        responseBody = Buffer.from(buffer).toString('base64');
       }
 
-      const endTime = Date.now()
-      const duration = endTime - startTime
+      const endTime = Date.now();
+      const duration = endTime - startTime;
 
       return c.json({
         success: true,
@@ -95,9 +143,9 @@ proxyRouter.post('/request', async (c) => {
           duration,
           timestamp: new Date().toISOString(),
         },
-      })
+      });
     } catch (fetchError: any) {
-      clearTimeout(timeoutId)
+      clearTimeout(timeoutId);
 
       // タイムアウトエラー
       if (fetchError.name === 'AbortError') {
@@ -110,23 +158,38 @@ proxyRouter.post('/request', async (c) => {
             timestamp: new Date().toISOString(),
           },
           408
-        )
+        );
       }
 
       // ネットワークエラー
+      console.error('Network error details:', {
+        url: targetUrl,
+        originalUrl: url !== targetUrl ? url : undefined,
+        method,
+        errorName: fetchError.name,
+        errorMessage: fetchError.message,
+        errorStack: fetchError.stack,
+      });
+
       return c.json(
         {
           success: false,
           error: 'Network error',
           message: fetchError.message || 'Failed to connect to the API',
+          details: {
+            url: targetUrl,
+            originalUrl: url !== targetUrl ? url : undefined,
+            method,
+            errorType: fetchError.name,
+          },
           duration: Date.now() - startTime,
           timestamp: new Date().toISOString(),
         },
         502
-      )
+      );
     }
   } catch (error) {
-    console.error('Proxy error:', error)
+    console.error('Proxy error:', error);
 
     if (error instanceof z.ZodError) {
       return c.json(
@@ -136,7 +199,7 @@ proxyRouter.post('/request', async (c) => {
           details: error.errors,
         },
         400
-      )
+      );
     }
 
     return c.json(
@@ -148,8 +211,8 @@ proxyRouter.post('/request', async (c) => {
         timestamp: new Date().toISOString(),
       },
       500
-    )
+    );
   }
-})
+});
 
-export default proxyRouter
+export default proxyRouter;

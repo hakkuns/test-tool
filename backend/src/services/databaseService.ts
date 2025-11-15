@@ -96,8 +96,22 @@ export async function insertData(
     let insertedCount = 0;
 
     for (const row of data) {
-      const columns = Object.keys(row);
-      const values = Object.values(row);
+      // 空文字列やnullを除外して、データベースのデフォルト値を使用
+      const filteredRow = Object.entries(row).reduce((acc, [key, value]) => {
+        if (value !== '' && value !== null && value !== undefined) {
+          acc[key] = value;
+        }
+        return acc;
+      }, {} as Record<string, any>);
+
+      const columns = Object.keys(filteredRow);
+      const values = Object.values(filteredRow);
+
+      if (columns.length === 0) {
+        // 全てのカラムが空の場合はスキップ
+        continue;
+      }
+
       const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
 
       const query = `
@@ -170,10 +184,8 @@ export async function importTableData(data: TableData): Promise<number> {
   try {
     await client.query('BEGIN');
 
-    // truncateBeforeがtrueの場合、テーブルをクリア
-    if (data.truncateBefore) {
-      await client.query(`TRUNCATE TABLE "${data.tableName}" CASCADE`);
-    }
+    // データインポート前に常にテーブルをクリア
+    await client.query(`TRUNCATE TABLE "${data.tableName}" CASCADE`);
 
     let insertedCount = 0;
 

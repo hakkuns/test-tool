@@ -175,6 +175,11 @@ database.post(
   async (c) => {
     try {
       const tableData = c.req.valid('json');
+      console.log('Importing data:', {
+        tableName: tableData.tableName,
+        rowCount: tableData.rows.length,
+        sampleRow: tableData.rows[0],
+      });
       const insertedCount = await dbService.importTableData(tableData);
       return c.json({
         success: true,
@@ -182,6 +187,7 @@ database.post(
         insertedCount,
       });
     } catch (error: any) {
+      console.error('Import error:', error.message);
       return c.json(
         {
           success: false,

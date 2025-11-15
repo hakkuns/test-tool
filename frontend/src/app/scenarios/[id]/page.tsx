@@ -42,6 +42,7 @@ export default function ScenarioDetailPage() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isApplying, setIsApplying] = useState(false);
 
   // Basic info
   const [name, setName] = useState('');
@@ -242,6 +243,31 @@ export default function ScenarioDetailPage() {
     }
   };
 
+  const handleApply = async () => {
+    if (
+      !confirm(
+        'このシナリオを適用しますか？\nテーブル作成・データ投入・モックAPI設定が実行されます。'
+      )
+    ) {
+      return;
+    }
+
+    setIsApplying(true);
+    try {
+      const result = await scenariosApi.apply(id);
+      toast.success(
+        `シナリオを適用しました\nテーブル: ${result.tablesCreated}個\nデータ: ${result.dataInserted}行\nモックAPI: ${result.mocksConfigured}個`
+      );
+    } catch (error) {
+      console.error('Failed to apply scenario:', error);
+      toast.error(
+        error instanceof Error ? error.message : 'シナリオの適用に失敗しました'
+      );
+    } finally {
+      setIsApplying(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto py-8 max-w-6xl">
@@ -272,6 +298,15 @@ export default function ScenarioDetailPage() {
             </p>
           </div>
           <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleApply}
+              disabled={isApplying}
+            >
+              <Play className="h-4 w-4 mr-2" />
+              {isApplying ? '適用中...' : 'シナリオを適用'}
+            </Button>
             <Button type="button" variant="outline" onClick={handleImportJSON}>
               <Upload className="h-4 w-4 mr-2" />
               JSON インポート
@@ -385,6 +420,11 @@ export default function ScenarioDetailPage() {
                   required
                   placeholder="http://localhost:8080/api/users"
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  完全なURL（http://またはhttps://から始まる）を入力してください。
+                  dev
+                  container内から外部APIにアクセスする場合、localhostではなくhost.docker.internalを使用してください。
+                </p>
               </div>
             </div>
           </CardContent>

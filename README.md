@@ -85,6 +85,12 @@ pnpm install
 ```env
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/testdb
 PORT=3001
+
+# API Proxy設定（オプション）
+# 別のdev containerにアクセスする場合、コンテナ名を指定
+# 例: TARGET_API_CONTAINER=my-spring-api
+# 指定しない場合は host.docker.internal（ホストマシン）を使用
+TARGET_API_CONTAINER=
 ```
 
 #### フロントエンド (`frontend/.env.local`)
@@ -199,6 +205,8 @@ postgres-test-helper/
 
 ## 📖 ドキュメント
 
+- [API仕様書](docs/API.md)
+- [トラブルシューティングガイド](docs/TROUBLESHOOTING.md) ⚠️
 - [プロジェクト実装計画](PROJECT_PLAN.md)
 - [開発インストラクション](.github/instructions/DEVELOPMENT_INSTRUCTION.md.instructions.md)
 
@@ -290,6 +298,20 @@ test-tool/
 - `POST /api/proxy/request` - リクエストプロキシ
 
 詳細は [API 仕様書](./docs/API.md) を参照してください。
+
+## ⚠️ トラブルシューティング
+
+### API Test で 502 エラーが発生する場合
+
+502 エラーは、テスト対象の API に接続できない場合に発生します。
+
+**よくある原因:**
+
+1. **URL が不正または到達不可能** - URL が正しいか、API が起動しているか確認
+2. **dev container から localhost にアクセスできない** - `localhost`の代わりに`host.docker.internal`を使用
+3. **ファイアウォールやネットワーク制限**
+
+**詳細は [トラブルシューティングガイド](./docs/TROUBLESHOOTING.md) を参照してください。**
 
 ## 🤝 コントリビューション
 
