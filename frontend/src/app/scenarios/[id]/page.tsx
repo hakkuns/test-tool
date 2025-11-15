@@ -20,7 +20,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, Save, Play, FileJson, Upload } from 'lucide-react';
+import { ArrowLeft, Save, Play, CheckCircle2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { ScenarioTablesEditor } from '@/components/scenarios/ScenarioTablesEditor';
 import { ScenarioDataEditor } from '@/components/scenarios/ScenarioDataEditor';
 import { ScenarioMocksEditor } from '@/components/scenarios/ScenarioMocksEditor';
@@ -43,6 +44,7 @@ export default function ScenarioDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
+  const [isApplied, setIsApplied] = useState(false);
 
   // Basic info
   const [name, setName] = useState('');
@@ -90,6 +92,10 @@ export default function ScenarioDetailPage() {
         setMockApis(data.mockApis || []);
         setTestHeaders(data.testSettings?.headers || {});
         setTestBody(data.testSettings?.body || '');
+
+        // 適用状態を確認
+        const appliedScenarioId = localStorage.getItem('appliedScenarioId');
+        setIsApplied(appliedScenarioId === id);
       } catch (error) {
         console.error('Failed to load scenario:', error);
         toast.error('シナリオが見つかりません');
@@ -112,84 +118,6 @@ export default function ScenarioDetailPage() {
 
   const handleRemoveTag = (tag: string) => {
     setTags(tags.filter((t) => t !== tag));
-  };
-
-  const handleImportJSON = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-
-      try {
-        const text = await file.text();
-        const data = JSON.parse(text);
-
-        // シナリオ全体のインポート
-        if (data.name) setName(data.name);
-        if (data.description) setDescription(data.description);
-        if (data.tags) setTags(data.tags);
-        if (data.targetApi) {
-          if (data.targetApi.method) setTargetApiMethod(data.targetApi.method);
-          if (data.targetApi.url) setTargetApiUrl(data.targetApi.url);
-          if (data.targetApi.headers)
-            setTargetApiHeaders(data.targetApi.headers);
-          if (data.targetApi.body) setTargetApiBody(data.targetApi.body);
-        }
-        if (data.tables) setTables(data.tables);
-        if (data.tableData) setTableData(data.tableData);
-        if (data.mockApis) setMockApis(data.mockApis);
-        if (data.testSettings) {
-          setTestHeaders(data.testSettings.headers || {});
-          setTestBody(data.testSettings.body || '');
-        }
-
-        toast.success('シナリオをインポートしました');
-      } catch (error) {
-        console.error('Import error:', error);
-        toast.error('JSONの読み込みに失敗しました');
-      }
-    };
-    input.click();
-  };
-
-  const handleExportJSON = () => {
-    const data: UpdateScenarioInput = {
-      name,
-      description: description || undefined,
-      targetApi: {
-        method: targetApiMethod,
-        url: targetApiUrl,
-        headers:
-          Object.keys(targetApiHeaders).length > 0
-            ? targetApiHeaders
-            : undefined,
-        body: targetApiBody,
-      },
-      tables,
-      tableData,
-      mockApis,
-      testSettings:
-        Object.keys(testHeaders).length > 0 || testBody
-          ? {
-              headers:
-                Object.keys(testHeaders).length > 0 ? testHeaders : undefined,
-              body: testBody || undefined,
-            }
-          : undefined,
-      tags,
-    };
-
-    const json = JSON.stringify(data, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `scenario-${name || id}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success('シナリオをエクスポートしました');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -257,6 +185,11 @@ export default function ScenarioDetailPage() {
     setIsApplying(true);
     try {
       const result = await scenariosApi.apply(id);
+
+      // 適用成功後、LocalStorageに保存
+      localStorage.setItem('appliedScenarioId', id);
+      setIsApplied(true);
+
       toast.success(
         `シナリオを適用しました\nテーブル: ${result.tablesCreated}個\nデータ: ${result.dataInserted}行\nモックAPI: ${result.mocksConfigured}個`
       );
@@ -272,7 +205,7 @@ export default function ScenarioDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto py-8 max-w-6xl">
+      <div className="container mx-auto p-6">
         <div className="text-center py-12">
           <p className="text-muted-foreground">読み込み中...</p>
         </div>
@@ -281,7 +214,7 @@ export default function ScenarioDetailPage() {
   }
 
   return (
-    <div className="container mx-auto py-8 max-w-6xl">
+    <div className="container mx-auto p-6 space-y-6">
       <div className="mb-6">
         <Button
           variant="ghost"
@@ -294,7 +227,15 @@ export default function ScenarioDetailPage() {
         </Button>
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-3xl font-bold">シナリオを編集</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl font-bold">シナリオを編集</h1>
+              {isApplied && (
+                <Badge className="bg-green-500 hover:bg-green-600">
+                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                  適用中
+                </Badge>
+              )}
+            </div>
             <p className="text-muted-foreground mt-2">
               テストシナリオの設定を変更します
             </p>
@@ -309,14 +250,6 @@ export default function ScenarioDetailPage() {
               <Play className="h-4 w-4 mr-2" />
               {isApplying ? '適用中...' : 'シナリオを適用'}
             </Button>
-            <Button type="button" variant="outline" onClick={handleImportJSON}>
-              <Upload className="h-4 w-4 mr-2" />
-              JSON インポート
-            </Button>
-            <Button type="button" variant="outline" onClick={handleExportJSON}>
-              <FileJson className="h-4 w-4 mr-2" />
-              JSON エクスポート
-            </Button>
           </div>
         </div>
       </div>
@@ -328,7 +261,7 @@ export default function ScenarioDetailPage() {
             <CardTitle>基本情報</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="name">シナリオ名 *</Label>
               <Input
                 id="name"
@@ -338,7 +271,7 @@ export default function ScenarioDetailPage() {
                 placeholder="ユーザー登録テスト"
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="description">説明</Label>
               <Textarea
                 id="description"
@@ -348,7 +281,7 @@ export default function ScenarioDetailPage() {
                 rows={3}
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label>タグ</Label>
               <div className="flex gap-2 mb-2">
                 <Input
@@ -391,7 +324,7 @@ export default function ScenarioDetailPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-4 gap-4">
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="targetApiMethod">HTTPメソッド *</Label>
                 <Select
                   value={targetApiMethod}
@@ -413,7 +346,7 @@ export default function ScenarioDetailPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="col-span-3">
+              <div className="col-span-3 space-y-2">
                 <Label htmlFor="targetApiUrl">URL *</Label>
                 <Input
                   id="targetApiUrl"

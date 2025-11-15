@@ -90,12 +90,14 @@ export function ScenarioTablesEditor({
   };
 
   return (
-    <Card>
+    <Card className="opacity-50 pointer-events-none">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>テーブル定義</CardTitle>
-            <CardDescription>シナリオに必要なテーブルを追加</CardDescription>
+          <div className="space-y-1.5">
+            <CardTitle>テーブル定義（準備中）</CardTitle>
+            <CardDescription>
+              シナリオに必要なテーブルを追加（この機能は現在開発中です）
+            </CardDescription>
           </div>
           <div className="flex gap-2">
             <Button
@@ -103,11 +105,17 @@ export function ScenarioTablesEditor({
               variant="outline"
               size="sm"
               onClick={handleImportJSON}
+              disabled
             >
               <FileText className="h-4 w-4 mr-2" />
               JSON
             </Button>
-            <Button type="button" size="sm" onClick={() => setIsAdding(true)}>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => setIsAdding(true)}
+              disabled
+            >
               <Plus className="h-4 w-4 mr-2" />
               追加
             </Button>

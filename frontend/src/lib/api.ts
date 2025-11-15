@@ -173,6 +173,14 @@ export async function getDatabaseTables() {
   }>('/api/database/tables');
 }
 
+// Database API - DB接続状態確認
+export async function checkDatabaseConnection() {
+  return fetchAPI<{
+    status: string;
+    database: string;
+  }>('/api/tables/health');
+}
+
 // Database API - テーブルスキーマ取得
 export async function getTableSchema(tableName: string) {
   return fetchAPI<{

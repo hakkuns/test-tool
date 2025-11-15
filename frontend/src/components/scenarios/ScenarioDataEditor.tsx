@@ -190,7 +190,7 @@ export function ScenarioDataEditor({
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <div>
+          <div className="space-y-1.5">
             <CardTitle>テーブルデータ</CardTitle>
             <CardDescription>各テーブルに挿入するデータを設定</CardDescription>
           </div>
@@ -199,6 +199,7 @@ export function ScenarioDataEditor({
             variant="outline"
             size="sm"
             onClick={handleImportJSON}
+            disabled
           >
             <FileText className="h-4 w-4 mr-2" />
             JSON
@@ -236,7 +237,7 @@ export function ScenarioDataEditor({
         )}
 
         {/* テーブル選択 */}
-        <div>
+        <div className="space-y-2">
           <Label htmlFor="table-select">テーブル選択</Label>
           <Select value={selectedTable} onValueChange={handleTableSelect}>
             <SelectTrigger id="table-select">
@@ -245,7 +246,7 @@ export function ScenarioDataEditor({
             <SelectContent>
               {allTables.length === 0 && (
                 <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                  DDLをアップロードするか、「DBテーブル取得」ボタンを押してください
+                  テーブルが見つかりません
                 </div>
               )}
               {allTables.map((table) => (

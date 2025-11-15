@@ -248,7 +248,7 @@ export function ScenarioMocksEditor({
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <div>
+          <div className="space-y-1.5">
             <CardTitle>モックAPI</CardTitle>
             <CardDescription>外部APIのモック応答を設定</CardDescription>
           </div>
@@ -258,6 +258,7 @@ export function ScenarioMocksEditor({
               variant="outline"
               size="sm"
               onClick={handleImportJSON}
+              disabled
             >
               <FileText className="h-4 w-4 mr-2" />
               JSON
@@ -276,6 +277,7 @@ export function ScenarioMocksEditor({
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>名前</TableHead>
                   <TableHead>メソッド</TableHead>
                   <TableHead>パス</TableHead>
                   <TableHead>ステータス</TableHead>
@@ -286,6 +288,15 @@ export function ScenarioMocksEditor({
               <TableBody>
                 {mocks.map((mock, index) => (
                   <TableRow key={index}>
+                    <TableCell>
+                      {mock.name ? (
+                        <span className="font-medium">{mock.name}</span>
+                      ) : (
+                        <span className="text-muted-foreground italic">
+                          未設定
+                        </span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Badge className={getMethodBadgeColor(mock.method)}>
                         {mock.method}
@@ -341,8 +352,19 @@ export function ScenarioMocksEditor({
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="mock-name">名前</Label>
+                <Input
+                  id="mock-name"
+                  value={currentMock.name || ''}
+                  onChange={(e) =>
+                    setCurrentMock({ ...currentMock, name: e.target.value })
+                  }
+                  placeholder="ユーザー一覧取得"
+                />
+              </div>
               <div className="grid grid-cols-2 gap-4">
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="mock-method">HTTPメソッド *</Label>
                   <Select
                     value={currentMock.method}
@@ -362,7 +384,7 @@ export function ScenarioMocksEditor({
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="mock-status">ステータスコード *</Label>
                   <Input
                     id="mock-status"
@@ -382,7 +404,7 @@ export function ScenarioMocksEditor({
                   />
                 </div>
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="mock-path">パス *</Label>
                 <Input
                   id="mock-path"
@@ -393,7 +415,7 @@ export function ScenarioMocksEditor({
                   placeholder="/api/users"
                 />
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="mock-headers">レスポンスヘッダー (JSON)</Label>
                 <Textarea
                   id="mock-headers"
@@ -418,12 +440,12 @@ export function ScenarioMocksEditor({
                       },
                     });
                   }}
-                  placeholder='{"Content-Type": "application/json"}'
+                  placeholder='例: {"Content-Type": "application/json", "X-Custom-Header": "value"}'
                   rows={3}
                   className="font-mono text-sm"
                 />
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="mock-body">レスポンスボディ (JSON)</Label>
                 <Textarea
                   id="mock-body"

@@ -24,6 +24,7 @@ import {
   ChevronDown,
   Folder,
   MoreVertical,
+  Database,
 } from 'lucide-react';
 import { scenariosApi, groupsApi } from '@/lib/api/scenarios';
 import type { TestScenario, ScenarioGroup } from '@/types/scenario';
@@ -195,18 +196,6 @@ export default function Home() {
     }
   };
 
-  // 全シナリオエクスポート
-  const handleExportAll = async () => {
-    try {
-      const exportData = await scenariosApi.exportAll();
-      scenariosApi.downloadAllAsJson(exportData);
-      toast.success('全シナリオをエクスポートしました');
-    } catch (error) {
-      toast.error('エクスポートに失敗しました');
-      console.error(error);
-    }
-  };
-
   // シナリオインポート
   const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -285,27 +274,25 @@ export default function Home() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* ヘッダー */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">テストシナリオ</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold">テストシナリオ</h1>
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base">
             テーブル、データ、モックAPIを統合管理
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => openGroupDialog()}>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => openGroupDialog()} size="sm">
             <FolderPlus className="h-4 w-4 mr-2" />
-            グループ作成
-          </Button>
-          <Button variant="outline" onClick={handleExportAll}>
-            <Download className="h-4 w-4 mr-2" />
-            全エクスポート
+            <span className="hidden sm:inline">グループ作成</span>
+            <span className="sm:hidden">グループ</span>
           </Button>
           <label htmlFor="import-file">
-            <Button variant="outline" asChild>
+            <Button variant="outline" asChild size="sm">
               <span>
                 <Upload className="h-4 w-4 mr-2" />
-                インポート
+                <span className="hidden sm:inline">インポート</span>
+                <span className="sm:hidden">Import</span>
               </span>
             </Button>
           </label>
@@ -316,7 +303,7 @@ export default function Home() {
             onChange={handleImport}
             className="hidden"
           />
-          <Button onClick={() => router.push('/scenarios/new')}>
+          <Button onClick={() => router.push('/scenarios/new')} size="sm">
             <Plus className="h-4 w-4 mr-2" />
             新規作成
           </Button>
@@ -388,7 +375,6 @@ export default function Home() {
                       key={scenario.id}
                       scenario={scenario}
                       groups={groups}
-                      onApply={handleApply}
                       onExport={handleExport}
                       onDelete={(id) => {
                         setScenarioToDelete(id);
@@ -417,7 +403,6 @@ export default function Home() {
                     key={scenario.id}
                     scenario={scenario}
                     groups={groups}
-                    onApply={handleApply}
                     onExport={handleExport}
                     onDelete={(id) => {
                       setScenarioToDelete(id);
@@ -494,7 +479,6 @@ export default function Home() {
 function ScenarioCard({
   scenario,
   groups,
-  onApply,
   onExport,
   onDelete,
   onMoveToGroup,
@@ -502,7 +486,6 @@ function ScenarioCard({
 }: {
   scenario: TestScenario;
   groups: ScenarioGroup[];
-  onApply: (id: string, name: string) => void;
   onExport: (id: string) => void;
   onDelete: (id: string) => void;
   onMoveToGroup: (scenarioId: string, groupId: string | undefined) => void;
@@ -548,9 +531,11 @@ function ScenarioCard({
           <div className="font-medium text-muted-foreground mb-1">
             テスト対象API
           </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline">{scenario.targetApi.method}</Badge>
-            <code className="text-xs">{scenario.targetApi.url}</code>
+          <div className="flex items-start gap-2">
+            <Badge variant="outline" className="shrink-0">
+              {scenario.targetApi.method}
+            </Badge>
+            <code className="text-xs break-all">{scenario.targetApi.url}</code>
           </div>
         </div>
 
@@ -584,15 +569,7 @@ function ScenarioCard({
         )}
 
         {/* アクション */}
-        <div className="grid grid-cols-2 gap-2 pt-2">
-          <Button
-            size="sm"
-            variant="default"
-            onClick={() => onApply(scenario.id, scenario.name)}
-          >
-            <Play className="h-3 w-3 mr-1" />
-            適用
-          </Button>
+        <div className="grid grid-cols-3 gap-2 pt-2">
           <Button
             size="sm"
             variant="outline"

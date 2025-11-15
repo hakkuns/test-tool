@@ -27,12 +27,14 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { PlayCircle, Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import { PlayCircle, Loader2, CheckCircle2, XCircle, Edit } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 const HISTORY_KEY = 'api-test-history';
 const MAX_HISTORY = 50;
 
 export default function ApiTestPage() {
+  const router = useRouter();
   const [response, setResponse] = useState<any>(null);
   const [error, setError] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -62,6 +64,13 @@ export default function ApiTestPage() {
       try {
         const data = await scenariosApi.getAll();
         setScenarios(data);
+
+        // 適用中のシナリオを確認
+        const appliedScenarioId = localStorage.getItem('appliedScenarioId');
+        if (appliedScenarioId) {
+          setSelectedScenarioId(appliedScenarioId);
+          setIsApplied(true);
+        }
       } catch (error) {
         console.error('Failed to load scenarios:', error);
         toast.error('シナリオの読み込みに失敗しました');
@@ -182,101 +191,30 @@ export default function ApiTestPage() {
 
     setIsApplying(true);
     try {
-      await scenariosApi.apply(selectedScenarioId);
+      const result = await scenariosApi.apply(selectedScenarioId);
+
+      // 適用成功後、LocalStorageに保存
+      localStorage.setItem('appliedScenarioId', selectedScenarioId);
       setIsApplied(true);
-      toast.success('シナリオを適用しました');
+
+      toast.success(
+        `シナリオを適用しました\nテーブル: ${result.tablesCreated}個\nデータ: ${result.dataInserted}行\nモックAPI: ${result.mocksConfigured}個`
+      );
 
       // 選択されたシナリオを取得
       const scenario = scenarios.find((s) => s.id === selectedScenarioId);
       if (scenario?.testSettings) {
-        // RequestFormコンポーネントに初期値を設定するためのイベントを発火
-        // ここでは、適用後にフォームを手動で更新するためのロジックが必要
         toast.info('フォームにテスト設定を適用しました');
       }
     } catch (error) {
       console.error('Failed to apply scenario:', error);
-      toast.error('シナリオの適用に失敗しました');
+      toast.error(
+        error instanceof Error ? error.message : 'シナリオの適用に失敗しました'
+      );
       setIsApplied(false);
     } finally {
       setIsApplying(false);
     }
-  };
-
-  // エクスポート
-  const handleExport = () => {
-    if (history.length === 0) {
-      toast.error('エクスポートする履歴がありません');
-      return;
-    }
-
-    const data = {
-      version: '1.0.0',
-      timestamp: new Date().toISOString(),
-      history: history,
-    };
-
-    const blob = new Blob([JSON.stringify(data, null, 2)], {
-      type: 'application/json',
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `api-test-history-${
-      new Date().toISOString().split('T')[0]
-    }.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-
-    toast.success('リクエスト履歴をエクスポートしました');
-  };
-
-  // インポート
-  const handleImport = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'application/json';
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-
-      try {
-        const text = await file.text();
-        const data = JSON.parse(text);
-
-        // バージョンチェック
-        if (!data.version || !data.history || !Array.isArray(data.history)) {
-          toast.error('Invalid file format');
-          return;
-        }
-
-        // 履歴をマージするか確認
-        if (history.length > 0) {
-          if (
-            confirm(
-              '既存の履歴に追加しますか？キャンセルすると上書きされます。'
-            )
-          ) {
-            const mergedHistory = [...data.history, ...history].slice(
-              0,
-              MAX_HISTORY
-            );
-            saveHistory(mergedHistory);
-          } else {
-            saveHistory(data.history.slice(0, MAX_HISTORY));
-          }
-        } else {
-          saveHistory(data.history.slice(0, MAX_HISTORY));
-        }
-
-        toast.success(
-          `Successfully imported ${data.history.length} history items`
-        );
-      } catch (error) {
-        toast.error('Failed to import history');
-        console.error(error);
-      }
-    };
-    input.click();
   };
 
   return (
@@ -312,10 +250,10 @@ export default function ApiTestPage() {
                       setIsApplied(false);
                     }}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="シナリオを選択..." />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="min-w-[300px]">
                       {scenarios.map((scenario) => (
                         <SelectItem key={scenario.id} value={scenario.id}>
                           {scenario.name}
@@ -324,6 +262,17 @@ export default function ApiTestPage() {
                     </SelectContent>
                   </Select>
                 </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() =>
+                    router.push(`/scenarios/${selectedScenarioId}`)
+                  }
+                  disabled={!selectedScenarioId}
+                  title="シナリオを編集"
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
                 <Button
                   onClick={handleApplyScenario}
                   disabled={!selectedScenarioId || isApplying}
@@ -362,8 +311,6 @@ export default function ApiTestPage() {
           <RequestForm
             onSubmit={handleSubmit}
             isLoading={isLoading}
-            onExport={handleExport}
-            onImport={handleImport}
             initialData={
               selectedScenarioId && isApplied
                 ? scenarios.find((s) => s.id === selectedScenarioId)

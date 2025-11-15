@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Trash2, Download, Upload } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import type { TestScenario } from '@/types/scenario';
 
 interface HeaderEntry {
@@ -31,16 +31,12 @@ interface RequestFormProps {
     timeout?: number;
   }) => Promise<void>;
   isLoading?: boolean;
-  onExport?: () => void;
-  onImport?: () => void;
   initialData?: TestScenario;
 }
 
 export function RequestForm({
   onSubmit,
   isLoading,
-  onExport,
-  onImport,
   initialData,
 }: RequestFormProps) {
   const [method, setMethod] = useState('GET');
@@ -125,35 +121,7 @@ export function RequestForm({
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>リクエスト設定</CardTitle>
-          <div className="flex gap-2">
-            {onExport && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={onExport}
-                className="flex items-center gap-1"
-              >
-                <Download className="h-4 w-4" />
-                Export
-              </Button>
-            )}
-            {onImport && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={onImport}
-                className="flex items-center gap-1"
-              >
-                <Upload className="h-4 w-4" />
-                Import
-              </Button>
-            )}
-          </div>
-        </div>
+        <CardTitle>リクエスト設定</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">

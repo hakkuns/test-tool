@@ -231,7 +231,7 @@ export default function NewScenarioPage() {
   };
 
   return (
-    <div className="container mx-auto py-8 max-w-6xl">
+    <div className="container mx-auto p-6 space-y-6">
       <div className="mb-6 flex items-start justify-between">
         <div>
           <h1 className="text-3xl font-bold">新しいシナリオを作成</h1>
@@ -258,7 +258,7 @@ export default function NewScenarioPage() {
             <CardTitle>基本情報</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="name">シナリオ名 *</Label>
               <Input
                 id="name"
@@ -268,7 +268,7 @@ export default function NewScenarioPage() {
                 placeholder="ユーザー登録テスト"
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="description">説明</Label>
               <Textarea
                 id="description"
@@ -278,7 +278,7 @@ export default function NewScenarioPage() {
                 rows={3}
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="group">グループ</Label>
               <Select
                 value={groupId || 'none'}
@@ -299,7 +299,7 @@ export default function NewScenarioPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div>
+            <div className="space-y-2">
               <Label>タグ</Label>
               <div className="flex gap-2 mb-2">
                 <Input
@@ -342,7 +342,7 @@ export default function NewScenarioPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-4 gap-4">
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="targetApiMethod">HTTPメソッド *</Label>
                 <Select
                   value={targetApiMethod}
@@ -364,7 +364,7 @@ export default function NewScenarioPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="col-span-3">
+              <div className="col-span-3 space-y-2">
                 <Label htmlFor="targetApiUrl">URL *</Label>
                 <Input
                   id="targetApiUrl"

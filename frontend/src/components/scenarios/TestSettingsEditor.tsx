@@ -77,11 +77,10 @@ export function TestSettingsEditor({
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="space-y-1.5">
         <CardTitle>テスト設定</CardTitle>
         <CardDescription>
-          API実行時に使用するヘッダーとボディのデフォルト値（API
-          Testページで動的に変更可能）
+          API実行時に追加で送信するヘッダーやボディを設定
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -140,8 +139,8 @@ export function TestSettingsEditor({
           </TabsContent>
 
           {/* Body Tab */}
-          <TabsContent value="body">
-            <div>
+          <TabsContent value="body" className="space-y-2">
+            <div className="space-y-2">
               <Label htmlFor="testBody">Request Body</Label>
               <Textarea
                 id="testBody"
