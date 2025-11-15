@@ -128,7 +128,9 @@ export function RequestForm({
           {/* Method & URL */}
           <div className="flex gap-2">
             <div className="w-32">
-              <Label htmlFor="method">Method</Label>
+              <Label htmlFor="method" className="mb-2 block">
+                Method
+              </Label>
               <Select value={method} onValueChange={setMethod}>
                 <SelectTrigger id="method">
                   <SelectValue />
@@ -146,7 +148,9 @@ export function RequestForm({
             </div>
 
             <div className="flex-1">
-              <Label htmlFor="url">URL</Label>
+              <Label htmlFor="url" className="mb-2 block">
+                URL
+              </Label>
               <Input
                 id="url"
                 type="url"

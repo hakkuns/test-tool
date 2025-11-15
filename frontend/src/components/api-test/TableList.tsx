@@ -32,10 +32,6 @@ export function TableList({ tables }: TableListProps) {
   const [tableData, setTableData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  if (tables.length === 0) {
-    return null;
-  }
-
   const fetchTableData = async (tableName: string) => {
     setIsLoading(true);
     setSelectedTable(tableName);
@@ -68,31 +64,41 @@ export function TableList({ tables }: TableListProps) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-            <span>作成済みテーブル</span>
-            <Badge variant="secondary">{tables.length}件</Badge>
+            <span>データ追加済みテーブル</span>
+            {tables.length > 0 && (
+              <Badge variant="secondary">{tables.length}件</Badge>
+            )}
           </CardTitle>
-          <CardDescription>現在データベースに存在するテーブル</CardDescription>
+          <CardDescription>
+            シナリオでデータが挿入されたテーブル
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
-            {tables.map((tableName) => (
-              <div
-                key={tableName}
-                className="flex items-center gap-3 p-3 border rounded-lg hover:bg-accent/50 transition-colors"
-              >
-                <Database className="h-4 w-4 text-muted-foreground" />
-                <code className="flex-1 text-sm font-mono">{tableName}</code>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => fetchTableData(tableName)}
+          {tables.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              シナリオを適用するとテーブルが表示されます
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {tables.map((tableName) => (
+                <div
+                  key={tableName}
+                  className="flex items-center gap-3 p-3 border rounded-lg hover:bg-accent/50 transition-colors"
                 >
-                  <Eye className="h-4 w-4 mr-2" />
-                  データ表示
-                </Button>
-              </div>
-            ))}
-          </div>
+                  <Database className="h-4 w-4 text-muted-foreground" />
+                  <code className="flex-1 text-sm font-mono">{tableName}</code>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => fetchTableData(tableName)}
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    データ表示
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 

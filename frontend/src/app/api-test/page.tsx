@@ -69,25 +69,15 @@ export default function ApiTestPage() {
 
   const mockEndpoints = mockEndpointsData?.data || [];
 
-  // テーブル一覧を取得（useQuery）
-  const { data: tablesData } = useQuery({
-    queryKey: ['database-tables'],
-    queryFn: async () => {
-      const response = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
-        }/api/database/tables`
-      );
-      if (!response.ok) {
-        throw new Error('Failed to fetch tables');
-      }
-      const result = await response.json();
-      return result;
-    },
-    refetchInterval: 10000, // 10秒ごとに自動更新
-  });
-
-  const tables = tablesData?.tables || [];
+  // シナリオで実際にデータが追加されたテーブル一覧を取得
+  const tables =
+    selectedScenarioId && isApplied
+      ? (() => {
+          const scenario = scenarios.find((s) => s.id === selectedScenarioId);
+          // tableDataに存在するテーブル名のみを返す
+          return scenario?.tableData?.map((td) => td.tableName) || [];
+        })()
+      : [];
 
   // 履歴をLocalStorageから読み込み
   useEffect(() => {

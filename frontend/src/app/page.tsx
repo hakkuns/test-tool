@@ -75,15 +75,27 @@ export default function Home() {
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      const [scenariosData, groupsData] = await Promise.all([
-        scenariosApi.getAll(),
-        groupsApi.getAll(),
-      ]);
+      const scenariosData = await scenariosApi.getAll();
+      console.log('Fetched scenarios:', scenariosData);
+
+      // グループ取得は失敗しても続行
+      let groupsData: ScenarioGroup[] = [];
+      try {
+        groupsData = await groupsApi.getAll();
+        console.log('Fetched groups:', groupsData);
+      } catch (groupError) {
+        console.warn(
+          'Failed to fetch groups, continuing without groups:',
+          groupError
+        );
+        toast.error('グループの取得に失敗しました（シナリオは表示されます）');
+      }
+
       setScenarios(scenariosData);
       setGroups(groupsData);
     } catch (error) {
       toast.error('データの取得に失敗しました');
-      console.error(error);
+      console.error('Fetch error:', error);
     } finally {
       setIsLoading(false);
     }
@@ -255,11 +267,22 @@ export default function Home() {
   };
 
   // グループ別にシナリオを整理
-  const ungroupedScenarios = scenarios.filter((s) => !s.groupId);
+  // 存在するグループのIDセット
+  const existingGroupIds = new Set(groups.map((g) => g.id));
+
+  // groupIdが無いか、存在しないグループIDを持つシナリオは未分類とする
+  const ungroupedScenarios = scenarios.filter(
+    (s) => !s.groupId || !existingGroupIds.has(s.groupId)
+  );
+
   const groupedScenarios = groups.map((group) => ({
     group,
     scenarios: scenarios.filter((s) => s.groupId === group.id),
   }));
+
+  console.log('Total scenarios:', scenarios.length);
+  console.log('Ungrouped scenarios:', ungroupedScenarios.length);
+  console.log('Grouped scenarios:', groupedScenarios);
 
   if (isLoading) {
     return (
@@ -447,7 +470,9 @@ export default function Home() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium">グループ名</label>
+              <label className="text-sm font-medium mb-2 block">
+                グループ名
+              </label>
               <Input
                 value={groupName}
                 onChange={(e) => setGroupName(e.target.value)}
@@ -455,7 +480,9 @@ export default function Home() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium">説明（任意）</label>
+              <label className="text-sm font-medium mb-2 block">
+                説明（任意）
+              </label>
               <Textarea
                 value={groupDescription}
                 onChange={(e) => setGroupDescription(e.target.value)}

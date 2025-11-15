@@ -230,11 +230,42 @@ export const scenariosApi = {
             error,
             tableData,
           });
-          throw new Error(
-            `データ投入失敗 (${tableData.tableName}): ${
-              error.message || error.error || `HTTP ${importResponse.status}`
-            }`
-          );
+
+          // SQLエラーメッセージを解析してユーザーフレンドリーなメッセージに変換
+          let errorMessage =
+            error.message || error.error || `HTTP ${importResponse.status}`;
+
+          // PostgreSQLの一般的なエラーパターンを検出
+          if (
+            errorMessage.includes('duplicate key') ||
+            errorMessage.includes('重複')
+          ) {
+            errorMessage = `主キーまたはユニークキーの重複: ${tableData.tableName}`;
+          } else if (
+            errorMessage.includes('foreign key') ||
+            errorMessage.includes('外部キー')
+          ) {
+            errorMessage = `外部キー制約違反: ${tableData.tableName}`;
+          } else if (
+            errorMessage.includes('not-null') ||
+            errorMessage.includes('null value')
+          ) {
+            errorMessage = `NOT NULL制約違反: ${tableData.tableName}`;
+          } else if (
+            errorMessage.includes('check constraint') ||
+            errorMessage.includes('チェック制約')
+          ) {
+            errorMessage = `チェック制約違反: ${tableData.tableName}`;
+          } else if (
+            errorMessage.includes('does not exist') ||
+            errorMessage.includes('存在しません')
+          ) {
+            errorMessage = `テーブルまたはカラムが存在しません: ${tableData.tableName}`;
+          } else {
+            errorMessage = `データ投入失敗 (${tableData.tableName}): ${errorMessage}`;
+          }
+
+          throw new Error(errorMessage);
         }
 
         const result = await importResponse.json();

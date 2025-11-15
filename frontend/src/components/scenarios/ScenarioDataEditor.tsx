@@ -46,6 +46,9 @@ export function ScenarioDataEditor({
   const [columns, setColumns] = useState<string[]>([]);
   const [rows, setRows] = useState<Record<string, any>[]>([]);
   const [dbTables, setDbTables] = useState<string[]>([]);
+  const [columnInfo, setColumnInfo] = useState<
+    Record<string, { isNullable: boolean; dataType: string }>
+  >({});
 
   // コンポーネントマウント時にデータベースからテーブル一覧を取得
   useEffect(() => {
@@ -76,23 +79,55 @@ export function ScenarioDataEditor({
           const cols = Object.keys(data.rows[0]);
           setColumns(cols);
           setRows(data.rows);
+
+          // スキーマ情報も取得
+          try {
+            const schema = await getTableSchema(selectedTable);
+            const colInfo: Record<
+              string,
+              { isNullable: boolean; dataType: string }
+            > = {};
+            schema.columns.forEach((col) => {
+              colInfo[col.column_name] = {
+                isNullable: col.is_nullable === 'YES',
+                dataType: col.data_type,
+              };
+            });
+            setColumnInfo(colInfo);
+          } catch (error) {
+            console.error('Failed to load schema:', error);
+            setColumnInfo({});
+          }
         } else {
           // データがない場合、データベースからスキーマを取得
           try {
             const schema = await getTableSchema(selectedTable);
             const cols = schema.columns.map((c) => c.column_name);
+            const colInfo: Record<
+              string,
+              { isNullable: boolean; dataType: string }
+            > = {};
+            schema.columns.forEach((col) => {
+              colInfo[col.column_name] = {
+                isNullable: col.is_nullable === 'YES',
+                dataType: col.data_type,
+              };
+            });
             setColumns(cols);
             setRows([]);
+            setColumnInfo(colInfo);
           } catch (error) {
             console.error('Failed to load schema:', error);
             // スキーマ取得に失敗した場合は空にする
             setColumns([]);
             setRows([]);
+            setColumnInfo({});
           }
         }
       } else {
         setColumns([]);
         setRows([]);
+        setColumnInfo({});
       }
     };
     loadTableData();
@@ -271,31 +306,156 @@ export function ScenarioDataEditor({
 
             {/* データ行 */}
             {columns.length > 0 && (
-              <div className="border rounded-lg overflow-auto">
+              <div className="border rounded-lg overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
                       {columns.map((col, index) => (
-                        <TableHead key={index}>{col}</TableHead>
+                        <TableHead
+                          key={index}
+                          className="min-w-[150px] whitespace-nowrap"
+                        >
+                          {col}
+                          {columnInfo[col] && !columnInfo[col].isNullable && (
+                            <span className="text-red-500 ml-1" title="必須">
+                              *
+                            </span>
+                          )}
+                        </TableHead>
                       ))}
-                      <TableHead className="w-20">操作</TableHead>
+                      <TableHead className="w-20 sticky right-0 bg-background">
+                        操作
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {rows.map((row, rowIndex) => (
                       <TableRow key={rowIndex}>
-                        {columns.map((col, colIndex) => (
-                          <TableCell key={colIndex}>
-                            <Input
-                              value={row[col] ?? ''}
-                              onChange={(e) =>
-                                handleCellChange(rowIndex, col, e.target.value)
-                              }
-                              className="h-8"
-                            />
-                          </TableCell>
-                        ))}
-                        <TableCell>
+                        {columns.map((col, colIndex) => {
+                          const colMeta = columnInfo[col];
+                          const dataType =
+                            colMeta?.dataType?.toLowerCase() || '';
+
+                          // データ型に応じた入力フィールドを選択
+                          if (dataType.includes('bool')) {
+                            // Boolean型
+                            return (
+                              <TableCell
+                                key={colIndex}
+                                className="min-w-[150px]"
+                              >
+                                <Select
+                                  value={row[col]?.toString() || 'null'}
+                                  onValueChange={(value) =>
+                                    handleCellChange(
+                                      rowIndex,
+                                      col,
+                                      value === 'null' ? '' : value
+                                    )
+                                  }
+                                >
+                                  <SelectTrigger className="h-8 min-w-[140px]">
+                                    <SelectValue placeholder="選択..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="true">true</SelectItem>
+                                    <SelectItem value="false">false</SelectItem>
+                                    {colMeta?.isNullable && (
+                                      <SelectItem value="null">NULL</SelectItem>
+                                    )}
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                            );
+                          } else if (
+                            dataType.includes('int') ||
+                            dataType.includes('numeric') ||
+                            dataType.includes('decimal') ||
+                            dataType.includes('float') ||
+                            dataType.includes('double') ||
+                            dataType.includes('real')
+                          ) {
+                            // 数値型
+                            return (
+                              <TableCell
+                                key={colIndex}
+                                className="min-w-[150px]"
+                              >
+                                <Input
+                                  type="number"
+                                  value={row[col] ?? ''}
+                                  onChange={(e) =>
+                                    handleCellChange(
+                                      rowIndex,
+                                      col,
+                                      e.target.value
+                                    )
+                                  }
+                                  className="h-8 min-w-[140px]"
+                                  placeholder={
+                                    colMeta && !colMeta.isNullable ? '必須' : ''
+                                  }
+                                />
+                              </TableCell>
+                            );
+                          } else if (
+                            dataType.includes('date') ||
+                            dataType.includes('timestamp')
+                          ) {
+                            // 日付型
+                            return (
+                              <TableCell
+                                key={colIndex}
+                                className="min-w-[150px]"
+                              >
+                                <Input
+                                  type={
+                                    dataType.includes('timestamp')
+                                      ? 'datetime-local'
+                                      : 'date'
+                                  }
+                                  value={row[col] ?? ''}
+                                  onChange={(e) =>
+                                    handleCellChange(
+                                      rowIndex,
+                                      col,
+                                      e.target.value
+                                    )
+                                  }
+                                  className="h-8 min-w-[140px]"
+                                  placeholder={
+                                    colMeta && !colMeta.isNullable ? '必須' : ''
+                                  }
+                                />
+                              </TableCell>
+                            );
+                          } else {
+                            // 文字列型（デフォルト）
+                            return (
+                              <TableCell
+                                key={colIndex}
+                                className="min-w-[150px]"
+                              >
+                                <Input
+                                  type="text"
+                                  value={row[col] ?? ''}
+                                  onChange={(e) =>
+                                    handleCellChange(
+                                      rowIndex,
+                                      col,
+                                      e.target.value
+                                    )
+                                  }
+                                  className="h-8 min-w-[140px]"
+                                  placeholder={
+                                    colMeta && !colMeta.isNullable ? '必須' : ''
+                                  }
+                                />
+                              </TableCell>
+                            );
+                          }
+                        })}
+                        <TableCell className="sticky right-0 bg-background">
                           <Button
                             variant="ghost"
                             size="sm"

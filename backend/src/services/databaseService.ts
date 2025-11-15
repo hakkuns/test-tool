@@ -79,6 +79,59 @@ export async function getTables() {
 }
 
 /**
+ * PostgreSQLエラーを解析してユーザーフレンドリーなメッセージに変換
+ */
+function parsePostgresError(error: any): string {
+  const message = error.message || '';
+  const code = error.code || '';
+
+  // PostgreSQLエラーコードに基づいて処理
+  switch (code) {
+    case '23505': // unique_violation
+      // キー重複エラー
+      const duplicateMatch = message.match(
+        /Key \((.*?)\)=\((.*?)\) already exists/
+      );
+      if (duplicateMatch) {
+        return `重複エラー: キー ${duplicateMatch[1]} の値 ${duplicateMatch[2]} は既に存在します`;
+      }
+      return '主キーまたはユニークキーの重複エラーが発生しました';
+
+    case '23503': // foreign_key_violation
+      return '外部キー制約違反: 参照先のデータが存在しません';
+
+    case '23502': // not_null_violation
+      const columnMatch = message.match(/column "(.*?)"/);
+      if (columnMatch) {
+        return `NOT NULL制約違反: カラム ${columnMatch[1]} に NULL は設定できません`;
+      }
+      return 'NOT NULL制約違反: 必須項目が入力されていません';
+
+    case '23514': // check_constraint_violation
+      return 'チェック制約違反: データが制約条件を満たしていません';
+
+    case '42P01': // undefined_table
+      return 'テーブルが存在しません';
+
+    case '42703': // undefined_column
+      const undefinedColMatch = message.match(/column "(.*?)"/);
+      if (undefinedColMatch) {
+        return `カラム ${undefinedColMatch[1]} が存在しません`;
+      }
+      return 'カラムが存在しません';
+
+    case '22P02': // invalid_text_representation
+      return 'データ型が不正です（例: 数値フィールドに文字列を入力）';
+
+    case '22001': // string_data_right_truncation
+      return '文字列が長すぎます';
+
+    default:
+      return message || 'データベースエラーが発生しました';
+  }
+}
+
+/**
  * テーブルにデータを挿入する
  */
 export async function insertData(
@@ -127,7 +180,7 @@ export async function insertData(
     return insertedCount;
   } catch (error) {
     await client.query('ROLLBACK');
-    throw error;
+    throw new Error(parsePostgresError(error));
   } finally {
     client.release();
   }
@@ -210,7 +263,7 @@ export async function importTableData(data: TableData): Promise<number> {
     return insertedCount;
   } catch (error) {
     await client.query('ROLLBACK');
-    throw error;
+    throw new Error(parsePostgresError(error));
   } finally {
     client.release();
   }
@@ -250,7 +303,7 @@ export async function importAllTableData(dataList: TableData[]): Promise<void> {
     await client.query('COMMIT');
   } catch (error) {
     await client.query('ROLLBACK');
-    throw error;
+    throw new Error(parsePostgresError(error));
   } finally {
     client.release();
   }

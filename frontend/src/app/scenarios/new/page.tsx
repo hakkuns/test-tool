@@ -39,6 +39,7 @@ export default function NewScenarioPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [groups, setGroups] = useState<ScenarioGroup[]>([]);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // Basic info
   const [name, setName] = useState('');
@@ -79,6 +80,54 @@ export default function NewScenarioPage() {
     };
     fetchGroups();
   }, []);
+
+  // フォームの変更を監視
+  useEffect(() => {
+    const hasData =
+      name.trim() ||
+      description.trim() ||
+      tags.length > 0 ||
+      targetApiUrl.trim() ||
+      tables.length > 0 ||
+      tableData.length > 0 ||
+      mockApis.length > 0;
+    setHasUnsavedChanges(hasData);
+  }, [name, description, tags, targetApiUrl, tables, tableData, mockApis]);
+
+  // ページ離脱時の警告
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    // リンククリックをインターセプト
+    const handleClick = (e: MouseEvent) => {
+      if (!hasUnsavedChanges) return;
+
+      const target = e.target as HTMLElement;
+      const link = target.closest('a');
+
+      if (link && link.href && !link.href.includes('/scenarios/new')) {
+        if (!confirm('変更が保存されていません。このページを離れますか？')) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }
+    };
+
+    document.addEventListener('click', handleClick, true);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('click', handleClick, true);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasUnsavedChanges]);
 
   const handleAddTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
@@ -220,6 +269,7 @@ export default function NewScenarioPage() {
       };
 
       await scenariosApi.create(scenario);
+      setHasUnsavedChanges(false);
       toast.success('シナリオを作成しました');
       router.push('/');
     } catch (error) {
@@ -405,11 +455,19 @@ export default function NewScenarioPage() {
         <ScenarioMocksEditor mocks={mockApis} onChange={setMockApis} />
 
         {/* アクション */}
-        <div className="flex gap-4 justify-end">
+        <div className="flex gap-4 justify-end mt-8">
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.back()}
+            onClick={() => {
+              if (
+                hasUnsavedChanges &&
+                !confirm('変更が保存されていません。このページを離れますか？')
+              ) {
+                return;
+              }
+              router.back();
+            }}
             disabled={isSubmitting}
           >
             キャンセル

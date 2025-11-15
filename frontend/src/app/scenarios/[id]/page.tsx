@@ -45,6 +45,8 @@ export default function ScenarioDetailPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
   const [isApplied, setIsApplied] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [initialDataLoaded, setInitialDataLoaded] = useState(false);
 
   // Basic info
   const [name, setName] = useState('');
@@ -96,6 +98,9 @@ export default function ScenarioDetailPage() {
         // 適用状態を確認
         const appliedScenarioId = localStorage.getItem('appliedScenarioId');
         setIsApplied(appliedScenarioId === id);
+
+        // 初期データのロード完了をマーク
+        setInitialDataLoaded(true);
       } catch (error) {
         console.error('Failed to load scenario:', error);
         toast.error('シナリオが見つかりません');
@@ -108,6 +113,69 @@ export default function ScenarioDetailPage() {
 
     loadScenario();
   }, [id]);
+
+  // フォームの変更を監視
+  useEffect(() => {
+    // 初期データのロードが完了してから変更を監視
+    if (initialDataLoaded && !isLoading) {
+      console.log('Change detected, setting hasUnsavedChanges to true');
+      setHasUnsavedChanges(true);
+    }
+  }, [
+    initialDataLoaded,
+    isLoading,
+    name,
+    description,
+    tags,
+    targetApiMethod,
+    targetApiUrl,
+    targetApiHeaders,
+    targetApiBody,
+    tables,
+    tableData,
+    mockApis,
+    testHeaders,
+    testBody,
+  ]);
+
+  // ページ離脱時の警告
+  useEffect(() => {
+    console.log('hasUnsavedChanges:', hasUnsavedChanges);
+
+    // ブラウザのページ離脱時の警告
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        console.log('Preventing unload');
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    // リンククリックをインターセプト
+    const handleClick = (e: MouseEvent) => {
+      if (!hasUnsavedChanges) return;
+
+      const target = e.target as HTMLElement;
+      const link = target.closest('a');
+
+      if (link && link.href && !link.href.includes(`/scenarios/${id}`)) {
+        if (!confirm('変更が保存されていません。このページを離れますか？')) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }
+    };
+
+    document.addEventListener('click', handleClick, true);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('click', handleClick, true);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasUnsavedChanges, id]);
 
   const handleAddTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
@@ -163,6 +231,7 @@ export default function ScenarioDetailPage() {
       };
 
       await scenariosApi.update(id, update);
+      setHasUnsavedChanges(false);
       toast.success('シナリオを更新しました');
       router.push('/');
     } catch (error) {
@@ -387,11 +456,19 @@ export default function ScenarioDetailPage() {
         <ScenarioMocksEditor mocks={mockApis} onChange={setMockApis} />
 
         {/* アクション */}
-        <div className="flex gap-4 justify-end">
+        <div className="flex gap-4 justify-end mt-8">
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.back()}
+            onClick={() => {
+              if (
+                hasUnsavedChanges &&
+                !confirm('変更が保存されていません。このページを離れますか？')
+              ) {
+                return;
+              }
+              router.back();
+            }}
             disabled={isSubmitting}
           >
             キャンセル
