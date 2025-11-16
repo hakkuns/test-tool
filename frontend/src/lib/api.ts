@@ -84,6 +84,21 @@ export interface MockEndpoint {
   updatedAt: string;
 }
 
+export interface MockRequestLog {
+  id: string;
+  timestamp: string;
+  method: string;
+  path: string;
+  query?: Record<string, string>;
+  body?: any;
+  headers?: Record<string, string>;
+  matchedEndpointId?: string;
+  matchedEndpointName?: string;
+  responseStatus: number;
+  responseBody?: any;
+  duration?: number;
+}
+
 // Mock API - エンドポイント一覧取得
 export async function getMockEndpoints() {
   return fetchAPI<{
@@ -160,6 +175,26 @@ export async function importMockEndpoints(endpoints: MockEndpoint[]) {
   }>('/api/mock/import', {
     method: 'POST',
     body: JSON.stringify(endpoints),
+  });
+}
+
+// Mock API - リクエストログ取得
+export async function getMockLogs() {
+  return fetchAPI<{
+    success: boolean;
+    data: MockRequestLog[];
+    count: number;
+  }>('/api/mock/logs');
+}
+
+// Mock API - リクエストログクリア
+export async function clearMockLogs() {
+  return fetchAPI<{
+    success: boolean;
+    message: string;
+    clearedCount: number;
+  }>('/api/mock/logs', {
+    method: 'DELETE',
   });
 }
 
