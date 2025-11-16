@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { RequestForm } from '@/components/api-test/RequestForm';
 import { ResponseViewer } from '@/components/api-test/ResponseViewer';
 import {
@@ -10,7 +10,8 @@ import {
 } from '@/components/api-test/RequestHistory';
 import { MockEndpointList } from '@/components/api-test/MockEndpointList';
 import { TableList } from '@/components/api-test/TableList';
-import { proxyRequest, getMockEndpoints } from '@/lib/api';
+import { MockLogViewer } from '@/components/api-test/MockLogViewer';
+import { proxyRequest, getMockEndpoints, clearMockLogs, getMockLogs, type MockRequestLog } from '@/lib/api';
 import { scenariosApi } from '@/lib/api/scenarios';
 import type { TestScenario } from '@/types/scenario';
 import { toast } from 'sonner';
@@ -38,9 +39,11 @@ const MAX_HISTORY = 50;
 
 export default function ApiTestPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [response, setResponse] = useState<any>(null);
   const [error, setError] = useState<any>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [mockLogs, setMockLogs] = useState<MockRequestLog[]>([]);
 
   // シナリオ関連
   const [selectedScenarioId, setSelectedScenarioId] = useState<string>('');
@@ -128,6 +131,9 @@ export default function ApiTestPage() {
       body?: string;
       timeout?: number;
     }) => {
+      // リクエスト送信前にモックログをクリア
+      await clearMockLogs();
+
       // ボディをパース
       let parsedBody: any = undefined;
       if (data.body) {
@@ -146,10 +152,20 @@ export default function ApiTestPage() {
         timeout: data.timeout,
       });
     },
-    onSuccess: (result, variables) => {
+    onSuccess: async (result, variables) => {
       if (result.success && result.response) {
         setResponse(result.response);
         toast.success('Request completed successfully');
+
+        // レスポンス受信後にモックログを取得
+        try {
+          const logsResult = await getMockLogs();
+          if (logsResult.success) {
+            setMockLogs(logsResult.data);
+          }
+        } catch (err) {
+          console.error('Failed to fetch mock logs:', err);
+        }
 
         // 履歴に追加
         const historyItem: HistoryItem = {
@@ -200,6 +216,7 @@ export default function ApiTestPage() {
   }) => {
     setResponse(null);
     setError(null);
+    setMockLogs([]);
     requestMutation.mutate(data);
   };
 
@@ -234,10 +251,16 @@ export default function ApiTestPage() {
     mutationFn: async (scenarioId: string) => {
       return await scenariosApi.apply(scenarioId);
     },
-    onSuccess: (result, scenarioId) => {
+    onSuccess: async (result, scenarioId) => {
       // 適用成功後、LocalStorageに保存
       localStorage.setItem('appliedScenarioId', scenarioId);
       setIsApplied(true);
+
+      // モックエンドポイントとシナリオ一覧を即座に再取得
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['mock-endpoints'] }),
+        queryClient.invalidateQueries({ queryKey: ['scenarios'] }),
+      ]);
 
       toast.success(
         `シナリオを適用しました\nテーブル: ${result.tablesCreated}個\nデータ: ${result.dataInserted}行\nモックAPI: ${result.mocksConfigured}個`
@@ -381,8 +404,9 @@ export default function ApiTestPage() {
         </div>
 
         {/* 右側: レスポンス表示 */}
-        <div>
+        <div className="space-y-6">
           <ResponseViewer response={response} error={error} />
+          <MockLogViewer logs={mockLogs} endpoints={mockEndpoints} />
         </div>
       </div>
     </div>

@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PostgreSQL Test Helper",
+  title: "Testing Assistant Suite",
   description: "Test helper tool for PostgreSQL and Spring Boot applications",
 };
 

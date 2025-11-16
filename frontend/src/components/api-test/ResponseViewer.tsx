@@ -26,7 +26,7 @@ export function ResponseViewer({ response, error }: ResponseViewerProps) {
   if (!response && !error) {
     return (
       <Card>
-        <CardContent className="pt-6">
+        <CardContent className="flex items-center justify-center min-h-[400px]">
           <p className="text-center text-muted-foreground">
             リクエストを送信するとレスポンスがここに表示されます
           </p>
