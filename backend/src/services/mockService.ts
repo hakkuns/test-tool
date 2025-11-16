@@ -1,4 +1,4 @@
-import type { MockEndpoint } from '../types/index.js'
+import type { MockEndpoint } from '../types/index'
 
 /**
  * モックエンドポイント管理サービス

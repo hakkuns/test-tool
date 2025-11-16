@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "ESNext",
+    "module": "ES2022",
     "lib": [
       "ES2022"
     ],
@@ -12,6 +12,7 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "resolveJsonModule": true,
+    "allowImportingTsExtensions": false,
     "types": [
       "node",
       "vitest/globals"
@@ -22,6 +23,8 @@
   ],
   "exclude": [
     "node_modules",
-    "dist"
+    "dist",
+    "src/**/*.test.ts",
+    "src/__tests__"
   ]
 }

@@ -5,9 +5,9 @@ import type {
   TableData,
   MockEndpoint,
   ScenarioGroup,
-} from '../types/index.js';
-import * as databaseService from './databaseService.js';
-import { mockService } from './mockService.js';
+} from '../types/index';
+import * as databaseService from './databaseService';
+import { mockService } from './mockService';
 
 /**
  * テストシナリオ管理サービス

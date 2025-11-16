@@ -5,7 +5,7 @@
   "description": "Backend API for PostgreSQL Test Helper",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc",
+    "build": "node build.mjs",
     "start": "node dist/server.js",
     "test": "vitest",
     "test:ui": "vitest --ui",
@@ -22,6 +22,7 @@
   "devDependencies": {
     "@types/node": "^22.10.2",
     "@types/pg": "^8.15.6",
+    "esbuild": "^0.27.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"

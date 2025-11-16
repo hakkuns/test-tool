@@ -1,6 +1,6 @@
 import { pool } from '../db/pool';
 import type { PoolClient } from 'pg';
-import type { TableData } from '../types';
+import type { TableData } from '../types/index';
 
 /**
  * DDLを実行する

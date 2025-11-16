@@ -1,13 +1,13 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
-import { scenarioService } from '../services/scenarioService.js';
+import { scenarioService } from '../services/scenarioService';
 import {
   createScenarioSchema,
   updateScenarioSchema,
   scenarioExportSchema,
   createGroupSchema,
   updateGroupSchema,
-} from '../types/schemas.js';
+} from '../types/schemas';
 import { z } from 'zod';
 
 const scenariosRouter = new Hono();

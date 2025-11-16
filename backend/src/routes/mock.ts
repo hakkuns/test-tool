@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
-import { mockService } from '../services/mockService.js'
-import type { MockEndpoint } from '../types/index.js'
+import { mockService } from '../services/mockService'
+import type { MockEndpoint } from '../types/index'
 
 const mockRouter = new Hono()
 
