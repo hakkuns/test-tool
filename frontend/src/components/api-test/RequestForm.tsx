@@ -218,8 +218,8 @@ export function RequestForm({
             </TabsContent>
 
             {/* Body Tab */}
-            <TabsContent value="body">
-              <div>
+            <TabsContent value="body" className="space-y-2">
+              <div className="space-y-2">
                 <Label htmlFor="body">Request Body (JSON)</Label>
                 <Textarea
                   id="body"
@@ -238,8 +238,8 @@ export function RequestForm({
             </TabsContent>
 
             {/* Settings Tab */}
-            <TabsContent value="settings">
-              <div>
+            <TabsContent value="settings" className="space-y-2">
+              <div className="space-y-2">
                 <Label htmlFor="timeout">Timeout (ms)</Label>
                 <Input
                   id="timeout"

@@ -52,6 +52,7 @@ export interface TableData {
   rows: Record<string, any>[];
   truncateBefore?: boolean;
   readOnly?: boolean;
+  encryptedColumns?: string[];
 }
 
 export interface TestScenario {

@@ -1,5 +1,4 @@
 import { pool } from '../db/pool';
-import type { PoolClient } from 'pg';
 import type { TableData } from '../types/index';
 
 /**
@@ -169,21 +168,26 @@ export async function insertData(
         continue;
       }
 
+      // まず通常のカラム値を追加
+      columns.forEach((column) => {
+        values.push(filteredRow[column]);
+      });
+
+      // 暗号化カラムがある場合、暗号化キーを最後に追加
+      const hasEncryptedColumns = columns.some(col => encrypted.includes(col));
+      if (hasEncryptedColumns && encryptionKey) {
+        values.push(encryptionKey);
+      }
+
+      // プレースホルダーを構築
       columns.forEach((column, i) => {
         // 暗号化対象カラムの場合、pgp_sym_encrypt関数を使用
         if (encrypted.includes(column) && encryptionKey) {
           placeholders.push(`pgp_sym_encrypt($${i + 1}, $${columns.length + 1})`);
-          values.push(filteredRow[column]);
         } else {
           placeholders.push(`$${i + 1}`);
-          values.push(filteredRow[column]);
         }
       });
-
-      // 暗号化キーをパラメータリストの最後に追加
-      if (encrypted.length > 0 && encryptionKey) {
-        values.push(encryptionKey);
-      }
 
       const query = `
         INSERT INTO "${tableName}" (${columns.map((c) => `"${c}"`).join(', ')})
@@ -254,9 +258,11 @@ export async function exportTableData(
     const columnNames = columns.map((col) => col.column_name);
 
     // SELECTクエリを構築（bytea型カラムは復号化）
+    // 暗号化キーをエスケープして安全に埋め込む
+    const escapedKey = encryptionKey.replace(/'/g, "''");
     const selectClauses = columnNames.map((col) => {
       if (byteaColumns.includes(col)) {
-        return `pgp_sym_decrypt("${col}", '${encryptionKey}') AS "${col}"`;
+        return `pgp_sym_decrypt("${col}", '${escapedKey}') AS "${col}"`;
       }
       return `"${col}"`;
     });
@@ -314,21 +320,26 @@ export async function importTableData(data: TableData): Promise<number> {
       const values: any[] = [];
       const placeholders: string[] = [];
 
+      // まず通常のカラム値を追加
+      columns.forEach((column) => {
+        values.push(row[column]);
+      });
+
+      // 暗号化カラムがある場合、暗号化キーを最後に追加
+      const hasEncryptedColumns = columns.some(col => encryptedColumns.includes(col));
+      if (hasEncryptedColumns && encryptionKey) {
+        values.push(encryptionKey);
+      }
+
+      // プレースホルダーを構築
       columns.forEach((column, i) => {
         // 暗号化対象カラムの場合、pgp_sym_encrypt関数を使用
         if (encryptedColumns.includes(column) && encryptionKey) {
           placeholders.push(`pgp_sym_encrypt($${i + 1}, $${columns.length + 1})`);
-          values.push(row[column]);
         } else {
           placeholders.push(`$${i + 1}`);
-          values.push(row[column]);
         }
       });
-
-      // 暗号化キーをパラメータリストの最後に追加
-      if (encryptedColumns.length > 0 && encryptionKey) {
-        values.push(encryptionKey);
-      }
 
       const query = `
         INSERT INTO "${data.tableName}" (${columns
@@ -426,21 +437,26 @@ export async function importAllTableData(dataList: TableData[]): Promise<void> {
         const values: any[] = [];
         const placeholders: string[] = [];
 
+        // まず通常のカラム値を追加
+        columns.forEach((column) => {
+          values.push(row[column]);
+        });
+
+        // 暗号化カラムがある場合、暗号化キーを最後に追加
+        const hasEncryptedColumns = columns.some(col => encryptedColumns.includes(col));
+        if (hasEncryptedColumns && encryptionKey) {
+          values.push(encryptionKey);
+        }
+
+        // プレースホルダーを構築
         columns.forEach((column, i) => {
           // 暗号化対象カラムの場合、pgp_sym_encrypt関数を使用
           if (encryptedColumns.includes(column) && encryptionKey) {
             placeholders.push(`pgp_sym_encrypt($${i + 1}, $${columns.length + 1})`);
-            values.push(row[column]);
           } else {
             placeholders.push(`$${i + 1}`);
-            values.push(row[column]);
           }
         });
-
-        // 暗号化キーをパラメータリストの最後に追加
-        if (encryptedColumns.length > 0 && encryptionKey) {
-          values.push(encryptionKey);
-        }
 
         const query = `
           INSERT INTO "${data.tableName}" (${columns

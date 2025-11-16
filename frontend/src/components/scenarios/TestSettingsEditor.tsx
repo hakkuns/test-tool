@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -33,10 +33,24 @@ export function TestSettingsEditor({
   onHeadersChange,
   onBodyChange,
 }: TestSettingsEditorProps) {
-  const [headerEntries, setHeaderEntries] = useState<HeaderEntry[]>([]);
+  const [headerEntries, setHeaderEntries] = useState<HeaderEntry[]>(() => {
+    const entries = Object.entries(headers).map(([key, value]) => ({
+      key,
+      value,
+    }));
+    return entries.length > 0 ? entries : [{ key: '', value: '' }];
+  });
 
-  // headers オブジェクトを HeaderEntry[] に変換
+  const isInternalUpdateRef = useRef(false);
+
+  // headers プロップが外部から変更された場合のみ更新
   useEffect(() => {
+    // 内部更新の場合はスキップ
+    if (isInternalUpdateRef.current) {
+      isInternalUpdateRef.current = false;
+      return;
+    }
+
     const entries = Object.entries(headers).map(([key, value]) => ({
       key,
       value,
@@ -72,6 +86,7 @@ export function TestSettingsEditor({
         headersObj[entry.key] = entry.value;
       }
     }
+    isInternalUpdateRef.current = true;
     onHeadersChange(headersObj);
   };
 

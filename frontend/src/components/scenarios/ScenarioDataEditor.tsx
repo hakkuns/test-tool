@@ -27,7 +27,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Trash2, FileText, Key, Link } from 'lucide-react';
+import { Plus, Trash2, FileText, Key, Link, Lock } from 'lucide-react';
 import type { TableData } from '@/types/scenario';
 import { toast } from 'sonner';
 import { getDatabaseTables, getTableSchema, getTableKeyInfo } from '@/lib/api';
@@ -43,7 +43,6 @@ export function ScenarioDataEditor({
   availableTables,
   onChange,
 }: ScenarioDataEditorProps) {
-  const [isAdding, setIsAdding] = useState(false);
   const [selectedTable, setSelectedTable] = useState<string>('');
   const [columns, setColumns] = useState<string[]>([]);
   const [rows, setRows] = useState<Record<string, any>[]>([]);
@@ -301,10 +300,16 @@ export function ScenarioDataEditor({
       return;
     }
 
+    // bytea型カラムを暗号化カラムとして検出
+    const encryptedColumns = columns.filter(
+      (col) => columnInfo[col] && columnInfo[col].dataType === 'bytea'
+    );
+
     const newData: TableData = {
       tableName: selectedTable,
       rows: isReadOnly ? [] : rows,
       readOnly: isReadOnly,
+      encryptedColumns: encryptedColumns.length > 0 ? encryptedColumns : undefined,
     };
 
     const existingIndex = tableData.findIndex(
@@ -508,6 +513,12 @@ export function ScenarioDataEditor({
                                   <Link className="h-3 w-3 text-blue-600" />
                                 </div>
                               )}
+                              {columnInfo[col] &&
+                                columnInfo[col].dataType === 'bytea' && (
+                                  <div title="暗号化カラム (bytea)">
+                                    <Lock className="h-3 w-3 text-purple-600" />
+                                  </div>
+                                )}
                               {columnInfo[col] &&
                                 !columnInfo[col].isNullable &&
                                 !isGrayedOut && (
