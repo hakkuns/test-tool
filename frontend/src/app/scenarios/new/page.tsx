@@ -40,6 +40,8 @@ export default function NewScenarioPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [groups, setGroups] = useState<ScenarioGroup[]>([]);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isCreated, setIsCreated] = useState(false);
+  const [createdScenarioId, setCreatedScenarioId] = useState<string>('');
 
   // Basic info
   const [name, setName] = useState('');
@@ -83,14 +85,15 @@ export default function NewScenarioPage() {
 
   // フォームの変更を監視
   useEffect(() => {
-    const hasData =
+    const hasData = Boolean(
       name.trim() ||
-      description.trim() ||
-      tags.length > 0 ||
-      targetApiUrl.trim() ||
-      tables.length > 0 ||
-      tableData.length > 0 ||
-      mockApis.length > 0;
+        description.trim() ||
+        tags.length > 0 ||
+        targetApiUrl.trim() ||
+        tables.length > 0 ||
+        tableData.length > 0 ||
+        mockApis.length > 0
+    );
     setHasUnsavedChanges(hasData);
   }, [name, description, tags, targetApiUrl, tables, tableData, mockApis]);
 
@@ -268,10 +271,11 @@ export default function NewScenarioPage() {
         tags,
       };
 
-      await scenariosApi.create(scenario);
+      const result = await scenariosApi.create(scenario);
       setHasUnsavedChanges(false);
+      setIsCreated(true);
+      setCreatedScenarioId(result.id);
       toast.success('シナリオを作成しました');
-      router.push('/');
     } catch (error) {
       console.error('Failed to create scenario:', error);
       toast.error('シナリオの作成に失敗しました');
@@ -475,6 +479,15 @@ export default function NewScenarioPage() {
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? '作成中...' : '作成'}
           </Button>
+          {isCreated && createdScenarioId && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => router.push('/api-test')}
+            >
+              API Test
+            </Button>
+          )}
         </div>
       </form>
     </div>

@@ -74,7 +74,7 @@ export default function ApiTestPage() {
     selectedScenarioId && isApplied
       ? (() => {
           const scenario = scenarios.find((s) => s.id === selectedScenarioId);
-          // tableDataに存在するテーブル名のみを返す
+          // tableDataに存在するテーブル名のみを返す（参照のみのテーブルも含む）
           return scenario?.tableData?.map((td) => td.tableName) || [];
         })()
       : [];
@@ -160,6 +160,10 @@ export default function ApiTestPage() {
           body: variables.body,
           timeout: variables.timeout,
           timestamp: new Date().toISOString(),
+          scenarioName:
+            selectedScenarioId && isApplied
+              ? scenarios.find((s) => s.id === selectedScenarioId)?.name
+              : undefined,
           response: {
             status: result.response.status,
             duration: result.response.duration,

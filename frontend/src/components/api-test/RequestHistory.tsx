@@ -1,49 +1,55 @@
-'use client'
+'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Trash2, Play } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Trash2, Play } from 'lucide-react';
 
 export interface HistoryItem {
-  id: string
-  method: string
-  url: string
-  headers: Record<string, string>
-  body?: string
-  timeout?: number
-  timestamp: string
+  id: string;
+  method: string;
+  url: string;
+  headers: Record<string, string>;
+  body?: string;
+  timeout?: number;
+  timestamp: string;
+  scenarioName?: string;
   response?: {
-    status: number
-    duration: number
-  }
+    status: number;
+    duration: number;
+  };
 }
 
 interface RequestHistoryProps {
-  history: HistoryItem[]
-  onReplay: (item: HistoryItem) => void
-  onDelete: (id: string) => void
-  onClear: () => void
+  history: HistoryItem[];
+  onReplay: (item: HistoryItem) => void;
+  onDelete: (id: string) => void;
+  onClear: () => void;
 }
 
-export function RequestHistory({ history, onReplay, onDelete, onClear }: RequestHistoryProps) {
+export function RequestHistory({
+  history,
+  onReplay,
+  onDelete,
+  onClear,
+}: RequestHistoryProps) {
   const getMethodColor = (method: string) => {
     switch (method) {
       case 'GET':
-        return 'bg-blue-500'
+        return 'bg-blue-500';
       case 'POST':
-        return 'bg-green-500'
+        return 'bg-green-500';
       case 'PUT':
-        return 'bg-yellow-500'
+        return 'bg-yellow-500';
       case 'DELETE':
-        return 'bg-red-500'
+        return 'bg-red-500';
       case 'PATCH':
-        return 'bg-purple-500'
+        return 'bg-purple-500';
       default:
-        return 'bg-gray-500'
+        return 'bg-gray-500';
     }
-  }
+  };
 
   if (history.length === 0) {
     return (
@@ -57,7 +63,7 @@ export function RequestHistory({ history, onReplay, onDelete, onClear }: Request
           </p>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -80,7 +86,11 @@ export function RequestHistory({ history, onReplay, onDelete, onClear }: Request
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <Badge className={`${getMethodColor(item.method)} text-white text-xs`}>
+                    <Badge
+                      className={`${getMethodColor(
+                        item.method
+                      )} text-white text-xs`}
+                    >
                       {item.method}
                     </Badge>
                     {item.response && (
@@ -94,6 +104,11 @@ export function RequestHistory({ history, onReplay, onDelete, onClear }: Request
                       </Badge>
                     )}
                   </div>
+                  {item.scenarioName && (
+                    <p className="text-xs text-muted-foreground mb-1">
+                      シナリオ: {item.scenarioName}
+                    </p>
+                  )}
                   <p className="text-sm truncate font-mono">{item.url}</p>
                   <p className="text-xs text-muted-foreground">
                     {new Date(item.timestamp).toLocaleString()}
@@ -124,5 +139,5 @@ export function RequestHistory({ history, onReplay, onDelete, onClear }: Request
         </ScrollArea>
       </CardContent>
     </Card>
-  )
+  );
 }

@@ -47,6 +47,7 @@ export default function ScenarioDetailPage() {
   const [isApplied, setIsApplied] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [initialDataLoaded, setInitialDataLoaded] = useState(false);
+  const [isUpdated, setIsUpdated] = useState(false);
 
   // Basic info
   const [name, setName] = useState('');
@@ -232,8 +233,8 @@ export default function ScenarioDetailPage() {
 
       await scenariosApi.update(id, update);
       setHasUnsavedChanges(false);
+      setIsUpdated(true);
       toast.success('シナリオを更新しました');
-      router.push('/');
     } catch (error) {
       console.error('Failed to update scenario:', error);
       toast.error('シナリオの更新に失敗しました');
@@ -477,6 +478,15 @@ export default function ScenarioDetailPage() {
             <Save className="h-4 w-4 mr-2" />
             {isSubmitting ? '更新中...' : '更新'}
           </Button>
+          {isUpdated && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => router.push('/api-test')}
+            >
+              API Test
+            </Button>
+          )}
         </div>
       </form>
     </div>

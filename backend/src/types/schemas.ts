@@ -25,6 +25,7 @@ export const tableDataSchema = z.object({
   tableName: z.string().min(1),
   rows: z.array(z.record(z.any())),
   truncateBefore: z.boolean().optional().default(false),
+  readOnly: z.boolean().optional().default(false),
 });
 
 // DDLテーブルスキーマ

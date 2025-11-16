@@ -51,6 +51,7 @@ export interface TableData {
   tableName: string;
   rows: Record<string, any>[];
   truncateBefore?: boolean;
+  readOnly?: boolean;
 }
 
 export interface TestScenario {

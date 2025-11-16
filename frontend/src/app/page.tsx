@@ -569,7 +569,7 @@ function ScenarioCard({
         {/* 統計情報 */}
         <div className="grid grid-cols-3 gap-2 text-xs">
           <div className="text-center p-2 bg-muted rounded">
-            <div className="font-semibold">{scenario.tables.length}</div>
+            <div className="font-semibold">{scenario.tableData.length}</div>
             <div className="text-muted-foreground">テーブル</div>
           </div>
           <div className="text-center p-2 bg-muted rounded">

@@ -26,6 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Switch } from '@/components/ui/switch';
 import { Plus, Trash2, FileText } from 'lucide-react';
 import type { TableData } from '@/types/scenario';
 import { toast } from 'sonner';
@@ -42,13 +43,59 @@ export function ScenarioDataEditor({
   availableTables,
   onChange,
 }: ScenarioDataEditorProps) {
+  const [isAdding, setIsAdding] = useState(false);
   const [selectedTable, setSelectedTable] = useState<string>('');
   const [columns, setColumns] = useState<string[]>([]);
   const [rows, setRows] = useState<Record<string, any>[]>([]);
+  const [isReadOnly, setIsReadOnly] = useState<boolean>(false);
   const [dbTables, setDbTables] = useState<string[]>([]);
   const [columnInfo, setColumnInfo] = useState<
-    Record<string, { isNullable: boolean; dataType: string }>
+    Record<
+      string,
+      {
+        isNullable: boolean;
+        dataType: string;
+        hasDefault: boolean;
+        isAutoIncrement: boolean;
+      }
+    >
   >({});
+
+  // カラムにデフォルト値があるか、またはオートインクリメントかを判定
+  const shouldGrayOut = (colName: string): boolean => {
+    const info = columnInfo[colName];
+    if (!info) return false;
+    return info.hasDefault || info.isAutoIncrement;
+  };
+
+  // デフォルト値からオートインクリメントや自動設定を判定
+  const parseColumnDefault = (
+    columnDefault: string | null
+  ): { hasDefault: boolean; isAutoIncrement: boolean } => {
+    if (!columnDefault) {
+      return { hasDefault: false, isAutoIncrement: false };
+    }
+
+    const defaultLower = columnDefault.toLowerCase();
+
+    // オートインクリメント（シーケンス）の検出
+    const isAutoIncrement =
+      defaultLower.includes('nextval') ||
+      defaultLower.includes('auto_increment') ||
+      defaultLower.includes('identity');
+
+    // CURRENT_TIMESTAMP, NOW(), などの自動設定値
+    const hasAutoDefault =
+      defaultLower.includes('current_timestamp') ||
+      defaultLower.includes('now()') ||
+      defaultLower.includes('current_date') ||
+      defaultLower.includes('current_time');
+
+    return {
+      hasDefault: hasAutoDefault || isAutoIncrement,
+      isAutoIncrement,
+    };
+  };
 
   // コンポーネントマウント時にデータベースからテーブル一覧を取得
   useEffect(() => {
@@ -79,18 +126,27 @@ export function ScenarioDataEditor({
           const cols = Object.keys(data.rows[0]);
           setColumns(cols);
           setRows(data.rows);
+          setIsReadOnly(data.readOnly || false);
 
           // スキーマ情報も取得
           try {
             const schema = await getTableSchema(selectedTable);
             const colInfo: Record<
               string,
-              { isNullable: boolean; dataType: string }
+              {
+                isNullable: boolean;
+                dataType: string;
+                hasDefault: boolean;
+                isAutoIncrement: boolean;
+              }
             > = {};
             schema.columns.forEach((col) => {
+              const defaultInfo = parseColumnDefault(col.column_default);
               colInfo[col.column_name] = {
                 isNullable: col.is_nullable === 'YES',
                 dataType: col.data_type,
+                hasDefault: defaultInfo.hasDefault,
+                isAutoIncrement: defaultInfo.isAutoIncrement,
               };
             });
             setColumnInfo(colInfo);
@@ -98,19 +154,61 @@ export function ScenarioDataEditor({
             console.error('Failed to load schema:', error);
             setColumnInfo({});
           }
-        } else {
-          // データがない場合、データベースからスキーマを取得
+        } else if (data && data.readOnly) {
+          // 参照のみのテーブルの場合
+          setIsReadOnly(true);
           try {
             const schema = await getTableSchema(selectedTable);
             const cols = schema.columns.map((c) => c.column_name);
             const colInfo: Record<
               string,
-              { isNullable: boolean; dataType: string }
+              {
+                isNullable: boolean;
+                dataType: string;
+                hasDefault: boolean;
+                isAutoIncrement: boolean;
+              }
             > = {};
             schema.columns.forEach((col) => {
+              const defaultInfo = parseColumnDefault(col.column_default);
               colInfo[col.column_name] = {
                 isNullable: col.is_nullable === 'YES',
                 dataType: col.data_type,
+                hasDefault: defaultInfo.hasDefault,
+                isAutoIncrement: defaultInfo.isAutoIncrement,
+              };
+            });
+            setColumns(cols);
+            setRows([]);
+            setColumnInfo(colInfo);
+          } catch (error) {
+            console.error('Failed to load schema:', error);
+            setColumns([]);
+            setRows([]);
+            setColumnInfo({});
+          }
+        } else {
+          // データがない場合、データベースからスキーマを取得
+          setIsReadOnly(false);
+          try {
+            const schema = await getTableSchema(selectedTable);
+            const cols = schema.columns.map((c) => c.column_name);
+            const colInfo: Record<
+              string,
+              {
+                isNullable: boolean;
+                dataType: string;
+                hasDefault: boolean;
+                isAutoIncrement: boolean;
+              }
+            > = {};
+            schema.columns.forEach((col) => {
+              const defaultInfo = parseColumnDefault(col.column_default);
+              colInfo[col.column_name] = {
+                isNullable: col.is_nullable === 'YES',
+                dataType: col.data_type,
+                hasDefault: defaultInfo.hasDefault,
+                isAutoIncrement: defaultInfo.isAutoIncrement,
               };
             });
             setColumns(cols);
@@ -127,6 +225,7 @@ export function ScenarioDataEditor({
       } else {
         setColumns([]);
         setRows([]);
+        setIsReadOnly(false);
         setColumnInfo({});
       }
     };
@@ -170,9 +269,16 @@ export function ScenarioDataEditor({
       return;
     }
 
+    // 参照のみの場合は、行が空でもOK
+    if (!isReadOnly && rows.length === 0) {
+      toast.error('少なくとも1行のデータを追加してください');
+      return;
+    }
+
     const newData: TableData = {
       tableName: selectedTable,
-      rows,
+      rows: isReadOnly ? [] : rows,
+      readOnly: isReadOnly,
     };
 
     const existingIndex = tableData.findIndex(
@@ -186,7 +292,11 @@ export function ScenarioDataEditor({
       onChange([...tableData, newData]);
     }
 
-    toast.success('テーブルデータを保存しました');
+    toast.success(
+      isReadOnly
+        ? 'テーブルを参照のみとして保存しました'
+        : 'テーブルデータを保存しました'
+    );
   };
 
   const handleRemoveTableData = (tableName: string) => {
@@ -253,9 +363,15 @@ export function ScenarioDataEditor({
                   className="flex items-center gap-2 px-3 py-1 bg-secondary rounded-md"
                 >
                   <span className="font-mono text-sm">{data.tableName}</span>
-                  <span className="text-xs text-muted-foreground">
-                    ({data.rows.length} 行)
-                  </span>
+                  {data.readOnly ? (
+                    <span className="text-xs text-blue-600 font-medium">
+                      参照のみ
+                    </span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">
+                      ({data.rows.length} 行)
+                    </span>
+                  )}
                   <Button
                     type="button"
                     variant="ghost"
@@ -298,31 +414,72 @@ export function ScenarioDataEditor({
           <div className="space-y-4 border rounded-lg p-4">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold">{selectedTable} のデータ</h3>
-              <Button type="button" size="sm" onClick={handleAddRow}>
-                <Plus className="h-4 w-4 mr-2" />
-                行を追加
-              </Button>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="read-only-switch"
+                    checked={isReadOnly}
+                    onCheckedChange={setIsReadOnly}
+                  />
+                  <Label htmlFor="read-only-switch" className="cursor-pointer">
+                    参照のみ
+                  </Label>
+                </div>
+                {!isReadOnly && (
+                  <Button type="button" size="sm" onClick={handleAddRow}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    行を追加
+                  </Button>
+                )}
+              </div>
             </div>
 
+            {isReadOnly && (
+              <div className="text-sm text-muted-foreground bg-blue-50 dark:bg-blue-950 p-3 rounded-md">
+                参照のみとして設定されています。このテーブルはAPI
+                Test画面でデータを表示できますが、データの追加は行われません。
+              </div>
+            )}
+
             {/* データ行 */}
-            {columns.length > 0 && (
+            {!isReadOnly && columns.length > 0 && (
               <div className="border rounded-lg overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      {columns.map((col, index) => (
-                        <TableHead
-                          key={index}
-                          className="min-w-[150px] whitespace-nowrap"
-                        >
-                          {col}
-                          {columnInfo[col] && !columnInfo[col].isNullable && (
-                            <span className="text-red-500 ml-1" title="必須">
-                              *
-                            </span>
-                          )}
-                        </TableHead>
-                      ))}
+                      {columns.map((col, index) => {
+                        const isGrayedOut = shouldGrayOut(col);
+                        return (
+                          <TableHead
+                            key={index}
+                            className={`min-w-[150px] whitespace-nowrap ${
+                              isGrayedOut
+                                ? 'bg-muted/50 text-muted-foreground'
+                                : ''
+                            }`}
+                          >
+                            {col}
+                            {columnInfo[col] &&
+                              !columnInfo[col].isNullable &&
+                              !isGrayedOut && (
+                                <span
+                                  className="text-red-500 ml-1"
+                                  title="必須"
+                                >
+                                  *
+                                </span>
+                              )}
+                            {isGrayedOut && (
+                              <span
+                                className="text-xs ml-1 text-muted-foreground"
+                                title="自動設定"
+                              >
+                                (自動)
+                              </span>
+                            )}
+                          </TableHead>
+                        );
+                      })}
                       <TableHead className="w-20 sticky right-0 bg-background">
                         操作
                       </TableHead>
@@ -335,6 +492,7 @@ export function ScenarioDataEditor({
                           const colMeta = columnInfo[col];
                           const dataType =
                             colMeta?.dataType?.toLowerCase() || '';
+                          const isGrayedOut = shouldGrayOut(col);
 
                           // データ型に応じた入力フィールドを選択
                           if (dataType.includes('bool')) {
@@ -342,7 +500,9 @@ export function ScenarioDataEditor({
                             return (
                               <TableCell
                                 key={colIndex}
-                                className="min-w-[150px]"
+                                className={`min-w-[150px] ${
+                                  isGrayedOut ? 'bg-muted/30' : ''
+                                }`}
                               >
                                 <Select
                                   value={row[col]?.toString() || 'null'}
@@ -353,6 +513,7 @@ export function ScenarioDataEditor({
                                       value === 'null' ? '' : value
                                     )
                                   }
+                                  disabled={isGrayedOut}
                                 >
                                   <SelectTrigger className="h-8 min-w-[140px]">
                                     <SelectValue placeholder="選択..." />
@@ -379,7 +540,9 @@ export function ScenarioDataEditor({
                             return (
                               <TableCell
                                 key={colIndex}
-                                className="min-w-[150px]"
+                                className={`min-w-[150px] ${
+                                  isGrayedOut ? 'bg-muted/30' : ''
+                                }`}
                               >
                                 <Input
                                   type="number"
@@ -393,8 +556,13 @@ export function ScenarioDataEditor({
                                   }
                                   className="h-8 min-w-[140px]"
                                   placeholder={
-                                    colMeta && !colMeta.isNullable ? '必須' : ''
+                                    colMeta &&
+                                    !colMeta.isNullable &&
+                                    !isGrayedOut
+                                      ? '必須'
+                                      : ''
                                   }
+                                  disabled={isGrayedOut}
                                 />
                               </TableCell>
                             );
@@ -406,7 +574,9 @@ export function ScenarioDataEditor({
                             return (
                               <TableCell
                                 key={colIndex}
-                                className="min-w-[150px]"
+                                className={`min-w-[150px] ${
+                                  isGrayedOut ? 'bg-muted/30' : ''
+                                }`}
                               >
                                 <Input
                                   type={
@@ -424,8 +594,13 @@ export function ScenarioDataEditor({
                                   }
                                   className="h-8 min-w-[140px]"
                                   placeholder={
-                                    colMeta && !colMeta.isNullable ? '必須' : ''
+                                    colMeta &&
+                                    !colMeta.isNullable &&
+                                    !isGrayedOut
+                                      ? '必須'
+                                      : ''
                                   }
+                                  disabled={isGrayedOut}
                                 />
                               </TableCell>
                             );
@@ -434,7 +609,9 @@ export function ScenarioDataEditor({
                             return (
                               <TableCell
                                 key={colIndex}
-                                className="min-w-[150px]"
+                                className={`min-w-[150px] ${
+                                  isGrayedOut ? 'bg-muted/30' : ''
+                                }`}
                               >
                                 <Input
                                   type="text"
@@ -448,8 +625,13 @@ export function ScenarioDataEditor({
                                   }
                                   className="h-8 min-w-[140px]"
                                   placeholder={
-                                    colMeta && !colMeta.isNullable ? '必須' : ''
+                                    colMeta &&
+                                    !colMeta.isNullable &&
+                                    !isGrayedOut
+                                      ? '必須'
+                                      : ''
                                   }
+                                  disabled={isGrayedOut}
                                 />
                               </TableCell>
                             );
@@ -471,9 +653,15 @@ export function ScenarioDataEditor({
               </div>
             )}
 
-            {columns.length === 0 && (
+            {!isReadOnly && columns.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
                 カラムを追加してください
+              </div>
+            )}
+
+            {isReadOnly && columns.length > 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                参照のみモードが有効です
               </div>
             )}
 

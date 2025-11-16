@@ -159,8 +159,12 @@ class ScenarioService {
       tablesCreated++;
     }
 
-    // 2. テーブルデータを挿入
+    // 2. テーブルデータを挿入（参照のみのテーブルはスキップ）
     for (const tableData of scenario.tableData) {
+      // 参照のみのテーブルはデータ挿入をスキップ
+      if (tableData.readOnly) {
+        continue;
+      }
       const inserted = await databaseService.importTableData(tableData);
       dataInserted += inserted;
     }
@@ -283,7 +287,10 @@ class ScenarioService {
     // グループに属するシナリオのgroupIdをクリア
     const scenarios = this.getScenariosByGroup(id);
     for (const scenario of scenarios) {
-      this.updateScenario(scenario.id, { groupId: undefined, groupName: undefined });
+      this.updateScenario(scenario.id, {
+        groupId: undefined,
+        groupName: undefined,
+      });
     }
     return this.groups.delete(id);
   }
