@@ -1,10 +1,29 @@
 import type { MockEndpoint } from '../types/index'
 
 /**
+ * モックエンドポイントへのリクエストログ
+ */
+export interface MockRequestLog {
+  id: string
+  timestamp: string
+  method: string
+  path: string
+  query?: Record<string, string>
+  body?: any
+  headers?: Record<string, string>
+  matchedEndpointId?: string
+  matchedEndpointName?: string
+  responseStatus: number
+  responseBody?: any
+  duration?: number
+}
+
+/**
  * モックエンドポイント管理サービス
  */
 class MockService {
   private endpoints: Map<string, MockEndpoint> = new Map()
+  private requestLogs: MockRequestLog[] = []
 
   /**
    * すべてのモックエンドポイントを取得
@@ -267,6 +286,60 @@ class MockService {
    */
   private generateId(): string {
     return `mock_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+  }
+
+  /**
+   * リクエストログを記録
+   */
+  logRequest(
+    method: string,
+    path: string,
+    query: Record<string, string> | undefined,
+    body: any,
+    headers: Record<string, string> | undefined,
+    matchedEndpoint: MockEndpoint | null,
+    responseStatus: number,
+    responseBody: any,
+    duration?: number
+  ): void {
+    const log: MockRequestLog = {
+      id: `log_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+      timestamp: new Date().toISOString(),
+      method,
+      path,
+      query,
+      body,
+      headers,
+      matchedEndpointId: matchedEndpoint?.id,
+      matchedEndpointName: matchedEndpoint?.name,
+      responseStatus,
+      responseBody,
+      duration,
+    }
+    this.requestLogs.push(log)
+  }
+
+  /**
+   * すべてのリクエストログを取得
+   */
+  getAllLogs(): MockRequestLog[] {
+    return [...this.requestLogs].sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    )
+  }
+
+  /**
+   * リクエストログをクリア
+   */
+  clearLogs(): void {
+    this.requestLogs = []
+  }
+
+  /**
+   * ログ数を取得
+   */
+  getLogCount(): number {
+    return this.requestLogs.length
   }
 }
 

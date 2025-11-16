@@ -301,11 +301,62 @@ mockRouter.post('/import', async (c) => {
 })
 
 /**
+ * リクエストログ取得
+ * GET /api/mock/logs
+ */
+mockRouter.get('/logs', (c) => {
+  try {
+    const logs = mockService.getAllLogs()
+    return c.json({
+      success: true,
+      data: logs,
+      count: logs.length,
+    })
+  } catch (error) {
+    console.error('Error fetching request logs:', error)
+    return c.json(
+      {
+        success: false,
+        error: 'Failed to fetch request logs',
+      },
+      500
+    )
+  }
+})
+
+/**
+ * リクエストログクリア
+ * DELETE /api/mock/logs
+ */
+mockRouter.delete('/logs', (c) => {
+  try {
+    const previousCount = mockService.getLogCount()
+    mockService.clearLogs()
+    return c.json({
+      success: true,
+      message: 'Request logs cleared successfully',
+      clearedCount: previousCount,
+    })
+  } catch (error) {
+    console.error('Error clearing request logs:', error)
+    return c.json(
+      {
+        success: false,
+        error: 'Failed to clear request logs',
+      },
+      500
+    )
+  }
+})
+
+/**
  * 動的モックルーティング
  * ANY /serve/*
  * 実際のモックエンドポイントとして機能
  */
 mockRouter.all('/serve/*', async (c) => {
+  const startTime = Date.now()
+
   try {
     const method = c.req.method
     // URLからパスを取得
@@ -341,6 +392,20 @@ mockRouter.all('/serve/*', async (c) => {
     const mockEndpoint = mockService.findMatchingMock(method, path, query, body, headers)
 
     if (!mockEndpoint) {
+      // マッチしなかった場合もログ記録
+      const duration = Date.now() - startTime
+      mockService.logRequest(
+        method,
+        path,
+        query,
+        body,
+        headers,
+        null,
+        404,
+        { success: false, error: 'No matching mock endpoint found' },
+        duration
+      )
+
       return c.json(
         {
           success: false,
@@ -376,14 +441,44 @@ mockRouter.all('/serve/*', async (c) => {
       }
     }
 
+    // リクエストログを記録
+    const duration = Date.now() - startTime
+    mockService.logRequest(
+      method,
+      path,
+      query,
+      body,
+      headers,
+      mockEndpoint,
+      mockEndpoint.response.status,
+      interpolatedBody,
+      duration
+    )
+
     return c.json(interpolatedBody, mockEndpoint.response.status as any)
   } catch (error) {
     console.error('Error serving mock endpoint:', error)
+
+    // エラーの場合もログ記録
+    const duration = Date.now() - startTime
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    mockService.logRequest(
+      c.req.method,
+      new URL(c.req.url).pathname.replace('/api/mock/serve', '') || '/',
+      undefined,
+      undefined,
+      undefined,
+      null,
+      500,
+      { success: false, error: 'Internal server error', message: errorMessage },
+      duration
+    )
+
     return c.json(
       {
         success: false,
         error: 'Internal server error',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: errorMessage,
       },
       500
     )
