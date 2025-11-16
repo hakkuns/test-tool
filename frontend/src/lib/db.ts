@@ -69,6 +69,21 @@ export interface ApiRequestHistory {
   createdAt: string;
 }
 
+// データベース接続情報の型
+export interface DatabaseConnection {
+  id?: number;
+  name: string;
+  host: string;
+  port: number;
+  database: string;
+  username: string;
+  password: string;
+  ssl?: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // IndexedDB データベース定義
 const db = new Dexie('PostgresTestHelperDB') as Dexie & {
   scenarios: EntityTable<TestScenario, 'id'>;
@@ -76,6 +91,7 @@ const db = new Dexie('PostgresTestHelperDB') as Dexie & {
   tableData: EntityTable<TableData, 'id'>;
   mockEndpoints: EntityTable<MockEndpoint, 'id'>;
   apiHistory: EntityTable<ApiRequestHistory, 'id'>;
+  dbConnections: EntityTable<DatabaseConnection, 'id'>;
 };
 
 // スキーマ定義
@@ -164,5 +180,15 @@ db.version(4)
       );
     }
   });
+
+// バージョン5: データベース接続情報ストアを追加
+db.version(5).stores({
+  scenarios: '++id, &scenarioId, name, createdAt, updatedAt',
+  ddlTables: '++id, name, order, createdAt',
+  tableData: '++id, tableName, createdAt',
+  mockEndpoints: '++id, path, method, priority, enabled, createdAt',
+  apiHistory: '++id, method, url, createdAt',
+  dbConnections: '++id, name, isActive, createdAt, updatedAt',
+});
 
 export { db };

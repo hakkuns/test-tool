@@ -27,10 +27,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Trash2, FileText } from 'lucide-react';
+import { Plus, Trash2, FileText, Key, Link } from 'lucide-react';
 import type { TableData } from '@/types/scenario';
 import { toast } from 'sonner';
-import { getDatabaseTables, getTableSchema } from '@/lib/api';
+import { getDatabaseTables, getTableSchema, getTableKeyInfo } from '@/lib/api';
 
 interface ScenarioDataEditorProps {
   tableData: TableData[];
@@ -60,6 +60,16 @@ export function ScenarioDataEditor({
       }
     >
   >({});
+  const [keyInfo, setKeyInfo] = useState<{
+    primaryKeys: string[];
+    foreignKeys: Array<{
+      column: string;
+      references: {
+        table: string;
+        column: string;
+      };
+    }>;
+  }>({ primaryKeys: [], foreignKeys: [] });
 
   // カラムにデフォルト値があるか、またはオートインクリメントかを判定
   const shouldGrayOut = (colName: string): boolean => {
@@ -150,9 +160,14 @@ export function ScenarioDataEditor({
               };
             });
             setColumnInfo(colInfo);
+
+            // キー情報も取得
+            const keys = await getTableKeyInfo(selectedTable);
+            setKeyInfo(keys);
           } catch (error) {
             console.error('Failed to load schema:', error);
             setColumnInfo({});
+            setKeyInfo({ primaryKeys: [], foreignKeys: [] });
           }
         } else if (data && data.readOnly) {
           // 参照のみのテーブルの場合
@@ -181,11 +196,16 @@ export function ScenarioDataEditor({
             setColumns(cols);
             setRows([]);
             setColumnInfo(colInfo);
+
+            // キー情報も取得
+            const keys = await getTableKeyInfo(selectedTable);
+            setKeyInfo(keys);
           } catch (error) {
             console.error('Failed to load schema:', error);
             setColumns([]);
             setRows([]);
             setColumnInfo({});
+            setKeyInfo({ primaryKeys: [], foreignKeys: [] });
           }
         } else {
           // データがない場合、データベースからスキーマを取得
@@ -214,12 +234,17 @@ export function ScenarioDataEditor({
             setColumns(cols);
             setRows([]);
             setColumnInfo(colInfo);
+
+            // キー情報も取得
+            const keys = await getTableKeyInfo(selectedTable);
+            setKeyInfo(keys);
           } catch (error) {
             console.error('Failed to load schema:', error);
             // スキーマ取得に失敗した場合は空にする
             setColumns([]);
             setRows([]);
             setColumnInfo({});
+            setKeyInfo({ primaryKeys: [], foreignKeys: [] });
           }
         }
       } else {
@@ -227,6 +252,7 @@ export function ScenarioDataEditor({
         setRows([]);
         setIsReadOnly(false);
         setColumnInfo({});
+        setKeyInfo({ primaryKeys: [], foreignKeys: [] });
       }
     };
     loadTableData();
@@ -458,25 +484,46 @@ export function ScenarioDataEditor({
                                 : ''
                             }`}
                           >
-                            {col}
-                            {columnInfo[col] &&
-                              !columnInfo[col].isNullable &&
-                              !isGrayedOut && (
-                                <span
-                                  className="text-red-500 ml-1"
-                                  title="必須"
+                            <div className="flex items-center gap-1">
+                              <span>{col}</span>
+                              {keyInfo.primaryKeys.includes(col) && (
+                                <div title="プライマリキー">
+                                  <Key className="h-3 w-3 text-yellow-600" />
+                                </div>
+                              )}
+                              {keyInfo.foreignKeys.some(
+                                (fk) => fk.column === col
+                              ) && (
+                                <div
+                                  title={`外部キー: ${
+                                    keyInfo.foreignKeys.find(
+                                      (fk) => fk.column === col
+                                    )?.references.table
+                                  }.${
+                                    keyInfo.foreignKeys.find(
+                                      (fk) => fk.column === col
+                                    )?.references.column
+                                  }`}
                                 >
-                                  *
+                                  <Link className="h-3 w-3 text-blue-600" />
+                                </div>
+                              )}
+                              {columnInfo[col] &&
+                                !columnInfo[col].isNullable &&
+                                !isGrayedOut && (
+                                  <span className="text-red-500" title="必須">
+                                    *
+                                  </span>
+                                )}
+                              {isGrayedOut && (
+                                <span
+                                  className="text-xs text-muted-foreground"
+                                  title="自動設定"
+                                >
+                                  (自動)
                                 </span>
                               )}
-                            {isGrayedOut && (
-                              <span
-                                className="text-xs ml-1 text-muted-foreground"
-                                title="自動設定"
-                              >
-                                (自動)
-                              </span>
-                            )}
+                            </div>
                           </TableHead>
                         );
                       })}

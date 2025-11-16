@@ -159,8 +159,13 @@ class ScenarioService {
       tablesCreated++;
     }
 
-    // 2. テーブルデータを挿入（参照のみのテーブルはスキップ）
-    for (const tableData of scenario.tableData) {
+    // 2. テーブルデータを挿入（依存関係を解決して順序制御）
+    const sortedTableData = this.sortTableDataByDependencies(
+      scenario.tableData,
+      scenario.tables
+    );
+
+    for (const tableData of sortedTableData) {
       // 参照のみのテーブルはデータ挿入をスキップ
       if (tableData.readOnly) {
         continue;
@@ -209,6 +214,63 @@ class ScenarioService {
    */
   private sortTablesByDependencies(tables: DDLTable[]): DDLTable[] {
     return [...tables].sort((a, b) => a.order - b.order);
+  }
+
+  /**
+   * テーブルデータを依存関係順にソート
+   * 外部キー制約のあるテーブルは参照先より後に挿入する
+   */
+  private sortTableDataByDependencies(
+    tableData: TableData[],
+    tables: DDLTable[]
+  ): TableData[] {
+    // テーブル名から依存関係を構築
+    const dependencies = new Map<string, string[]>();
+
+    for (const table of tables) {
+      const deps: string[] = [];
+      if (table.dependencies && table.dependencies.length > 0) {
+        deps.push(...table.dependencies);
+      }
+      dependencies.set(table.name, deps);
+    }
+
+    // トポロジカルソート
+    const sorted: TableData[] = [];
+    const visited = new Set<string>();
+    const visiting = new Set<string>();
+
+    const visit = (tableName: string) => {
+      if (visited.has(tableName)) return;
+      if (visiting.has(tableName)) {
+        // 循環依存を検出したが、処理を続行
+        console.warn(`Circular dependency detected for table: ${tableName}`);
+        return;
+      }
+
+      visiting.add(tableName);
+      const deps = dependencies.get(tableName) || [];
+
+      for (const dep of deps) {
+        visit(dep);
+      }
+
+      visiting.delete(tableName);
+      visited.add(tableName);
+
+      // このテーブルのデータを追加
+      const data = tableData.find((td) => td.tableName === tableName);
+      if (data) {
+        sorted.push(data);
+      }
+    };
+
+    // すべてのテーブルデータを処理
+    for (const data of tableData) {
+      visit(data.tableName);
+    }
+
+    return sorted;
   }
 
   /**

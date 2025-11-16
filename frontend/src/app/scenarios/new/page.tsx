@@ -429,8 +429,6 @@ export default function NewScenarioPage() {
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   完全なURL（http://またはhttps://から始まる）を入力してください。
-                  dev
-                  container内から外部APIにアクセスする場合、localhostではなくhost.docker.internalを使用してください。
                 </p>
               </div>
             </div>

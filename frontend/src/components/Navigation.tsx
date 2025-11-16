@@ -17,11 +17,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { checkDatabaseConnection } from '@/lib/api';
 import { ReadmeDialog } from '@/components/ReadmeDialog';
+import { DatabaseConnectionDialog } from '@/components/DatabaseConnectionDialog';
 
 export function Navigation() {
   const pathname = usePathname();
   const [dbConnected, setDbConnected] = useState<boolean | null>(null);
   const [readmeOpen, setReadmeOpen] = useState(false);
+  const [dbDialogOpen, setDbDialogOpen] = useState(false);
 
   useEffect(() => {
     checkDbConnection();
@@ -97,8 +99,14 @@ export function Navigation() {
             </Button>
 
             {/* DB接続状態 */}
-            <div className="ml-2 sm:ml-4 flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2">
-              <Database className="h-4 w-4 text-muted-foreground" />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setDbDialogOpen(true)}
+              className="ml-2 sm:ml-4 flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground"
+              title="データベース接続設定"
+            >
+              <Database className="h-4 w-4" />
               {dbConnected === null ? (
                 <Badge
                   variant="secondary"
@@ -117,11 +125,15 @@ export function Navigation() {
                   <span className="sm:hidden">●</span>
                 </Badge>
               )}
-            </div>
+            </Button>
           </div>
         </div>
       </div>
       <ReadmeDialog open={readmeOpen} onOpenChange={setReadmeOpen} />
+      <DatabaseConnectionDialog
+        open={dbDialogOpen}
+        onOpenChange={setDbDialogOpen}
+      />
     </nav>
   );
 }

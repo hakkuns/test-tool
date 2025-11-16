@@ -3,8 +3,72 @@ import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import * as dbService from '../services/databaseService';
 import { testConnection } from '../db/pool';
+import pkg from 'pg';
+const { Pool } = pkg;
 
 const database = new Hono();
+
+// DB接続テスト用スキーマ
+const testConnectionSchema = z.object({
+  host: z.string().min(1, 'Host is required'),
+  port: z.number().int().positive(),
+  database: z.string().min(1, 'Database is required'),
+  user: z.string().min(1, 'User is required'),
+  password: z.string().optional(),
+  ssl: z.boolean().optional(),
+});
+
+// 任意のDB接続をテスト
+database.post(
+  '/test-connection',
+  zValidator('json', testConnectionSchema),
+  async (c) => {
+    try {
+      const config = c.req.valid('json');
+
+      // 一時的なプールを作成してテスト
+      const testPool = new Pool({
+        host: config.host,
+        port: config.port,
+        database: config.database,
+        user: config.user,
+        password: config.password || undefined,
+        ssl: config.ssl ? { rejectUnauthorized: false } : false,
+        max: 1,
+        connectionTimeoutMillis: 5000,
+      });
+
+      try {
+        const client = await testPool.connect();
+        await client.query('SELECT 1');
+        client.release();
+
+        return c.json({
+          success: true,
+          message: 'Connection successful',
+        });
+      } catch (error: any) {
+        return c.json(
+          {
+            success: false,
+            error: error.message || 'Connection failed',
+          },
+          400
+        );
+      } finally {
+        await testPool.end();
+      }
+    } catch (error: any) {
+      return c.json(
+        {
+          success: false,
+          error: error.message || 'Invalid connection parameters',
+        },
+        400
+      );
+    }
+  }
+);
 
 // ヘルスチェック（DB接続確認）
 database.get('/health', async (c) => {
@@ -34,6 +98,17 @@ database.get('/tables/:tableName/columns', async (c) => {
     const tableName = c.req.param('tableName');
     const columns = await dbService.getTableColumns(tableName);
     return c.json({ tableName, columns });
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+// テーブルのキー情報取得（プライマリキー、外部キー）
+database.get('/tables/:tableName/keys', async (c) => {
+  try {
+    const tableName = c.req.param('tableName');
+    const keyInfo = await dbService.getTableKeyInfo(tableName);
+    return c.json({ tableName, ...keyInfo });
   } catch (error: any) {
     return c.json({ error: error.message }, 500);
   }

@@ -193,3 +193,18 @@ export async function getTableSchema(tableName: string) {
     }>;
   }>(`/api/database/tables/${tableName}/columns`);
 }
+
+// Database API - テーブルのキー情報取得（プライマリキー、外部キー）
+export async function getTableKeyInfo(tableName: string) {
+  return fetchAPI<{
+    tableName: string;
+    primaryKeys: string[];
+    foreignKeys: Array<{
+      column: string;
+      references: {
+        table: string;
+        column: string;
+      };
+    }>;
+  }>(`/api/database/tables/${tableName}/keys`);
+}
