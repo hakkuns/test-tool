@@ -81,6 +81,17 @@ http://localhost:3001/api/mock/serve/users
 
 **重要**: アプリケーション側で API のベース URL を変更する必要があります。
 
+**⚠️ devContainer からモック API に接続する場合:**
+
+devContainer 内で動作するアプリケーションからモック API に接続する場合、`localhost` の代わりに `host.docker.internal` を使用してください。
+
+例:
+```
+http://host.docker.internal:3001/api/mock/serve/users
+```
+
+これにより、devContainer からホストマシン上で動作している Testing Assistant Suite のモック API に正しくアクセスできます。
+
 ### シナリオの実行
 
 1. ホーム画面でシナリオカードの「**編集**」ボタンをクリック

@@ -156,6 +156,7 @@ database.post(
 const insertDataSchema = z.object({
   tableName: z.string().min(1, 'Table name is required'),
   data: z.array(z.record(z.any())).min(1, 'At least one row is required'),
+  encryptedColumns: z.array(z.string()).optional(),
 });
 
 database.post(
@@ -163,8 +164,12 @@ database.post(
   zValidator('json', insertDataSchema),
   async (c) => {
     try {
-      const { tableName, data } = c.req.valid('json');
-      const insertedCount = await dbService.insertData(tableName, data);
+      const { tableName, data, encryptedColumns } = c.req.valid('json');
+      const insertedCount = await dbService.insertData(
+        tableName,
+        data,
+        encryptedColumns
+      );
       return c.json({
         message: `${insertedCount} rows inserted successfully`,
         insertedCount,
@@ -201,7 +206,8 @@ database.delete('/tables/:tableName', async (c) => {
 database.get('/data/:tableName', async (c) => {
   try {
     const tableName = c.req.param('tableName');
-    const tableData = await dbService.exportTableData(tableName);
+    const decrypt = c.req.query('decrypt') === 'true';
+    const tableData = await dbService.exportTableData(tableName, decrypt);
     return c.json({
       success: true,
       data: tableData,
@@ -220,7 +226,8 @@ database.get('/data/:tableName', async (c) => {
 // 全テーブルデータエクスポート
 database.get('/data/export/all', async (c) => {
   try {
-    const allTableData = await dbService.exportAllTableData();
+    const decrypt = c.req.query('decrypt') === 'true';
+    const allTableData = await dbService.exportAllTableData(decrypt);
     return c.json({
       success: true,
       data: allTableData,
@@ -242,6 +249,7 @@ const importDataSchema = z.object({
   tableName: z.string().min(1),
   rows: z.array(z.record(z.any())),
   truncateBefore: z.boolean().optional(),
+  encryptedColumns: z.array(z.string()).optional(),
 });
 
 database.post(

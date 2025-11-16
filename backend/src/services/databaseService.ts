@@ -136,7 +136,8 @@ function parsePostgresError(error: any): string {
  */
 export async function insertData(
   tableName: string,
-  data: Record<string, any>[]
+  data: Record<string, any>[],
+  encryptedColumns?: string[]
 ): Promise<number> {
   if (data.length === 0) {
     return 0;
@@ -147,6 +148,8 @@ export async function insertData(
     await client.query('BEGIN');
 
     let insertedCount = 0;
+    const encryptionKey = process.env.ENCRYPTION_KEY;
+    const encrypted = encryptedColumns || [];
 
     for (const row of data) {
       // 空文字列やnullを除外して、データベースのデフォルト値を使用
@@ -158,18 +161,33 @@ export async function insertData(
       }, {} as Record<string, any>);
 
       const columns = Object.keys(filteredRow);
-      const values = Object.values(filteredRow);
+      const values: any[] = [];
+      const placeholders: string[] = [];
 
       if (columns.length === 0) {
         // 全てのカラムが空の場合はスキップ
         continue;
       }
 
-      const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
+      columns.forEach((column, i) => {
+        // 暗号化対象カラムの場合、pgp_sym_encrypt関数を使用
+        if (encrypted.includes(column) && encryptionKey) {
+          placeholders.push(`pgp_sym_encrypt($${i + 1}, $${columns.length + 1})`);
+          values.push(filteredRow[column]);
+        } else {
+          placeholders.push(`$${i + 1}`);
+          values.push(filteredRow[column]);
+        }
+      });
+
+      // 暗号化キーをパラメータリストの最後に追加
+      if (encrypted.length > 0 && encryptionKey) {
+        values.push(encryptionKey);
+      }
 
       const query = `
         INSERT INTO "${tableName}" (${columns.map((c) => `"${c}"`).join(', ')})
-        VALUES (${placeholders})
+        VALUES (${placeholders.join(', ')})
       `;
 
       await client.query(query, values);
@@ -201,28 +219,74 @@ export async function dropTable(tableName: string): Promise<void> {
 }
 
 /**
- * テーブルのデータをエクスポートする
+ * bytea型のカラムを取得する
  */
-export async function exportTableData(tableName: string): Promise<TableData> {
-  const query = `SELECT * FROM "${tableName}"`;
+async function getByteaColumns(tableName: string): Promise<string[]> {
+  const query = `
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = $1
+      AND data_type = 'bytea'
+  `;
+  const result = await pool.query(query, [tableName]);
+  return result.rows.map((row) => row.column_name);
+}
+
+/**
+ * テーブルのデータをエクスポートする（暗号化カラムを復号化）
+ */
+export async function exportTableData(
+  tableName: string,
+  decryptColumns?: boolean
+): Promise<TableData> {
+  const encryptionKey = process.env.ENCRYPTION_KEY;
+  let query: string;
+  let encryptedColumns: string[] = [];
+
+  if (decryptColumns && encryptionKey) {
+    // bytea型カラムを検出
+    const byteaColumns = await getByteaColumns(tableName);
+    encryptedColumns = byteaColumns;
+
+    // カラム情報を取得
+    const columns = await getTableColumns(tableName);
+    const columnNames = columns.map((col) => col.column_name);
+
+    // SELECTクエリを構築（bytea型カラムは復号化）
+    const selectClauses = columnNames.map((col) => {
+      if (byteaColumns.includes(col)) {
+        return `pgp_sym_decrypt("${col}", '${encryptionKey}') AS "${col}"`;
+      }
+      return `"${col}"`;
+    });
+
+    query = `SELECT ${selectClauses.join(', ')} FROM "${tableName}"`;
+  } else {
+    query = `SELECT * FROM "${tableName}"`;
+  }
+
   const result = await pool.query(query);
 
   return {
     tableName,
     rows: result.rows,
     truncateBefore: false,
+    encryptedColumns: decryptColumns ? encryptedColumns : undefined,
   };
 }
 
 /**
  * 全テーブルのデータをエクスポートする
  */
-export async function exportAllTableData(): Promise<TableData[]> {
+export async function exportAllTableData(
+  decryptColumns?: boolean
+): Promise<TableData[]> {
   const tables = await getTables();
   const tableData: TableData[] = [];
 
   for (const table of tables) {
-    const data = await exportTableData(table.table_name);
+    const data = await exportTableData(table.table_name, decryptColumns);
     tableData.push(data);
   }
 
@@ -241,18 +305,36 @@ export async function importTableData(data: TableData): Promise<number> {
     await client.query(`TRUNCATE TABLE "${data.tableName}" CASCADE`);
 
     let insertedCount = 0;
+    const encryptionKey = process.env.ENCRYPTION_KEY;
+    const encryptedColumns = data.encryptedColumns || [];
 
     // データを挿入
     for (const row of data.rows) {
       const columns = Object.keys(row);
-      const values = Object.values(row);
-      const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
+      const values: any[] = [];
+      const placeholders: string[] = [];
+
+      columns.forEach((column, i) => {
+        // 暗号化対象カラムの場合、pgp_sym_encrypt関数を使用
+        if (encryptedColumns.includes(column) && encryptionKey) {
+          placeholders.push(`pgp_sym_encrypt($${i + 1}, $${columns.length + 1})`);
+          values.push(row[column]);
+        } else {
+          placeholders.push(`$${i + 1}`);
+          values.push(row[column]);
+        }
+      });
+
+      // 暗号化キーをパラメータリストの最後に追加
+      if (encryptedColumns.length > 0 && encryptionKey) {
+        values.push(encryptionKey);
+      }
 
       const query = `
         INSERT INTO "${data.tableName}" (${columns
         .map((c) => `"${c}"`)
         .join(', ')})
-        VALUES (${placeholders})
+        VALUES (${placeholders.join(', ')})
       `;
 
       await client.query(query, values);
@@ -328,6 +410,7 @@ export async function importAllTableData(dataList: TableData[]): Promise<void> {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    const encryptionKey = process.env.ENCRYPTION_KEY;
 
     for (const data of dataList) {
       // truncateBeforeがtrueの場合、テーブルをクリア
@@ -335,17 +418,35 @@ export async function importAllTableData(dataList: TableData[]): Promise<void> {
         await client.query(`TRUNCATE TABLE "${data.tableName}" CASCADE`);
       }
 
+      const encryptedColumns = data.encryptedColumns || [];
+
       // データを挿入
       for (const row of data.rows) {
         const columns = Object.keys(row);
-        const values = Object.values(row);
-        const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
+        const values: any[] = [];
+        const placeholders: string[] = [];
+
+        columns.forEach((column, i) => {
+          // 暗号化対象カラムの場合、pgp_sym_encrypt関数を使用
+          if (encryptedColumns.includes(column) && encryptionKey) {
+            placeholders.push(`pgp_sym_encrypt($${i + 1}, $${columns.length + 1})`);
+            values.push(row[column]);
+          } else {
+            placeholders.push(`$${i + 1}`);
+            values.push(row[column]);
+          }
+        });
+
+        // 暗号化キーをパラメータリストの最後に追加
+        if (encryptedColumns.length > 0 && encryptionKey) {
+          values.push(encryptionKey);
+        }
 
         const query = `
           INSERT INTO "${data.tableName}" (${columns
           .map((c) => `"${c}"`)
           .join(', ')})
-          VALUES (${placeholders})
+          VALUES (${placeholders.join(', ')})
         `;
 
         await client.query(query, values);

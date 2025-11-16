@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -27,10 +27,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Trash2, FileText, Edit } from 'lucide-react';
 import type { MockEndpoint } from '@/types/scenario';
 import { toast } from 'sonner';
+
+interface HeaderEntry {
+  key: string;
+  value: string;
+}
 
 interface ScenarioMocksEditorProps {
   mocks: MockEndpoint[];
@@ -64,10 +70,62 @@ export function ScenarioMocksEditor({
     createdAt: '',
     updatedAt: '',
   });
+  const [headerEntries, setHeaderEntries] = useState<HeaderEntry[]>([
+    { key: 'Content-Type', value: 'application/json' },
+  ]);
+  const [bodyText, setBodyText] = useState('');
+
+  // currentMockが変更されたときにheaderEntriesとbodyTextを更新
+  useEffect(() => {
+    if (currentMock.response?.headers) {
+      const entries = Object.entries(currentMock.response.headers).map(
+        ([key, value]) => ({
+          key,
+          value,
+        })
+      );
+      setHeaderEntries(
+        entries.length > 0
+          ? entries
+          : [{ key: 'Content-Type', value: 'application/json' }]
+      );
+    }
+
+    if (currentMock.response?.body) {
+      setBodyText(
+        typeof currentMock.response.body === 'string'
+          ? currentMock.response.body
+          : JSON.stringify(currentMock.response.body, null, 2)
+      );
+    } else {
+      setBodyText('');
+    }
+  }, [currentMock]);
+
+  const handleAddHeader = () => {
+    setHeaderEntries([...headerEntries, { key: '', value: '' }]);
+  };
+
+  const handleRemoveHeader = (index: number) => {
+    const newEntries = headerEntries.filter((_, i) => i !== index);
+    setHeaderEntries(newEntries);
+  };
+
+  const handleHeaderChange = (
+    index: number,
+    field: 'key' | 'value',
+    value: string
+  ) => {
+    const newEntries = [...headerEntries];
+    newEntries[index][field] = value;
+    setHeaderEntries(newEntries);
+  };
 
   const handleAdd = () => {
     setIsEditing(true);
     setEditingIndex(null);
+    setHeaderEntries([{ key: 'Content-Type', value: 'application/json' }]);
+    setBodyText('');
     setCurrentMock({
       id: '',
       name: '',
@@ -90,7 +148,9 @@ export function ScenarioMocksEditor({
   const handleEdit = (index: number) => {
     setIsEditing(true);
     setEditingIndex(index);
-    setCurrentMock(mocks[index]);
+    const mock = mocks[index];
+    setCurrentMock(mock);
+    // useEffectで自動的にheaderEntriesとbodyTextが更新される
   };
 
   const handleSave = () => {
@@ -104,34 +164,22 @@ export function ScenarioMocksEditor({
       return;
     }
 
-    // bodyをパース
-    let parsedBody = null;
-    if (
-      currentMock.response?.body &&
-      typeof currentMock.response.body === 'string'
-    ) {
-      try {
-        parsedBody = JSON.parse(currentMock.response.body);
-      } catch {
-        parsedBody = currentMock.response.body;
+    // headerEntriesからheadersオブジェクトを構築
+    const parsedHeaders: Record<string, string> = {};
+    for (const entry of headerEntries) {
+      if (entry.key && entry.value) {
+        parsedHeaders[entry.key] = entry.value;
       }
-    } else if (currentMock.response?.body) {
-      parsedBody = currentMock.response.body;
     }
 
-    // headersをパース
-    let parsedHeaders = {};
-    if (
-      currentMock.response?.headers &&
-      typeof currentMock.response.headers === 'string'
-    ) {
+    // bodyTextをパース
+    let parsedBody = null;
+    if (bodyText.trim()) {
       try {
-        parsedHeaders = JSON.parse(currentMock.response.headers);
+        parsedBody = JSON.parse(bodyText);
       } catch {
-        parsedHeaders = {};
+        parsedBody = bodyText;
       }
-    } else if (currentMock.response?.headers) {
-      parsedHeaders = currentMock.response.headers;
     }
 
     const now = new Date().toISOString();
@@ -192,6 +240,8 @@ export function ScenarioMocksEditor({
   const handleCancel = () => {
     setIsEditing(false);
     setEditingIndex(null);
+    setHeaderEntries([{ key: 'Content-Type', value: 'application/json' }]);
+    setBodyText('');
     setCurrentMock({
       id: '',
       name: '',
@@ -423,64 +473,80 @@ export function ScenarioMocksEditor({
                   placeholder="/api/users"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="mock-headers">レスポンスヘッダー (JSON)</Label>
-                <Textarea
-                  id="mock-headers"
-                  value={
-                    typeof currentMock.response?.headers === 'string'
-                      ? currentMock.response.headers
-                      : JSON.stringify(
-                          currentMock.response?.headers || {},
-                          null,
-                          2
-                        )
-                  }
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setCurrentMock({
-                      ...currentMock,
-                      response: {
-                        ...currentMock.response,
-                        status: currentMock.response?.status || 200,
-                        headers: value as any,
-                        body: currentMock.response?.body || null,
-                      },
-                    });
-                  }}
-                  placeholder='例: {"Content-Type": "application/json", "X-Custom-Header": "value"}'
-                  rows={3}
-                  className="font-mono text-sm"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="mock-body">レスポンスボディ (JSON)</Label>
-                <Textarea
-                  id="mock-body"
-                  value={
-                    typeof currentMock.response?.body === 'string'
-                      ? currentMock.response.body
-                      : currentMock.response?.body
-                      ? JSON.stringify(currentMock.response.body, null, 2)
-                      : ''
-                  }
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setCurrentMock({
-                      ...currentMock,
-                      response: {
-                        ...currentMock.response,
-                        status: currentMock.response?.status || 200,
-                        headers: currentMock.response?.headers || {},
-                        body: value as any,
-                      },
-                    });
-                  }}
-                  placeholder='{"data": [...], "total": 100}'
-                  rows={8}
-                  className="font-mono text-sm"
-                />
-              </div>
+
+              {/* Headers / Body タブ */}
+              <Tabs defaultValue="headers">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="headers">Headers</TabsTrigger>
+                  <TabsTrigger value="body">Body</TabsTrigger>
+                </TabsList>
+
+                {/* Headers Tab */}
+                <TabsContent value="headers" className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <Label>レスポンスヘッダー</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleAddHeader}
+                      className="flex items-center gap-1"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add
+                    </Button>
+                  </div>
+
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {headerEntries.map((header, index) => (
+                      <div key={index} className="flex gap-2">
+                        <Input
+                          placeholder="Key"
+                          value={header.key}
+                          onChange={(e) =>
+                            handleHeaderChange(index, 'key', e.target.value)
+                          }
+                          className="flex-1"
+                        />
+                        <Input
+                          placeholder="Value"
+                          value={header.value}
+                          onChange={(e) =>
+                            handleHeaderChange(index, 'value', e.target.value)
+                          }
+                          className="flex-1"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemoveHeader(index)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </TabsContent>
+
+                {/* Body Tab */}
+                <TabsContent value="body" className="space-y-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="mock-body">レスポンスボディ (JSON)</Label>
+                    <Textarea
+                      id="mock-body"
+                      value={bodyText}
+                      onChange={(e) => setBodyText(e.target.value)}
+                      placeholder={`{
+  "data": [...],
+  "total": 100
+}`}
+                      rows={12}
+                      className="font-mono text-sm"
+                    />
+                  </div>
+                </TabsContent>
+              </Tabs>
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={handleCancel}>
                   キャンセル

@@ -105,6 +105,21 @@ NEXT_PUBLIC_API_URL=http://localhost:3001
 docker-compose up -d
 ```
 
+**暗号化機能を使用する場合:**
+
+PostgreSQL で pgcrypto 拡張を有効化する必要があります。
+
+```bash
+# PostgreSQLコンテナに接続
+docker-compose exec postgres psql -U postgres -d testdb
+
+# pgcrypto拡張を有効化
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+# 確認
+\dx
+```
+
 ### 5. アプリケーションの起動
 
 ```bash
@@ -177,6 +192,12 @@ pnpm dev
 5. レスポンス埋め込み: `{{id}}`
 6. モック API の URL: `http://localhost:3001/api/mock/serve/your/path`
 
+
+**⚠️ devContainerからモックAPIに接続する場合:**
+- `localhost`の代わりに`host.docker.internal`を使用してください
+- 例: `http://host.docker.internal:3001/api/mock/serve/your/path`
+- 詳細は [トラブルシューティングガイド](./docs/TROUBLESHOOTING.md) を参照してください
+
 ### API テスト（個別操作）
 
 1. トップページから「API テスト」を開く
@@ -185,6 +206,40 @@ pnpm dev
 4. 「Send Request」でリクエスト送信
 5. レスポンスを確認
 6. 履歴から過去のリクエストを再実行可能
+
+### 暗号化機能（bytea型カラムのpgcrypto暗号化）
+
+PostgreSQL の pgcrypto 拡張を使用して、bytea 型カラムのデータを暗号化・復号化できます。
+
+**セットアップ:**
+
+1. `.env` ファイルに暗号化キーを設定
+
+```env
+ENCRYPTION_KEY=your-secret-encryption-key-here
+```
+
+2. テーブルデータに暗号化カラムを指定
+
+```json
+{
+  "tableName": "users",
+  "rows": [
+    {
+      "id": 1,
+      "name": "Test User",
+      "password": "secret123"
+    }
+  ],
+  "encryptedColumns": ["password"]
+}
+```
+
+**仕組み:**
+
+- **インポート時**: `encryptedColumns` に指定したカラムは `pgp_sym_encrypt()` 関数で自動暗号化
+- **エクスポート時**: bytea 型カラムは `pgp_sym_decrypt()` 関数で自動復号化（`?decrypt=true` パラメータ使用時）
+- **API Test**: テーブル参照時に `?decrypt=true` を付けることで復号化されたデータを表示
 
 ```
 

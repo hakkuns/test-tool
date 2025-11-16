@@ -26,7 +26,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
-  getActiveConnection,
   getAllConnections,
   saveConnection,
   deleteConnection,
@@ -221,7 +220,7 @@ export function DatabaseConnectionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Database className="h-5 w-5" />
@@ -232,36 +231,58 @@ export function DatabaseConnectionDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 -mx-6 px-6">
-          <div className="space-y-4 pr-4">
+        <ScrollArea className="flex-1 -mx-6 px-6 overflow-y-auto">
+          <div className="space-y-4 pr-4 pb-4">
             {/* 現在の接続状態 */}
             <Card>
-              <CardContent className="py-3">
-                <div className="flex items-center justify-between">
-                  <div>
+              <CardContent className="py-4">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
                     <p className="text-sm font-medium">現在の接続</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {activeConnection ? (
-                        <>
-                          <Badge variant="default" className="mr-2">
-                            {activeConnection.name}
-                          </Badge>
-                          {activeConnection.host}:{activeConnection.port} /{' '}
-                          {activeConnection.database}
-                        </>
-                      ) : (
-                        'デフォルト接続（バックエンド設定）'
-                      )}
-                    </p>
+                    {activeConnection && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleUseDefault}
+                      >
+                        デフォルトに戻す
+                      </Button>
+                    )}
                   </div>
-                  {activeConnection && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleUseDefault}
-                    >
-                      デフォルトに戻す
-                    </Button>
+                  {activeConnection ? (
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="default">{activeConnection.name}</Badge>
+                        <Badge variant="outline" className="text-xs">
+                          <Check className="h-3 w-3 mr-1" />
+                          使用中
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                        <div>
+                          <span className="font-medium">ホスト:</span> {activeConnection.host}
+                        </div>
+                        <div>
+                          <span className="font-medium">ポート:</span> {activeConnection.port}
+                        </div>
+                        <div>
+                          <span className="font-medium">データベース:</span> {activeConnection.database}
+                        </div>
+                        <div>
+                          <span className="font-medium">ユーザー:</span> {activeConnection.username}
+                        </div>
+                        <div className="col-span-2">
+                          <span className="font-medium">SSL:</span> {activeConnection.ssl ? '有効' : '無効'}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-sm space-y-2">
+                      <p className="text-muted-foreground">デフォルト接続（バックエンド設定）</p>
+                      <p className="text-xs text-muted-foreground">
+                        バックエンドの環境変数 DATABASE_URL で設定された接続を使用しています
+                      </p>
+                    </div>
                   )}
                 </div>
               </CardContent>
@@ -322,14 +343,20 @@ export function DatabaseConnectionDialog({
 
             {/* 新規接続追加 */}
             {!isAdding ? (
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => setIsAdding(true)}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                新しい接続を追加
-              </Button>
+              <div className="space-y-2">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setIsAdding(true)}
+                  disabled
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  新しい接続を追加
+                </Button>
+                <p className="text-xs text-muted-foreground text-center">
+                  この機能は開発中です
+                </p>
+              </div>
             ) : (
               <Card>
                 <CardContent className="pt-4 space-y-4">

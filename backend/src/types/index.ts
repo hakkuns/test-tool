@@ -84,6 +84,7 @@ export interface TableData {
   rows: Record<string, any>[];
   truncateBefore?: boolean;
   readOnly?: boolean;
+  encryptedColumns?: string[]; // pgcryptoで暗号化するカラム名のリスト
 }
 
 export interface TestScenario {
