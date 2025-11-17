@@ -38,7 +38,7 @@ export function TableList({ tables }: TableListProps) {
     setIsDialogOpen(true);
 
     try {
-      const response = await fetch(`${API_URL}/api/database/data/${tableName}`);
+      const response = await fetch(`${API_URL}/api/database/data/${tableName}?decrypt=true`);
       if (!response.ok) {
         throw new Error(`Failed to fetch data: ${response.statusText}`);
       }

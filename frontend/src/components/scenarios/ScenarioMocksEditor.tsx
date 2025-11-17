@@ -11,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { JsonEditor } from '@/components/ui/json-editor';
 import {
   Select,
   SelectContent,
@@ -30,6 +30,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Trash2, FileText, Edit } from 'lucide-react';
+import { ConstantsTooltip } from '@/components/ui/constants-tooltip';
 import type { MockEndpoint } from '@/types/scenario';
 import { toast } from 'sonner';
 
@@ -181,6 +182,9 @@ export function ScenarioMocksEditor({
         parsedBody = bodyText;
       }
     }
+
+    // 定数を変換（保存時ではなく実行時に変換されることを示すため、ここでは変換しない）
+    // 実際の変換はシナリオ実行時に行われる
 
     const now = new Date().toISOString();
     const mock: MockEndpoint = {
@@ -484,7 +488,10 @@ export function ScenarioMocksEditor({
                 {/* Headers Tab */}
                 <TabsContent value="headers" className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <Label>レスポンスヘッダー</Label>
+                    <div className="flex items-center gap-2">
+                      <Label>レスポンスヘッダー</Label>
+                      <ConstantsTooltip />
+                    </div>
                     <Button
                       type="button"
                       variant="outline"
@@ -497,7 +504,7 @@ export function ScenarioMocksEditor({
                     </Button>
                   </div>
 
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                  <div className="space-y-2 max-h-64 overflow-y-auto p-0.5">
                     {headerEntries.map((header, index) => (
                       <div key={index} className="flex gap-2">
                         <Input
@@ -530,19 +537,16 @@ export function ScenarioMocksEditor({
                 </TabsContent>
 
                 {/* Body Tab */}
-                <TabsContent value="body" className="space-y-2">
+                <TabsContent value="body" className="space-y-4 mt-2">
                   <div className="space-y-2">
-                    <Label htmlFor="mock-body">レスポンスボディ (JSON)</Label>
-                    <Textarea
-                      id="mock-body"
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="mock-body">レスポンスボディ (JSON)</Label>
+                      <ConstantsTooltip />
+                    </div>
+                    <JsonEditor
                       value={bodyText}
-                      onChange={(e) => setBodyText(e.target.value)}
-                      placeholder={`{
-  "data": [...],
-  "total": 100
-}`}
-                      rows={12}
-                      className="font-mono text-sm"
+                      onChange={(value) => setBodyText(value || '')}
+                      height="256px"
                     />
                   </div>
                 </TabsContent>

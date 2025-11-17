@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { JsonEditor } from '@/components/ui/json-editor';
 import {
   Card,
   CardContent,
@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Trash2 } from 'lucide-react';
+import { ConstantsTooltip } from '@/components/ui/constants-tooltip';
 
 interface HeaderEntry {
   key: string;
@@ -108,7 +109,10 @@ export function TestSettingsEditor({
           {/* Headers Tab */}
           <TabsContent value="headers" className="space-y-2">
             <div className="flex justify-between items-center">
-              <Label>Headers</Label>
+              <div className="flex items-center gap-2">
+                <Label>Headers</Label>
+                <ConstantsTooltip />
+              </div>
               <Button
                 type="button"
                 variant="outline"
@@ -121,7 +125,7 @@ export function TestSettingsEditor({
               </Button>
             </div>
 
-            <div className="space-y-2 max-h-64 overflow-y-auto">
+            <div className="space-y-2 max-h-64 overflow-y-auto p-0.5">
               {headerEntries.map((header, index) => (
                 <div key={index} className="flex gap-2">
                   <Input
@@ -154,19 +158,16 @@ export function TestSettingsEditor({
           </TabsContent>
 
           {/* Body Tab */}
-          <TabsContent value="body" className="space-y-2">
+          <TabsContent value="body" className="space-y-4 mt-2">
             <div className="space-y-2">
-              <Label htmlFor="testBody">Request Body</Label>
-              <Textarea
-                id="testBody"
+              <div className="flex items-center gap-2">
+                <Label htmlFor="testBody">リクエストボディ (JSON)</Label>
+                <ConstantsTooltip />
+              </div>
+              <JsonEditor
                 value={body}
-                onChange={(e) => onBodyChange(e.target.value)}
-                placeholder={`{
-  "name": "test",
-  "email": "test@example.com"
-}`}
-                rows={12}
-                className="font-mono text-sm"
+                onChange={(value) => onBodyChange(value || '')}
+                height="256px"
               />
             </div>
           </TabsContent>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { RequestForm } from '@/components/api-test/RequestForm';
 import { ResponseViewer } from '@/components/api-test/ResponseViewer';
@@ -33,9 +33,31 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PlayCircle, Loader2, CheckCircle2, XCircle, Edit } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import {
+  replaceConstantsInHeaders,
+  replaceConstantsInObject,
+} from '@/utils/constants';
 
 const HISTORY_KEY = 'api-test-history';
 const MAX_HISTORY = 50;
+
+// シナリオのハッシュを計算する関数（変更検知用）
+function calculateScenarioHash(scenario: TestScenario): string {
+  const hashContent = JSON.stringify({
+    tableData: scenario.tableData,
+    mockApis: scenario.mockApis,
+    testSettings: scenario.testSettings,
+    updatedAt: scenario.updatedAt,
+  });
+  // 簡易的なハッシュ（必要に応じてライブラリを使用）
+  let hash = 0;
+  for (let i = 0; i < hashContent.length; i++) {
+    const char = hashContent.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return hash.toString(36);
+}
 
 export default function ApiTestPage() {
   const router = useRouter();
@@ -48,6 +70,7 @@ export default function ApiTestPage() {
   // シナリオ関連
   const [selectedScenarioId, setSelectedScenarioId] = useState<string>('');
   const [isApplied, setIsApplied] = useState(false);
+  const [appliedScenarioHash, setAppliedScenarioHash] = useState<string>('');
 
   // シナリオ一覧を取得（useQuery）
   const { data: scenarios = [], isLoading: isScenariosLoading } = useQuery<
@@ -82,6 +105,39 @@ export default function ApiTestPage() {
         })()
       : [];
 
+  // 選択されたシナリオの定数を変換
+  const convertedScenario = useMemo(() => {
+    if (!selectedScenarioId || !isApplied) return undefined;
+
+    const scenario = scenarios.find((s) => s.id === selectedScenarioId);
+    if (!scenario) return undefined;
+
+    // testSettingsの定数を変換
+    const convertedHeaders = scenario.testSettings?.headers
+      ? replaceConstantsInHeaders(scenario.testSettings.headers)
+      : {};
+
+    let convertedBody = scenario.testSettings?.body || '';
+    if (convertedBody) {
+      try {
+        const parsedBody = JSON.parse(convertedBody);
+        const convertedBodyObj = replaceConstantsInObject(parsedBody);
+        convertedBody = JSON.stringify(convertedBodyObj, null, 2);
+      } catch {
+        // JSONでない場合はそのまま
+      }
+    }
+
+    return {
+      ...scenario,
+      testSettings: {
+        ...scenario.testSettings,
+        headers: convertedHeaders,
+        body: convertedBody,
+      },
+    };
+  }, [selectedScenarioId, isApplied, scenarios]);
+
   // 履歴をLocalStorageから読み込み
   useEffect(() => {
     const savedHistory = localStorage.getItem(HISTORY_KEY);
@@ -95,9 +151,13 @@ export default function ApiTestPage() {
 
     // 適用中のシナリオを確認
     const appliedScenarioId = localStorage.getItem('appliedScenarioId');
+    const savedHash = localStorage.getItem('appliedScenarioHash');
     if (appliedScenarioId) {
       setSelectedScenarioId(appliedScenarioId);
       setIsApplied(true);
+      if (savedHash) {
+        setAppliedScenarioHash(savedHash);
+      }
     }
   }, []);
 
@@ -110,7 +170,9 @@ export default function ApiTestPage() {
         // シナリオが存在しない場合、リセット
         setSelectedScenarioId('');
         setIsApplied(false);
+        setAppliedScenarioHash('');
         localStorage.removeItem('appliedScenarioId');
+        localStorage.removeItem('appliedScenarioHash');
         toast.error('適用されていたシナリオが削除されました');
       }
     }
@@ -252,9 +314,14 @@ export default function ApiTestPage() {
       return await scenariosApi.apply(scenarioId);
     },
     onSuccess: async (result, scenarioId) => {
-      // 適用成功後、LocalStorageに保存
+      // 適用成功後、シナリオのハッシュを計算してLocalStorageに保存
+      const scenario = scenarios.find((s) => s.id === scenarioId);
+      const hash = scenario ? calculateScenarioHash(scenario) : '';
+      
       localStorage.setItem('appliedScenarioId', scenarioId);
+      localStorage.setItem('appliedScenarioHash', hash);
       setIsApplied(true);
+      setAppliedScenarioHash(hash);
 
       // モックエンドポイントとシナリオ一覧を即座に再取得
       await Promise.all([
@@ -266,8 +333,7 @@ export default function ApiTestPage() {
         `シナリオを適用しました\nテーブル: ${result.tablesCreated}個\nデータ: ${result.dataInserted}行\nモックAPI: ${result.mocksConfigured}個`
       );
 
-      // 選択されたシナリオを取得
-      const scenario = scenarios.find((s) => s.id === scenarioId);
+      // シナリオにテスト設定がある場合は通知
       if (scenario?.testSettings) {
         toast.info('フォームにテスト設定を適用しました');
       }
@@ -290,6 +356,21 @@ export default function ApiTestPage() {
 
     applyScenarioMutation.mutate(selectedScenarioId);
   };
+
+  // シナリオが更新されたかどうかを判定
+  const isScenarioModified = useMemo(() => {
+    if (!selectedScenarioId || !isApplied || !appliedScenarioHash) {
+      return false;
+    }
+
+    const currentScenario = scenarios.find((s) => s.id === selectedScenarioId);
+    if (!currentScenario) {
+      return false;
+    }
+
+    const currentHash = calculateScenarioHash(currentScenario);
+    return currentHash !== appliedScenarioHash;
+  }, [selectedScenarioId, isApplied, appliedScenarioHash, scenarios]);
 
   return (
     <div className="container mx-auto p-8">
@@ -320,8 +401,16 @@ export default function ApiTestPage() {
                   <Select
                     value={selectedScenarioId}
                     onValueChange={(value) => {
+                      const appliedScenarioId = localStorage.getItem('appliedScenarioId');
                       setSelectedScenarioId(value);
-                      setIsApplied(false);
+                      
+                      // 現在適用中のシナリオを選択した場合は、適用済み状態を維持
+                      if (value === appliedScenarioId) {
+                        setIsApplied(true);
+                      } else {
+                        // 別のシナリオを選択した場合は、未適用状態にする
+                        setIsApplied(false);
+                      }
                     }}
                   >
                     <SelectTrigger className="w-full">
@@ -369,10 +458,17 @@ export default function ApiTestPage() {
               {selectedScenarioId && (
                 <div className="flex items-center gap-2">
                   {isApplied ? (
-                    <Badge className="bg-green-500">
-                      <CheckCircle2 className="h-3 w-3 mr-1" />
-                      適用済み
-                    </Badge>
+                    <>
+                      <Badge className="bg-green-500">
+                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                        適用済み
+                      </Badge>
+                      {isScenarioModified && (
+                        <Badge variant="outline" className="border-yellow-500 text-yellow-700 bg-yellow-50">
+                          再適用が必要
+                        </Badge>
+                      )}
+                    </>
                   ) : (
                     <Badge variant="secondary">
                       <XCircle className="h-3 w-3 mr-1" />
@@ -387,11 +483,7 @@ export default function ApiTestPage() {
           <RequestForm
             onSubmit={handleSubmit}
             isLoading={requestMutation.isPending}
-            initialData={
-              selectedScenarioId && isApplied
-                ? scenarios.find((s) => s.id === selectedScenarioId)
-                : undefined
-            }
+            initialData={convertedScenario}
           />
           <TableList tables={tables} />
           <MockEndpointList endpoints={mockEndpoints} />

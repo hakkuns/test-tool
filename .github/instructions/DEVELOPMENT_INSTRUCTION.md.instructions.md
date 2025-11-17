@@ -1224,7 +1224,7 @@ export function RequestForm({ onSubmit, isLoading }: RequestFormProps) {
                   name="body"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Request Body (JSON)</FormLabel>
+                      <FormLabel>リクエストボディ (JSON)</FormLabel>
                       <FormControl>
                         <Textarea
                           placeholder='{"name": "John", "email": "john@example.com"}'

@@ -395,8 +395,8 @@ export default function NewScenarioPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-4 gap-4">
-              <div className="space-y-2">
+            <div className="flex gap-4">
+              <div className="space-y-2 w-40">
                 <Label htmlFor="targetApiMethod">HTTPメソッド *</Label>
                 <Select
                   value={targetApiMethod}
@@ -418,7 +418,7 @@ export default function NewScenarioPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="col-span-3 space-y-2">
+              <div className="flex-1 space-y-2">
                 <Label htmlFor="targetApiUrl">URL *</Label>
                 <Input
                   id="targetApiUrl"

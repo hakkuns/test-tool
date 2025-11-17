@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -35,10 +36,15 @@ import type {
   MockEndpoint,
 } from '@/types/scenario';
 import { toast } from 'sonner';
+import {
+  replaceConstantsInHeaders,
+  replaceConstantsInObject,
+} from '@/utils/constants';
 
 export default function ScenarioDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const queryClient = useQueryClient();
   const id = params?.id as string;
 
   const [isLoading, setIsLoading] = useState(true);
@@ -232,6 +238,10 @@ export default function ScenarioDetailPage() {
       };
 
       await scenariosApi.update(id, update);
+      
+      // React Queryのキャッシュを無効化してシナリオリストを更新
+      await queryClient.invalidateQueries({ queryKey: ['scenarios'] });
+      
       setHasUnsavedChanges(false);
       setIsUpdated(true);
       toast.success('シナリオを更新しました');
@@ -254,6 +264,22 @@ export default function ScenarioDetailPage() {
 
     setIsApplying(true);
     try {
+      // テスト設定の定数を変換してフォームに反映
+      const convertedHeaders = replaceConstantsInHeaders(testHeaders);
+      setTestHeaders(convertedHeaders);
+
+      let convertedBody = testBody;
+      if (testBody) {
+        try {
+          const parsedBody = JSON.parse(testBody);
+          const convertedBodyObj = replaceConstantsInObject(parsedBody);
+          convertedBody = JSON.stringify(convertedBodyObj, null, 2);
+          setTestBody(convertedBody);
+        } catch {
+          // JSONでない場合はそのまま
+        }
+      }
+
       const result = await scenariosApi.apply(id);
 
       // 適用成功後、LocalStorageに保存
@@ -393,8 +419,8 @@ export default function ScenarioDetailPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-4 gap-4">
-              <div className="space-y-2">
+            <div className="flex gap-4">
+              <div className="space-y-2 w-40">
                 <Label htmlFor="targetApiMethod">HTTPメソッド *</Label>
                 <Select
                   value={targetApiMethod}
@@ -416,7 +442,7 @@ export default function ScenarioDetailPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="col-span-3 space-y-2">
+              <div className="flex-1 space-y-2">
                 <Label htmlFor="targetApiUrl">URL *</Label>
                 <Input
                   id="targetApiUrl"

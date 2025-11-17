@@ -423,11 +423,8 @@ mockRouter.all('/serve/*', async (c) => {
     // パスパラメータを抽出
     const pathMatch = mockService.matchPathPattern(mockEndpoint.path, path)
 
-    // レスポンスボディにパラメータを埋め込む
-    const interpolatedBody = mockService.interpolateResponse(
-      mockEndpoint.response.body,
-      pathMatch.params
-    )
+    // レスポンスを準備（定数変換とパラメータ補間）
+    const preparedResponse = mockService.prepareResponse(mockEndpoint, pathMatch.params)
 
     // 遅延が設定されている場合は待機
     if (mockEndpoint.response.delay && mockEndpoint.response.delay > 0) {
@@ -435,10 +432,8 @@ mockRouter.all('/serve/*', async (c) => {
     }
 
     // レスポンスヘッダーを設定
-    if (mockEndpoint.response.headers) {
-      for (const [key, value] of Object.entries(mockEndpoint.response.headers)) {
-        c.header(key, value)
-      }
+    for (const [key, value] of Object.entries(preparedResponse.headers)) {
+      c.header(key, value)
     }
 
     // リクエストログを記録
@@ -450,12 +445,12 @@ mockRouter.all('/serve/*', async (c) => {
       body,
       headers,
       mockEndpoint,
-      mockEndpoint.response.status,
-      interpolatedBody,
+      preparedResponse.status,
+      preparedResponse.body,
       duration
     )
 
-    return c.json(interpolatedBody, mockEndpoint.response.status as any)
+    return c.json(preparedResponse.body, preparedResponse.status as any)
   } catch (error) {
     console.error('Error serving mock endpoint:', error)
 

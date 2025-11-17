@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
+import { JsonEditor } from '@/components/ui/json-editor'
 import {
   Select,
   SelectContent,
@@ -21,6 +21,13 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import { Info } from 'lucide-react'
 import type { MockEndpoint } from '@/lib/api'
 
 interface EndpointEditorProps {
@@ -239,28 +246,47 @@ export function EndpointEditor({ open, endpoint, onClose, onSave }: EndpointEdit
               </div>
 
               <div>
-                <Label htmlFor="responseBody">Response Body (JSON)</Label>
-                <Textarea
-                  id="responseBody"
+                <div className="flex items-center gap-2 mb-2">
+                  <Label htmlFor="responseBody">Response Body (JSON)</Label>
+                  <TooltipProvider>
+                    <Tooltip delayDuration={200}>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          className="inline-flex items-center justify-center"
+                        >
+                          <Info className="h-4 w-4 text-muted-foreground cursor-help hover:text-foreground transition-colors" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="max-w-sm">
+                        <div className="space-y-1.5 text-xs">
+                          <p className="font-semibold mb-1">使用可能な変数:</p>
+                          <div className="space-y-0.5">
+                            <p>• {`{{paramName}}`} - パスパラメータ</p>
+                            <p>• $SEQ - TST + 13桁タイムスタンプ</p>
+                            <p>• $TIMESTAMP - ISO8601形式の現在時刻</p>
+                            <p>• $UNIX_TIMESTAMP - Unixタイムスタンプ(ミリ秒)</p>
+                            <p>• $UUID - ランダムなUUID</p>
+                            <p>• $RANDOM_STRING - 8桁のランダム文字列</p>
+                          </div>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <JsonEditor
                   value={responseBody}
-                  onChange={(e) => setResponseBody(e.target.value)}
-                  placeholder='{"message": "Success"}'
-                  className="font-mono text-sm h-32"
-                  required
+                  onChange={(value) => setResponseBody(value || '{}')}
+                  height="128px"
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  パスパラメータは {`{{paramName}}`} で埋め込めます
-                </p>
               </div>
 
               <div>
                 <Label htmlFor="responseHeaders">Response Headers (JSON, Optional)</Label>
-                <Textarea
-                  id="responseHeaders"
+                <JsonEditor
                   value={responseHeaders}
-                  onChange={(e) => setResponseHeaders(e.target.value)}
-                  placeholder='{"Content-Type": "application/json"}'
-                  className="font-mono text-sm h-20"
+                  onChange={(value) => setResponseHeaders(value || '')}
+                  height="80px"
                 />
               </div>
             </TabsContent>
@@ -273,34 +299,28 @@ export function EndpointEditor({ open, endpoint, onClose, onSave }: EndpointEdit
 
               <div>
                 <Label htmlFor="matchQuery">Query Parameters (JSON, Optional)</Label>
-                <Textarea
-                  id="matchQuery"
+                <JsonEditor
                   value={matchQuery}
-                  onChange={(e) => setMatchQuery(e.target.value)}
-                  placeholder='{"status": "active"}'
-                  className="font-mono text-sm h-20"
+                  onChange={(value) => setMatchQuery(value || '')}
+                  height="80px"
                 />
               </div>
 
               <div>
                 <Label htmlFor="matchHeaders">Headers (JSON, Optional)</Label>
-                <Textarea
-                  id="matchHeaders"
+                <JsonEditor
                   value={matchHeaders}
-                  onChange={(e) => setMatchHeaders(e.target.value)}
-                  placeholder='{"Authorization": "Bearer token"}'
-                  className="font-mono text-sm h-20"
+                  onChange={(value) => setMatchHeaders(value || '')}
+                  height="80px"
                 />
               </div>
 
               <div>
-                <Label htmlFor="matchBody">Request Body (JSON, Optional)</Label>
-                <Textarea
-                  id="matchBody"
+                <Label htmlFor="matchBody">リクエストボディ (JSON, Optional)</Label>
+                <JsonEditor
                   value={matchBody}
-                  onChange={(e) => setMatchBody(e.target.value)}
-                  placeholder='{"type": "user"}'
-                  className="font-mono text-sm h-20"
+                  onChange={(value) => setMatchBody(value || '')}
+                  height="80px"
                 />
               </div>
             </TabsContent>

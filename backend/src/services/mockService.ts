@@ -1,4 +1,8 @@
 import type { MockEndpoint } from '../types/index'
+import {
+  replaceConstantsInHeaders,
+  replaceConstantsInObject,
+} from '../utils/constants'
 
 /**
  * モックエンドポイントへのリクエストログ
@@ -233,6 +237,31 @@ class MockService {
     }
 
     return response
+  }
+
+  /**
+   * モックレスポンスに定数変換とパラメータ補間を適用
+   */
+  prepareResponse(
+    endpoint: MockEndpoint,
+    params: Record<string, string>
+  ): { status: number; headers: Record<string, string>; body: any } {
+    // 定数を変換
+    let headers = endpoint.response.headers
+      ? replaceConstantsInHeaders(endpoint.response.headers)
+      : {}
+    let body = endpoint.response.body
+      ? replaceConstantsInObject(endpoint.response.body)
+      : null
+
+    // パスパラメータを補間
+    body = this.interpolateResponse(body, params)
+
+    return {
+      status: endpoint.response.status,
+      headers,
+      body,
+    }
   }
 
   /**

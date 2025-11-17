@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { JsonEditor } from '@/components/ui/json-editor';
 import {
   Select,
   SelectContent,
@@ -15,6 +15,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Trash2 } from 'lucide-react';
+import { ConstantsTooltip } from '@/components/ui/constants-tooltip';
 import type { TestScenario } from '@/types/scenario';
 
 interface HeaderEntry {
@@ -127,7 +128,7 @@ export function RequestForm({
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Method & URL */}
           <div className="flex gap-2">
-            <div className="w-32">
+            <div className="w-40">
               <Label htmlFor="method" className="mb-2 block">
                 Method
               </Label>
@@ -172,7 +173,10 @@ export function RequestForm({
             {/* Headers Tab */}
             <TabsContent value="headers" className="space-y-2">
               <div className="flex justify-between items-center">
-                <Label>Headers</Label>
+                <div className="flex items-center gap-2">
+                  <Label>Headers</Label>
+                  <ConstantsTooltip />
+                </div>
                 <Button
                   type="button"
                   variant="outline"
@@ -185,7 +189,7 @@ export function RequestForm({
                 </Button>
               </div>
 
-              <div className="space-y-2 max-h-64 overflow-y-auto">
+              <div className="space-y-2 max-h-64 overflow-y-auto p-0.5">
                 {headers.map((header, index) => (
                   <div key={index} className="flex gap-2">
                     <Input
@@ -218,23 +222,26 @@ export function RequestForm({
             </TabsContent>
 
             {/* Body Tab */}
-            <TabsContent value="body" className="space-y-2">
-              <div className="space-y-2">
-                <Label htmlFor="body">Request Body (JSON)</Label>
-                <Textarea
-                  id="body"
-                  value={body}
-                  onChange={(e) => setBody(e.target.value)}
-                  placeholder='{"key": "value"}'
-                  className="font-mono text-sm h-64"
-                  disabled={method === 'GET' || method === 'HEAD'}
-                />
-                {(method === 'GET' || method === 'HEAD') && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {method} リクエストではボディを送信できません
-                  </p>
-                )}
-              </div>
+            <TabsContent value="body" className="space-y-4 mt-2">
+              {(method === 'GET' || method === 'HEAD') ? (
+                <p className="text-sm text-muted-foreground py-8 text-center">
+                  {method} リクエストではボディを送信できません
+                </p>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="body">リクエストボディ (JSON)</Label>
+                      <ConstantsTooltip />
+                    </div>
+                    <JsonEditor
+                      value={body}
+                      onChange={(value) => setBody(value || '')}
+                      height="256px"
+                    />
+                  </div>
+                </>
+              )}
             </TabsContent>
 
             {/* Settings Tab */}
