@@ -450,6 +450,7 @@ export default function ScenarioDetailPage() {
 
         {/* テスト設定 */}
         <TestSettingsEditor
+          method={targetApiMethod}
           headers={testHeaders}
           body={testBody}
           onHeadersChange={setTestHeaders}

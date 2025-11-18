@@ -35,6 +35,7 @@ import {
   CircleHelp,
   Search,
   X,
+  Copy,
 } from 'lucide-react';
 import { scenariosApi, groupsApi } from '@/lib/api/scenarios';
 import type { TestScenario, ScenarioGroup } from '@/types/scenario';
@@ -216,6 +217,30 @@ export default function Home() {
     } finally {
       setDeleteDialogOpen(false);
       setScenarioToDelete(null);
+    }
+  };
+
+  // シナリオコピー
+  const handleCopy = async (id: string, name: string) => {
+    try {
+      const original = scenarios.find((s) => s.id === id);
+      if (!original) return;
+
+      const copied = await scenariosApi.create({
+        name: `${name}のコピー`,
+        description: original.description,
+        targetApi: original.targetApi,
+        tables: original.tables,
+        tableData: original.tableData,
+        mockApis: original.mockApis,
+        tags: original.tags,
+        groupId: original.groupId,
+      });
+      toast.success('シナリオをコピーしました');
+      await fetchData();
+    } catch (error) {
+      toast.error('シナリオのコピーに失敗しました');
+      console.error(error);
     }
   };
 
@@ -533,40 +558,40 @@ export default function Home() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-3">
           {/* グループ化されたシナリオ */}
           {groupedScenarios
             .filter(({ group, scenarios: groupScenarios }) => 
               shouldShowGroup(group.id) && groupScenarios.length > 0
             )
             .map(({ group, scenarios: groupScenarios }) => (
-            <div key={group.id} className="space-y-2">
-              <div className="flex items-center justify-between">
+            <div key={group.id} className="space-y-1">
+              <div className="flex items-center hover:bg-muted/50 p-1.5 rounded-lg transition-colors">
                 <button
                   onClick={() => toggleGroup(group.id)}
-                  className="flex items-center gap-2 hover:bg-muted p-2 rounded-md transition-colors flex-1"
+                  className="flex items-center gap-2"
                 >
                   {expandedGroups.has(group.id) ? (
-                    <ChevronDown className="h-5 w-5" />
+                    <ChevronDown className="h-5 w-5 text-muted-foreground" />
                   ) : (
-                    <ChevronRight className="h-5 w-5" />
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
                   )}
                   <Folder className="h-5 w-5 text-primary" />
-                  <div className="text-left flex-1">
-                    <h2 className="text-xl font-semibold">{group.name}</h2>
-                    {group.description && (
-                      <p className="text-sm text-muted-foreground">
-                        {group.description}
-                      </p>
-                    )}
-                  </div>
-                  <Badge variant="secondary">{groupScenarios.length}件</Badge>
+                  <h2 className="text-lg font-semibold">{group.name}</h2>
+                  <Badge variant="secondary" className="text-xs ml-1">{groupScenarios.length}件</Badge>
+                  {group.description && (
+                    <span className="text-sm text-muted-foreground ml-2 hidden lg:inline">
+                      {group.description}
+                    </span>
+                  )}
                 </button>
-                <div className="flex gap-1 ml-2">
+                <div className="flex-1" />
+                <div className="flex gap-1">
                   <Button
                     size="sm"
                     variant="ghost"
                     onClick={() => openGroupDialog(group)}
+                    className="h-8 w-8 p-0"
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
@@ -574,6 +599,7 @@ export default function Home() {
                     size="sm"
                     variant="ghost"
                     onClick={() => handleDeleteGroup(group.id)}
+                    className="h-8 w-8 p-0"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -581,13 +607,14 @@ export default function Home() {
               </div>
 
               {expandedGroups.has(group.id) && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ml-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pl-9">
                   {groupScenarios.map((scenario) => (
                     <ScenarioCard
                       key={scenario.id}
                       scenario={scenario}
                       groups={groups}
                       onExport={handleExport}
+                      onCopy={handleCopy}
                       onDelete={(id) => {
                         setScenarioToDelete(id);
                         setDeleteDialogOpen(true);
@@ -605,19 +632,20 @@ export default function Home() {
 
           {/* グループ化されていないシナリオ */}
           {shouldShowUngrouped && ungroupedScenarios.length > 0 && (
-            <div className="space-y-2">
-              <h2 className="text-xl font-semibold flex items-center gap-2">
-                <FileJson className="h-5 w-5" />
-                未分類
-                <Badge variant="secondary">{ungroupedScenarios.length}件</Badge>
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 p-1.5">
+                <FileJson className="h-5 w-5 text-muted-foreground" />
+                <h2 className="text-lg font-semibold">未分類</h2>
+                <Badge variant="secondary" className="text-xs">{ungroupedScenarios.length}件</Badge>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pl-9">
                 {ungroupedScenarios.map((scenario) => (
                   <ScenarioCard
                     key={scenario.id}
                     scenario={scenario}
                     groups={groups}
                     onExport={handleExport}
+                    onCopy={handleCopy}
                     onDelete={(id) => {
                       setScenarioToDelete(id);
                       setDeleteDialogOpen(true);
@@ -718,6 +746,7 @@ function ScenarioCard({
   scenario,
   groups,
   onExport,
+  onCopy,
   onDelete,
   onMoveToGroup,
   onToggleFavorite,
@@ -732,6 +761,7 @@ function ScenarioCard({
     result: 'success' | 'failure' | 'unknown'
   ) => void;
   onExport: (id: string) => void;
+  onCopy: (id: string, name: string) => void;
   onDelete: (id: string) => void;
   onMoveToGroup: (scenarioId: string, groupId: string | undefined) => void;
   router: any;
@@ -760,6 +790,13 @@ function ScenarioCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => onCopy(scenario.id, scenario.name)}
+              >
+                <Copy className="h-4 w-4 mr-2" />
+                コピー
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuLabel>グループに移動</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem

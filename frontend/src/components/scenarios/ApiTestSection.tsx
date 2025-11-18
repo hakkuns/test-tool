@@ -45,6 +45,9 @@ export function ApiTestSection({
   const [response, setResponse] = useState<any>(null);
   const [error, setError] = useState<any>(null);
 
+  // GETやDELETEではボディを送信すべきではない
+  const bodyAllowed = !['GET', 'DELETE', 'HEAD', 'OPTIONS'].includes(targetApi.method.toUpperCase());
+
   const handleApply = async () => {
     setIsApplying(true);
     try {
@@ -185,17 +188,19 @@ export function ApiTestSection({
         {isApplied && (
           <>
             {/* リクエストボディ */}
-            <div>
-              <Label htmlFor="test-body">リクエストボディ (JSON)</Label>
-              <Textarea
-                id="test-body"
-                value={testBody}
-                onChange={(e) => setTestBody(e.target.value)}
-                placeholder='{"key": "value"}'
-                rows={6}
-                className="font-mono text-sm mt-2"
-              />
-            </div>
+            {bodyAllowed && (
+              <div>
+                <Label htmlFor="test-body">リクエストボディ (JSON)</Label>
+                <Textarea
+                  id="test-body"
+                  value={testBody}
+                  onChange={(e) => setTestBody(e.target.value)}
+                  placeholder='{"key": "value"}'
+                  rows={6}
+                  className="font-mono text-sm mt-2"
+                />
+              </div>
+            )}
 
             {/* ヘッダー */}
             <div>

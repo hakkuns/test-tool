@@ -22,6 +22,7 @@ interface HeaderEntry {
 }
 
 interface TestSettingsEditorProps {
+  method?: string;
   headers: Record<string, string>;
   body: string;
   onHeadersChange: (headers: Record<string, string>) => void;
@@ -29,11 +30,14 @@ interface TestSettingsEditorProps {
 }
 
 export function TestSettingsEditor({
+  method,
   headers,
   body,
   onHeadersChange,
   onBodyChange,
 }: TestSettingsEditorProps) {
+  // GETやDELETEではボディを送信すべきではない
+  const bodyAllowed = method ? !['GET', 'DELETE', 'HEAD', 'OPTIONS'].includes(method.toUpperCase()) : true;
   const [headerEntries, setHeaderEntries] = useState<HeaderEntry[]>(() => {
     const entries = Object.entries(headers).map(([key, value]) => ({
       key,
@@ -103,7 +107,9 @@ export function TestSettingsEditor({
         <Tabs defaultValue="headers">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="headers">Headers</TabsTrigger>
-            <TabsTrigger value="body">Body</TabsTrigger>
+            <TabsTrigger value="body" disabled={!bodyAllowed} title={!bodyAllowed ? `${method}メソッドではボディを送信できません` : ''}>
+              Body
+            </TabsTrigger>
           </TabsList>
 
           {/* Headers Tab */}

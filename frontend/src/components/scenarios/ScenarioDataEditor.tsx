@@ -730,18 +730,6 @@ export function ScenarioDataEditor({
             </div>
           </div>
         )}
-
-        {!selectedTable && availableTables.length === 0 && (
-          <div className="text-center py-8 text-muted-foreground">
-            先にテーブル定義を追加してください
-          </div>
-        )}
-
-        {!selectedTable && availableTables.length > 0 && (
-          <div className="text-center py-8 text-muted-foreground">
-            テーブルを選択してデータを編集
-          </div>
-        )}
       </CardContent>
     </Card>
   );
