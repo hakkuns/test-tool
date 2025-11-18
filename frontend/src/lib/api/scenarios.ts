@@ -94,10 +94,22 @@ export const scenariosApi = {
    */
   exportScenario: async (id: string): Promise<ScenarioExport> => {
     const scenario = await scenariosApi.getById(id);
+    let group: ScenarioGroup | undefined;
+    
+    // グループ情報があれば取得
+    if (scenario.groupId) {
+      try {
+        group = await groupsApi.getById(scenario.groupId);
+      } catch (error) {
+        console.warn('Group not found for scenario:', error);
+      }
+    }
+
     return {
       version: '1.0.0',
       exportedAt: new Date().toISOString(),
       scenario,
+      group,
     };
   },
 
@@ -106,11 +118,29 @@ export const scenariosApi = {
    */
   exportAll: async (): Promise<ScenarioExport[]> => {
     const scenarios = await scenariosApi.getAll();
-    return scenarios.map((scenario) => ({
-      version: '1.0.0',
-      exportedAt: new Date().toISOString(),
-      scenario,
-    }));
+    const exports: ScenarioExport[] = [];
+
+    for (const scenario of scenarios) {
+      let group: ScenarioGroup | undefined;
+      
+      // グループ情報があれば取得
+      if (scenario.groupId) {
+        try {
+          group = await groupsApi.getById(scenario.groupId);
+        } catch (error) {
+          console.warn('Group not found for scenario:', error);
+        }
+      }
+
+      exports.push({
+        version: '1.0.0',
+        exportedAt: new Date().toISOString(),
+        scenario,
+        group,
+      });
+    }
+
+    return exports;
   },
 
   /**
@@ -121,8 +151,35 @@ export const scenariosApi = {
   ): Promise<TestScenario | TestScenario[]> => {
     const dataArray = Array.isArray(exportData) ? exportData : [exportData];
     const imported: TestScenario[] = [];
+    const groupIdMap = new Map<string, string>(); // 元のgroupId -> 新しいgroupId
 
-    for (const { scenario } of dataArray) {
+    for (const { scenario, group } of dataArray) {
+      let newGroupId: string | undefined;
+
+      // グループ情報がある場合、グループを復元または取得
+      if (group && scenario.groupId) {
+        // 既にマップに存在する場合は再利用
+        if (groupIdMap.has(scenario.groupId)) {
+          newGroupId = groupIdMap.get(scenario.groupId);
+        } else {
+          // 同じ名前のグループが存在するか確認
+          const allGroups = await groupsApi.getAll();
+          const existingGroup = allGroups.find((g) => g.name === group.name);
+
+          if (existingGroup) {
+            // 既存のグループを使用
+            newGroupId = existingGroup.id;
+          } else {
+            // 新しいグループを作成
+            const { id, createdAt, updatedAt, ...groupData } = group;
+            const createdGroup = await groupsApi.create(groupData);
+            newGroupId = createdGroup.id;
+          }
+
+          groupIdMap.set(scenario.groupId, newGroupId);
+        }
+      }
+
       // 既存のID関連フィールドをすべて除外し、新しいシナリオとして作成
       const { id, createdAt, updatedAt, groupId, groupName, ...rest } =
         scenario;
@@ -136,7 +193,7 @@ export const scenariosApi = {
       const created = await scenariosApi.create({
         ...rest,
         name: rest.name + ' (コピー)',
-        groupId: groupId, // グループ情報は保持
+        groupId: newGroupId, // 新しいグループIDまたはundefined
       });
       imported.push(created);
     }
@@ -368,19 +425,31 @@ export const scenariosApi = {
 };
 
 /**
- * グループ管理API
+ * グループ管理API (IndexedDBベース)
  */
 export const groupsApi = {
   /**
    * 全グループを取得
    */
   getAll: async (): Promise<ScenarioGroup[]> => {
-    const response = await fetch(`${API_URL}/api/scenarios/groups`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch groups');
+    const groups = await db.scenarioGroups.toArray();
+    return groups
+      .map((g) => ({ ...g, id: g.groupId }))
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+  },
+
+  /**
+   * IDでグループを取得
+   */
+  getById: async (id: string): Promise<ScenarioGroup> => {
+    const group = await db.scenarioGroups.where('groupId').equals(id).first();
+    if (!group) {
+      throw new Error('Group not found');
     }
-    const result = await response.json();
-    return result.data;
+    return { ...group, id: group.groupId };
   },
 
   /**
@@ -390,18 +459,34 @@ export const groupsApi = {
     name: string;
     description?: string;
   }): Promise<ScenarioGroup> => {
-    const response = await fetch(`${API_URL}/api/scenarios/groups`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(input),
-    });
-    if (!response.ok) {
-      throw new Error('Failed to create group');
+    try {
+      // 同じ名前のグループが存在するかチェック
+      const existingGroups = await db.scenarioGroups.toArray();
+      const duplicateName = existingGroups.some(
+        (g) => g.name.toLowerCase() === input.name.toLowerCase()
+      );
+
+      if (duplicateName) {
+        throw new Error('同じ名前のグループが既に存在します');
+      }
+
+      const now = new Date().toISOString();
+      const groupId = generateId();
+      const group = {
+        groupId,
+        ...input,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      console.log('Creating group in IndexedDB:', group);
+      await db.scenarioGroups.add(group);
+      console.log('Group created successfully');
+      return { ...group, id: groupId };
+    } catch (error) {
+      console.error('Error creating group in IndexedDB:', error);
+      throw error;
     }
-    const result = await response.json();
-    return result.data;
   },
 
   /**
@@ -411,43 +496,130 @@ export const groupsApi = {
     id: string,
     input: { name?: string; description?: string }
   ): Promise<ScenarioGroup> => {
-    const response = await fetch(`${API_URL}/api/scenarios/groups/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(input),
-    });
-    if (!response.ok) {
-      throw new Error('Failed to update group');
+    const existing = await db.scenarioGroups.where('groupId').equals(id).first();
+    if (!existing) {
+      throw new Error('Group not found');
     }
-    const result = await response.json();
-    return result.data;
+
+    // 名前を変更する場合、同じ名前のグループが存在するかチェック
+    if (input.name && input.name !== existing.name) {
+      const allGroups = await db.scenarioGroups.toArray();
+      const duplicateName = allGroups.some(
+        (g) => g.groupId !== id && g.name.toLowerCase() === input.name!.toLowerCase()
+      );
+
+      if (duplicateName) {
+        throw new Error('同じ名前のグループが既に存在します');
+      }
+    }
+
+    const updated = {
+      ...existing,
+      ...input,
+      updatedAt: new Date().toISOString(),
+    };
+
+    await db.scenarioGroups.update(existing.id!, updated);
+
+    // グループ名が変更された場合、そのグループに属するシナリオのgroupNameも更新
+    if (input.name && input.name !== existing.name) {
+      const scenarios = await db.scenarios.where('groupId').equals(id).toArray();
+      for (const scenario of scenarios) {
+        await db.scenarios.update(scenario.id!, {
+          ...scenario,
+          groupName: input.name,
+        });
+      }
+    }
+
+    return { ...updated, id: updated.groupId };
   },
 
   /**
    * グループを削除
    */
   delete: async (id: string): Promise<void> => {
-    const response = await fetch(`${API_URL}/api/scenarios/groups/${id}`, {
-      method: 'DELETE',
-    });
-    if (!response.ok) {
-      throw new Error('Failed to delete group');
+    const group = await db.scenarioGroups.where('groupId').equals(id).first();
+    if (!group) {
+      throw new Error('Group not found');
     }
+
+    // グループに属するシナリオのgroupIdとgroupNameをクリア
+    const scenarios = await db.scenarios.where('groupId').equals(id).toArray();
+    for (const scenario of scenarios) {
+      await db.scenarios.update(scenario.id!, {
+        ...scenario,
+        groupId: undefined,
+        groupName: undefined,
+      });
+    }
+
+    await db.scenarioGroups.delete(group.id!);
   },
 
   /**
    * グループに属するシナリオを取得
    */
   getScenarios: async (groupId: string): Promise<TestScenario[]> => {
-    const response = await fetch(
-      `${API_URL}/api/scenarios/groups/${groupId}/scenarios`
-    );
-    if (!response.ok) {
-      throw new Error('Failed to fetch scenarios in group');
+    const scenarios = await db.scenarios.where('groupId').equals(groupId).toArray();
+    return scenarios.map((s) => ({ ...s, id: s.scenarioId }));
+  },
+
+  /**
+   * グループをシナリオと一緒にエクスポート
+   */
+  exportGroup: async (groupId: string): Promise<any> => {
+    const group = await groupsApi.getById(groupId);
+    const scenarios = await groupsApi.getScenarios(groupId);
+
+    return {
+      version: '1.0.0',
+      exportedAt: new Date().toISOString(),
+      group,
+      scenarios,
+    };
+  },
+
+  /**
+   * グループをシナリオと一緒にインポート
+   */
+  importGroup: async (exportData: any): Promise<{
+    group: ScenarioGroup;
+    scenarios: TestScenario[];
+  }> => {
+    const { group: groupData, scenarios: scenariosData } = exportData;
+
+    // 同じ名前のグループが存在するか確認
+    const allGroups = await groupsApi.getAll();
+    const existingGroup = allGroups.find((g) => g.name === groupData.name);
+
+    let group: ScenarioGroup;
+    if (existingGroup) {
+      // 既存のグループを使用
+      group = existingGroup;
+    } else {
+      // 新しいグループを作成
+      const { id, createdAt, updatedAt, ...restGroup } = groupData;
+      group = await groupsApi.create(restGroup);
     }
-    const result = await response.json();
-    return result.data;
+
+    // シナリオをインポート
+    const importedScenarios: TestScenario[] = [];
+    for (const scenario of scenariosData) {
+      const { id, createdAt, updatedAt, groupId, groupName, ...rest } = scenario;
+
+      if ('scenarioId' in rest) {
+        delete (rest as any).scenarioId;
+      }
+
+      const created = await scenariosApi.create({
+        ...rest,
+        name: rest.name + ' (コピー)',
+        groupId: group.id,
+      });
+      importedScenarios.push(created);
+    }
+
+    return { group, scenarios: importedScenarios };
   },
 };

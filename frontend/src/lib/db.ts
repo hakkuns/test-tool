@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie';
-import type { TestScenario as ScenarioType } from '@/types/scenario';
+import type { TestScenario as ScenarioType, ScenarioGroup } from '@/types/scenario';
 
 // シナリオの型（IndexedDB用にidをnumberに）
 export interface TestScenario extends Omit<ScenarioType, 'id'> {
@@ -84,9 +84,16 @@ export interface DatabaseConnection {
   updatedAt: string;
 }
 
+// グループの型（IndexedDB用にidをnumberに）
+export interface ScenarioGroupDB extends Omit<ScenarioGroup, 'id'> {
+  id?: number;
+  groupId: string; // 元のUUID
+}
+
 // IndexedDB データベース定義
 const db = new Dexie('PostgresTestHelperDB') as Dexie & {
   scenarios: EntityTable<TestScenario, 'id'>;
+  scenarioGroups: EntityTable<ScenarioGroupDB, 'id'>;
   ddlTables: EntityTable<DDLTable, 'id'>;
   tableData: EntityTable<TableData, 'id'>;
   mockEndpoints: EntityTable<MockEndpoint, 'id'>;
@@ -184,6 +191,17 @@ db.version(4)
 // バージョン5: データベース接続情報ストアを追加
 db.version(5).stores({
   scenarios: '++id, &scenarioId, name, createdAt, updatedAt',
+  ddlTables: '++id, name, order, createdAt',
+  tableData: '++id, tableName, createdAt',
+  mockEndpoints: '++id, path, method, priority, enabled, createdAt',
+  apiHistory: '++id, method, url, createdAt',
+  dbConnections: '++id, name, isActive, createdAt, updatedAt',
+});
+
+// バージョン6: シナリオグループストアを追加
+db.version(6).stores({
+  scenarios: '++id, &scenarioId, name, groupId, createdAt, updatedAt',
+  scenarioGroups: '++id, &groupId, name, createdAt, updatedAt',
   ddlTables: '++id, name, order, createdAt',
   tableData: '++id, tableName, createdAt',
   mockEndpoints: '++id, path, method, priority, enabled, createdAt',

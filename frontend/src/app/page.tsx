@@ -25,6 +25,16 @@ import {
   Folder,
   MoreVertical,
   Database,
+  Table,
+  Rows,
+  Network,
+  Star,
+  StarOff,
+  CircleCheck,
+  CircleX,
+  CircleHelp,
+  Search,
+  X,
 } from 'lucide-react';
 import { scenariosApi, groupsApi } from '@/lib/api/scenarios';
 import type { TestScenario, ScenarioGroup } from '@/types/scenario';
@@ -50,6 +60,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -70,6 +87,10 @@ export default function Home() {
   const [editingGroup, setEditingGroup] = useState<ScenarioGroup | null>(null);
   const [groupName, setGroupName] = useState('');
   const [groupDescription, setGroupDescription] = useState('');
+  
+  // 検索とフィルター
+  const [searchText, setSearchText] = useState('');
+  const [selectedGroupFilter, setSelectedGroupFilter] = useState<string | 'all' | 'ungrouped'>('all');
 
   // データ取得
   const fetchData = async () => {
@@ -139,23 +160,25 @@ export default function Home() {
 
     try {
       if (editingGroup) {
-        await groupsApi.update(editingGroup.id, {
+        const updated = await groupsApi.update(editingGroup.id, {
           name: groupName,
           description: groupDescription,
         });
+        console.log('Group updated:', updated);
         toast.success('グループを更新しました');
       } else {
-        await groupsApi.create({
+        const created = await groupsApi.create({
           name: groupName,
           description: groupDescription,
         });
+        console.log('Group created:', created);
         toast.success('グループを作成しました');
       }
       setGroupDialogOpen(false);
       await fetchData();
     } catch (error) {
-      toast.error('グループの保存に失敗しました');
-      console.error(error);
+      console.error('Group save error:', error);
+      toast.error(`グループの保存に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
     }
   };
 
@@ -266,19 +289,127 @@ export default function Home() {
     }
   };
 
+  // お気に入りの切り替え
+  const handleToggleFavorite = async (scenarioId: string) => {
+    try {
+      const scenario = scenarios.find((s) => s.id === scenarioId);
+      if (!scenario) return;
+
+      await scenariosApi.update(scenarioId, {
+        isFavorite: !scenario.isFavorite,
+      });
+      
+      // ローカルステートを更新
+      setScenarios((prev) =>
+        prev.map((s) =>
+          s.id === scenarioId ? { ...s, isFavorite: !s.isFavorite } : s
+        )
+      );
+    } catch (error) {
+      toast.error('お気に入りの更新に失敗しました');
+      console.error(error);
+    }
+  };
+
+  // テスト結果の更新
+  const handleUpdateTestResult = async (
+    scenarioId: string,
+    result: 'success' | 'failure' | 'unknown'
+  ) => {
+    try {
+      const now = new Date().toISOString();
+      await scenariosApi.update(scenarioId, {
+        lastTestResult: result,
+        lastTestedAt: now,
+      });
+
+      // ローカルステートを更新
+      setScenarios((prev) =>
+        prev.map((s) =>
+          s.id === scenarioId
+            ? { ...s, lastTestResult: result, lastTestedAt: now }
+            : s
+        )
+      );
+
+      const resultText =
+        result === 'success' ? '成功' : result === 'failure' ? '失敗' : '不明';
+      toast.success(`テスト結果を「${resultText}」に更新しました`);
+    } catch (error) {
+      toast.error('テスト結果の更新に失敗しました');
+      console.error(error);
+    }
+  };
+
+  // 検索とフィルターロジック
+  const filterScenarios = (scenarioList: TestScenario[]) => {
+    let filtered = scenarioList;
+
+    // テキスト検索
+    if (searchText.trim()) {
+      const searchLower = searchText.toLowerCase();
+      filtered = filtered.filter(
+        (s) =>
+          s.name.toLowerCase().includes(searchLower) ||
+          s.description?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // グループフィルター
+    if (selectedGroupFilter !== 'all') {
+      if (selectedGroupFilter === 'ungrouped') {
+        filtered = filtered.filter(
+          (s) => !s.groupId || !existingGroupIds.has(s.groupId)
+        );
+      } else {
+        filtered = filtered.filter((s) => s.groupId === selectedGroupFilter);
+      }
+    }
+
+    return filtered;
+  };
+
   // グループ別にシナリオを整理
   // 存在するグループのIDセット
   const existingGroupIds = new Set(groups.map((g) => g.id));
 
+  // フィルター適用後のシナリオ
+  const filteredScenarios = filterScenarios(scenarios);
+
   // groupIdが無いか、存在しないグループIDを持つシナリオは未分類とする
-  const ungroupedScenarios = scenarios.filter(
-    (s) => !s.groupId || !existingGroupIds.has(s.groupId)
-  );
+  // お気に入りが前に来るようにソート
+  const ungroupedScenarios = filteredScenarios
+    .filter((s) => !s.groupId || !existingGroupIds.has(s.groupId))
+    .sort((a, b) => {
+      // お気に入りを優先
+      if (a.isFavorite && !b.isFavorite) return -1;
+      if (!a.isFavorite && b.isFavorite) return 1;
+      // 作成日時で降順
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
 
   const groupedScenarios = groups.map((group) => ({
     group,
-    scenarios: scenarios.filter((s) => s.groupId === group.id),
+    scenarios: filteredScenarios
+      .filter((s) => s.groupId === group.id)
+      .sort((a, b) => {
+        // お気に入りを優先
+        if (a.isFavorite && !b.isFavorite) return -1;
+        if (!a.isFavorite && b.isFavorite) return 1;
+        // 作成日時で降順
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }),
   }));
+
+  // グループフィルターが適用されている場合の表示制御
+  const shouldShowGroup = (groupId: string) => {
+    return (
+      selectedGroupFilter === 'all' || selectedGroupFilter === groupId
+    );
+  };
+
+  const shouldShowUngrouped =
+    selectedGroupFilter === 'all' || selectedGroupFilter === 'ungrouped';
 
   console.log('Total scenarios:', scenarios.length);
   console.log('Ungrouped scenarios:', ungroupedScenarios.length);
@@ -296,22 +427,50 @@ export default function Home() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      {/* ヘッダー */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">テストシナリオ</h1>
-          <p className="text-muted-foreground mt-1 text-sm sm:text-base">
-            テーブル、データ、モックAPIを統合管理
-          </p>
+      {/* 検索、フィルター、アクションボタン */}
+      <div className="flex flex-col lg:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="シナリオ名または説明で検索..."
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            className="pl-9 pr-9"
+          />
+          {searchText && (
+            <button
+              onClick={() => setSearchText('')}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => openGroupDialog()} size="sm">
+        <Select
+          value={selectedGroupFilter}
+          onValueChange={(value) => setSelectedGroupFilter(value)}
+        >
+          <SelectTrigger className="w-full lg:w-[180px]">
+            <SelectValue placeholder="グループで絞り込み" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">すべて表示</SelectItem>
+            <SelectItem value="ungrouped">未分類のみ</SelectItem>
+            {groups.map((group) => (
+              <SelectItem key={group.id} value={group.id}>
+                {group.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => openGroupDialog()} size="default">
             <FolderPlus className="h-4 w-4 mr-2" />
             <span className="hidden sm:inline">グループ作成</span>
             <span className="sm:hidden">グループ</span>
           </Button>
           <label htmlFor="import-file">
-            <Button variant="outline" asChild size="sm">
+            <Button variant="outline" asChild size="default">
               <span>
                 <Upload className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline">インポート</span>
@@ -326,12 +485,20 @@ export default function Home() {
             onChange={handleImport}
             className="hidden"
           />
-          <Button onClick={() => router.push('/scenarios/new')} size="sm">
+          <Button onClick={() => router.push('/scenarios/new')} size="default">
             <Plus className="h-4 w-4 mr-2" />
             新規作成
           </Button>
         </div>
       </div>
+
+      {/* 検索結果の件数表示 */}
+      {(searchText || selectedGroupFilter !== 'all') && (
+        <div className="text-sm text-muted-foreground">
+          {filteredScenarios.length}件のシナリオが見つかりました
+          {searchText && ` (検索: "${searchText}")`}
+        </div>
+      )}
 
       {/* シナリオ一覧 */}
       {scenarios.length === 0 ? (
@@ -347,10 +514,32 @@ export default function Home() {
             </Button>
           </CardContent>
         </Card>
+      ) : filteredScenarios.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center h-64">
+            <Search className="h-12 w-12 text-muted-foreground mb-4" />
+            <p className="text-muted-foreground mb-4">
+              条件に一致するシナリオが見つかりませんでした
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSearchText('');
+                setSelectedGroupFilter('all');
+              }}
+            >
+              検索条件をクリア
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
         <div className="space-y-6">
           {/* グループ化されたシナリオ */}
-          {groupedScenarios.map(({ group, scenarios: groupScenarios }) => (
+          {groupedScenarios
+            .filter(({ group, scenarios: groupScenarios }) => 
+              shouldShowGroup(group.id) && groupScenarios.length > 0
+            )
+            .map(({ group, scenarios: groupScenarios }) => (
             <div key={group.id} className="space-y-2">
               <div className="flex items-center justify-between">
                 <button
@@ -404,6 +593,8 @@ export default function Home() {
                         setDeleteDialogOpen(true);
                       }}
                       onMoveToGroup={handleMoveToGroup}
+                      onToggleFavorite={handleToggleFavorite}
+                      onUpdateTestResult={handleUpdateTestResult}
                       router={router}
                     />
                   ))}
@@ -413,7 +604,7 @@ export default function Home() {
           ))}
 
           {/* グループ化されていないシナリオ */}
-          {ungroupedScenarios.length > 0 && (
+          {shouldShowUngrouped && ungroupedScenarios.length > 0 && (
             <div className="space-y-2">
               <h2 className="text-xl font-semibold flex items-center gap-2">
                 <FileJson className="h-5 w-5" />
@@ -432,6 +623,8 @@ export default function Home() {
                       setDeleteDialogOpen(true);
                     }}
                     onMoveToGroup={handleMoveToGroup}
+                    onToggleFavorite={handleToggleFavorite}
+                    onUpdateTestResult={handleUpdateTestResult}
                     router={router}
                   />
                 ))}
@@ -502,6 +695,24 @@ export default function Home() {
   );
 }
 
+// HTTPメソッドの色を取得
+function getMethodColor(method: string): string {
+  switch (method) {
+    case 'GET':
+      return 'bg-blue-500 text-white border-blue-500';
+    case 'POST':
+      return 'bg-green-500 text-white border-green-500';
+    case 'PUT':
+      return 'bg-yellow-500 text-white border-yellow-500';
+    case 'PATCH':
+      return 'bg-purple-500 text-white border-purple-500';
+    case 'DELETE':
+      return 'bg-red-500 text-white border-red-500';
+    default:
+      return 'bg-gray-500 text-white border-gray-500';
+  }
+}
+
 // シナリオカードコンポーネント
 function ScenarioCard({
   scenario,
@@ -509,20 +720,39 @@ function ScenarioCard({
   onExport,
   onDelete,
   onMoveToGroup,
+  onToggleFavorite,
+  onUpdateTestResult,
   router,
 }: {
   scenario: TestScenario;
   groups: ScenarioGroup[];
+  onToggleFavorite: (id: string) => void;
+  onUpdateTestResult: (
+    id: string,
+    result: 'success' | 'failure' | 'unknown'
+  ) => void;
   onExport: (id: string) => void;
   onDelete: (id: string) => void;
   onMoveToGroup: (scenarioId: string, groupId: string | undefined) => void;
   router: any;
 }) {
   return (
-    <Card className="hover:shadow-lg transition-shadow">
+    <Card className="hover:shadow-lg transition-shadow flex flex-col">
       <CardHeader>
-        <CardTitle className="flex items-start justify-between">
-          <span className="flex-1">{scenario.name}</span>
+        <CardTitle className="flex items-start justify-between gap-2">
+          <div className="flex items-center gap-2 flex-1">
+            <button
+              onClick={() => onToggleFavorite(scenario.id)}
+              className="hover:scale-110 transition-transform"
+            >
+              {scenario.isFavorite ? (
+                <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+              ) : (
+                <StarOff className="h-5 w-5 text-muted-foreground" />
+              )}
+            </button>
+            <span className="flex-1">{scenario.name}</span>
+          </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -552,41 +782,10 @@ function ScenarioCard({
           <CardDescription>{scenario.description}</CardDescription>
         )}
       </CardHeader>
-      <CardContent className="space-y-4">
-        {/* API情報 */}
-        <div className="text-sm">
-          <div className="font-medium text-muted-foreground mb-1">
-            テスト対象API
-          </div>
-          <div className="flex items-start gap-2">
-            <Badge variant="outline" className="shrink-0">
-              {scenario.targetApi.method}
-            </Badge>
-            <code className="text-xs break-all">{scenario.targetApi.url}</code>
-          </div>
-        </div>
-
-        {/* 統計情報 */}
-        <div className="grid grid-cols-3 gap-2 text-xs">
-          <div className="text-center p-2 bg-muted rounded">
-            <div className="font-semibold">{scenario.tableData.length}</div>
-            <div className="text-muted-foreground">テーブル</div>
-          </div>
-          <div className="text-center p-2 bg-muted rounded">
-            <div className="font-semibold">
-              {scenario.tableData.reduce((sum, t) => sum + t.rows.length, 0)}
-            </div>
-            <div className="text-muted-foreground">データ行</div>
-          </div>
-          <div className="text-center p-2 bg-muted rounded">
-            <div className="font-semibold">{scenario.mockApis.length}</div>
-            <div className="text-muted-foreground">モックAPI</div>
-          </div>
-        </div>
-
+      <CardContent className="flex flex-col flex-1">
         {/* タグ */}
         {scenario.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1 mb-3">
             {scenario.tags.map((tag) => (
               <Badge key={tag} variant="secondary" className="text-xs">
                 {tag}
@@ -595,37 +794,94 @@ function ScenarioCard({
           </div>
         )}
 
-        {/* アクション */}
-        <div className="grid grid-cols-3 gap-2 pt-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => router.push(`/scenarios/${scenario.id}`)}
-          >
-            <Edit className="h-3 w-3 mr-1" />
-            編集
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => onExport(scenario.id)}
-          >
-            <Download className="h-3 w-3 mr-1" />
-            Export
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => onDelete(scenario.id)}
-          >
-            <Trash2 className="h-3 w-3 mr-1" />
-            削除
-          </Button>
+        {/* スペーサー */}
+        <div className="flex-1" />
+
+        {/* 統計情報 - 右寄せ */}
+        <div className="flex items-center justify-end gap-4 text-xs text-muted-foreground mb-3">
+          <div className="flex items-center gap-1">
+            <Table className="h-3.5 w-3.5" />
+            <span className="font-medium">{scenario.tableData.length}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Rows className="h-3.5 w-3.5" />
+            <span className="font-medium">
+              {scenario.tableData.reduce((sum, t) => sum + t.rows.length, 0)}
+            </span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Network className="h-3.5 w-3.5" />
+            <span className="font-medium">{scenario.mockApis.length}</span>
+          </div>
+          
+          {/* テスト結果 */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-1 hover:opacity-70 transition-opacity">
+                {scenario.lastTestResult === 'success' ? (
+                  <CircleCheck className="h-4 w-4 text-green-500" />
+                ) : scenario.lastTestResult === 'failure' ? (
+                  <CircleX className="h-4 w-4 text-red-500" />
+                ) : (
+                  <CircleHelp className="h-4 w-4 text-gray-400" />
+                )}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>テスト結果</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => onUpdateTestResult(scenario.id, 'success')}
+              >
+                <CircleCheck className="h-4 w-4 mr-2 text-green-500" />
+                成功
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => onUpdateTestResult(scenario.id, 'failure')}
+              >
+                <CircleX className="h-4 w-4 mr-2 text-red-500" />
+                失敗
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => onUpdateTestResult(scenario.id, 'unknown')}
+              >
+                <CircleHelp className="h-4 w-4 mr-2 text-gray-400" />
+                未テスト
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
-        {/* 作成日時 */}
-        <div className="text-xs text-muted-foreground pt-2 border-t">
-          作成: {new Date(scenario.createdAt).toLocaleString('ja-JP')}
+        {/* アクション - アイコンのみ */}
+        <div className="flex items-center gap-2 pt-3 border-t">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => router.push(`/scenarios/${scenario.id}`)}
+            title="編集"
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => onExport(scenario.id)}
+            title="エクスポート"
+          >
+            <Download className="h-4 w-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => onDelete(scenario.id)}
+            title="削除"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+          <div className="flex-1" />
+          <span className="text-xs text-muted-foreground">
+            {new Date(scenario.createdAt).toLocaleDateString('ja-JP')}
+          </span>
         </div>
       </CardContent>
     </Card>

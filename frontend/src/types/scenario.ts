@@ -75,6 +75,9 @@ export interface TestScenario {
     headers?: Record<string, string>;
   };
   tags: string[];
+  isFavorite?: boolean;
+  lastTestResult?: 'success' | 'failure' | 'unknown';
+  lastTestedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -83,6 +86,14 @@ export interface ScenarioExport {
   version: string;
   exportedAt: string;
   scenario: TestScenario;
+  group?: ScenarioGroup; // グループ情報（オプショナル）
+}
+
+export interface ScenarioGroupExport {
+  version: string;
+  exportedAt: string;
+  group: ScenarioGroup;
+  scenarios: TestScenario[];
 }
 
 export interface CreateScenarioInput {
@@ -103,6 +114,9 @@ export interface CreateScenarioInput {
     headers?: Record<string, string>;
   };
   tags: string[];
+  isFavorite?: boolean;
+  lastTestResult?: 'success' | 'failure' | 'unknown';
+  lastTestedAt?: string;
 }
 
 export interface UpdateScenarioInput {
@@ -123,6 +137,9 @@ export interface UpdateScenarioInput {
     headers?: Record<string, string>;
   };
   tags?: string[];
+  isFavorite?: boolean;
+  lastTestResult?: 'success' | 'failure' | 'unknown';
+  lastTestedAt?: string;
 }
 
 export interface ApplyScenarioResult {

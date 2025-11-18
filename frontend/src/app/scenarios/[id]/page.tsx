@@ -311,43 +311,32 @@ export default function ScenarioDetailPage() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <div className="mb-6">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.back()}
-          className="mb-4"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          戻る
-        </Button>
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold">シナリオを編集</h1>
-              {isApplied && (
-                <Badge className="bg-green-500 hover:bg-green-600">
-                  <CheckCircle2 className="h-3 w-3 mr-1" />
-                  適用中
-                </Badge>
-              )}
-            </div>
-            <p className="text-muted-foreground mt-2">
-              テストシナリオの設定を変更します
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={handleApply}
-              disabled={isApplying}
-            >
-              <Play className="h-4 w-4 mr-2" />
-              {isApplying ? '適用中...' : 'シナリオを適用'}
-            </Button>
-          </div>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.back()}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            戻る
+          </Button>
+          {isApplied && (
+            <Badge className="bg-green-500 hover:bg-green-600">
+              <CheckCircle2 className="h-3 w-3 mr-1" />
+              適用中
+            </Badge>
+          )}
         </div>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={handleApply}
+          disabled={isApplying}
+        >
+          <Play className="h-4 w-4 mr-2" />
+          {isApplying ? '適用中...' : 'シナリオを適用'}
+        </Button>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
