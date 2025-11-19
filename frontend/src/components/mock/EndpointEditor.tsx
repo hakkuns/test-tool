@@ -1,7 +1,7 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,104 +9,119 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { JsonEditor } from '@/components/ui/json-editor'
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { JsonEditor } from "@/components/ui/json-editor";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip'
-import { Info } from 'lucide-react'
-import type { MockEndpoint } from '@/lib/api'
+} from "@/components/ui/tooltip";
+import { Info } from "lucide-react";
+import type { MockEndpoint } from "@/lib/api";
 
 interface EndpointEditorProps {
-  open: boolean
-  endpoint?: MockEndpoint | null
-  onClose: () => void
-  onSave: (data: Partial<MockEndpoint>) => Promise<void>
+  open: boolean;
+  endpoint?: MockEndpoint | null;
+  onClose: () => void;
+  onSave: (data: Partial<MockEndpoint>) => Promise<void>;
 }
 
-export function EndpointEditor({ open, endpoint, onClose, onSave }: EndpointEditorProps) {
-  const [name, setName] = useState('')
-  const [method, setMethod] = useState<'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'>('GET')
-  const [path, setPath] = useState('')
-  const [priority, setPriority] = useState('0')
-  const [responseStatus, setResponseStatus] = useState('200')
-  const [responseBody, setResponseBody] = useState('{}')
-  const [responseHeaders, setResponseHeaders] = useState('')
-  const [responseDelay, setResponseDelay] = useState('')
-  const [matchQuery, setMatchQuery] = useState('')
-  const [matchHeaders, setMatchHeaders] = useState('')
-  const [matchBody, setMatchBody] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+export function EndpointEditor({
+  open,
+  endpoint,
+  onClose,
+  onSave,
+}: EndpointEditorProps) {
+  const [name, setName] = useState("");
+  const [method, setMethod] = useState<
+    "GET" | "POST" | "PUT" | "DELETE" | "PATCH"
+  >("GET");
+  const [path, setPath] = useState("");
+  const [priority, setPriority] = useState("0");
+  const [responseStatus, setResponseStatus] = useState("200");
+  const [responseBody, setResponseBody] = useState("{}");
+  const [responseHeaders, setResponseHeaders] = useState("");
+  const [responseDelay, setResponseDelay] = useState("");
+  const [matchQuery, setMatchQuery] = useState("");
+  const [matchHeaders, setMatchHeaders] = useState("");
+  const [matchBody, setMatchBody] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // エンドポイントデータを初期化
   useEffect(() => {
     if (endpoint) {
-      setName(endpoint.name || '')
-      setMethod(endpoint.method)
-      setPath(endpoint.path)
-      setPriority(endpoint.priority.toString())
-      setResponseStatus(endpoint.response.status.toString())
-      setResponseBody(JSON.stringify(endpoint.response.body, null, 2))
+      setName(endpoint.name || "");
+      setMethod(endpoint.method);
+      setPath(endpoint.path);
+      setPriority(endpoint.priority.toString());
+      setResponseStatus(endpoint.response.status.toString());
+      setResponseBody(JSON.stringify(endpoint.response.body, null, 2));
       setResponseHeaders(
-        endpoint.response.headers ? JSON.stringify(endpoint.response.headers, null, 2) : ''
-      )
-      setResponseDelay(endpoint.response.delay?.toString() || '')
+        endpoint.response.headers
+          ? JSON.stringify(endpoint.response.headers, null, 2)
+          : "",
+      );
+      setResponseDelay(endpoint.response.delay?.toString() || "");
       setMatchQuery(
         endpoint.requestMatch?.query
           ? JSON.stringify(endpoint.requestMatch.query, null, 2)
-          : ''
-      )
+          : "",
+      );
       setMatchHeaders(
         endpoint.requestMatch?.headers
           ? JSON.stringify(endpoint.requestMatch.headers, null, 2)
-          : ''
-      )
+          : "",
+      );
       setMatchBody(
-        endpoint.requestMatch?.body ? JSON.stringify(endpoint.requestMatch.body, null, 2) : ''
-      )
+        endpoint.requestMatch?.body
+          ? JSON.stringify(endpoint.requestMatch.body, null, 2)
+          : "",
+      );
     } else {
       // リセット
-      setName('')
-      setMethod('GET')
-      setPath('/api/')
-      setPriority('0')
-      setResponseStatus('200')
-      setResponseBody('{\n  "message": "Success"\n}')
-      setResponseHeaders('')
-      setResponseDelay('')
-      setMatchQuery('')
-      setMatchHeaders('')
-      setMatchBody('')
+      setName("");
+      setMethod("GET");
+      setPath("/api/");
+      setPriority("0");
+      setResponseStatus("200");
+      setResponseBody('{\n  "message": "Success"\n}');
+      setResponseHeaders("");
+      setResponseDelay("");
+      setMatchQuery("");
+      setMatchHeaders("");
+      setMatchBody("");
     }
-    setError(null)
-  }, [endpoint, open])
+    setError(null);
+  }, [endpoint, open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setIsSubmitting(true)
+    e.preventDefault();
+    setError(null);
+    setIsSubmitting(true);
 
     try {
       // JSON文字列をパース
-      const parsedResponseBody = JSON.parse(responseBody)
-      const parsedResponseHeaders = responseHeaders ? JSON.parse(responseHeaders) : undefined
-      const parsedMatchQuery = matchQuery ? JSON.parse(matchQuery) : undefined
-      const parsedMatchHeaders = matchHeaders ? JSON.parse(matchHeaders) : undefined
-      const parsedMatchBody = matchBody ? JSON.parse(matchBody) : undefined
+      const parsedResponseBody = JSON.parse(responseBody);
+      const parsedResponseHeaders = responseHeaders
+        ? JSON.parse(responseHeaders)
+        : undefined;
+      const parsedMatchQuery = matchQuery ? JSON.parse(matchQuery) : undefined;
+      const parsedMatchHeaders = matchHeaders
+        ? JSON.parse(matchHeaders)
+        : undefined;
+      const parsedMatchBody = matchBody ? JSON.parse(matchBody) : undefined;
 
       const data: Partial<MockEndpoint> = {
         name: name || undefined,
@@ -128,24 +143,27 @@ export function EndpointEditor({ open, endpoint, onClose, onSave }: EndpointEdit
                 body: parsedMatchBody,
               }
             : undefined,
-      }
+      };
 
-      await onSave(data)
-      onClose()
+      await onSave(data);
+      onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save endpoint')
+      setError(err instanceof Error ? err.message : "Failed to save endpoint");
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{endpoint ? 'Edit Mock Endpoint' : 'Create Mock Endpoint'}</DialogTitle>
+          <DialogTitle>
+            {endpoint ? "Edit Mock Endpoint" : "Create Mock Endpoint"}
+          </DialogTitle>
           <DialogDescription>
-            モックエンドポイントを設定します。パスパラメータには :id のような形式を使用できます。
+            モックエンドポイントを設定します。パスパラメータには :id
+            のような形式を使用できます。
           </DialogDescription>
         </DialogHeader>
 
@@ -265,7 +283,9 @@ export function EndpointEditor({ open, endpoint, onClose, onSave }: EndpointEdit
                             <p>• {`{{paramName}}`} - パスパラメータ</p>
                             <p>• $SEQ - TST + 13桁タイムスタンプ</p>
                             <p>• $TIMESTAMP - ISO8601形式の現在時刻</p>
-                            <p>• $UNIX_TIMESTAMP - Unixタイムスタンプ(ミリ秒)</p>
+                            <p>
+                              • $UNIX_TIMESTAMP - Unixタイムスタンプ(ミリ秒)
+                            </p>
                             <p>• $UUID - ランダムなUUID</p>
                             <p>• $RANDOM_STRING - 8桁のランダム文字列</p>
                           </div>
@@ -276,16 +296,18 @@ export function EndpointEditor({ open, endpoint, onClose, onSave }: EndpointEdit
                 </div>
                 <JsonEditor
                   value={responseBody}
-                  onChange={(value) => setResponseBody(value || '{}')}
+                  onChange={(value) => setResponseBody(value || "{}")}
                   height="128px"
                 />
               </div>
 
               <div>
-                <Label htmlFor="responseHeaders">Response Headers (JSON, Optional)</Label>
+                <Label htmlFor="responseHeaders">
+                  Response Headers (JSON, Optional)
+                </Label>
                 <JsonEditor
                   value={responseHeaders}
-                  onChange={(value) => setResponseHeaders(value || '')}
+                  onChange={(value) => setResponseHeaders(value || "")}
                   height="80px"
                 />
               </div>
@@ -298,10 +320,12 @@ export function EndpointEditor({ open, endpoint, onClose, onSave }: EndpointEdit
               </p>
 
               <div>
-                <Label htmlFor="matchQuery">Query Parameters (JSON, Optional)</Label>
+                <Label htmlFor="matchQuery">
+                  Query Parameters (JSON, Optional)
+                </Label>
                 <JsonEditor
                   value={matchQuery}
-                  onChange={(value) => setMatchQuery(value || '')}
+                  onChange={(value) => setMatchQuery(value || "")}
                   height="80px"
                 />
               </div>
@@ -310,16 +334,18 @@ export function EndpointEditor({ open, endpoint, onClose, onSave }: EndpointEdit
                 <Label htmlFor="matchHeaders">Headers (JSON, Optional)</Label>
                 <JsonEditor
                   value={matchHeaders}
-                  onChange={(value) => setMatchHeaders(value || '')}
+                  onChange={(value) => setMatchHeaders(value || "")}
                   height="80px"
                 />
               </div>
 
               <div>
-                <Label htmlFor="matchBody">リクエストボディ (JSON, Optional)</Label>
+                <Label htmlFor="matchBody">
+                  リクエストボディ (JSON, Optional)
+                </Label>
                 <JsonEditor
                   value={matchBody}
-                  onChange={(value) => setMatchBody(value || '')}
+                  onChange={(value) => setMatchBody(value || "")}
                   height="80px"
                 />
               </div>
@@ -331,11 +357,11 @@ export function EndpointEditor({ open, endpoint, onClose, onSave }: EndpointEdit
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : endpoint ? 'Update' : 'Create'}
+              {isSubmitting ? "Saving..." : endpoint ? "Update" : "Create"}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

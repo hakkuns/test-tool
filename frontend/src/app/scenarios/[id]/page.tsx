@@ -1,45 +1,45 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import { useQueryClient } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from "@/components/ui/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { ArrowLeft, Save, Play, CheckCircle2 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { ScenarioTablesEditor } from '@/components/scenarios/ScenarioTablesEditor';
-import { ScenarioDataEditor } from '@/components/scenarios/ScenarioDataEditor';
-import { ScenarioMocksEditor } from '@/components/scenarios/ScenarioMocksEditor';
-import { TestSettingsEditor } from '@/components/scenarios/TestSettingsEditor';
-import { scenariosApi } from '@/lib/api/scenarios';
+} from "@/components/ui/select";
+import { ArrowLeft, Save, Play, CheckCircle2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ScenarioTablesEditor } from "@/components/scenarios/ScenarioTablesEditor";
+import { ScenarioDataEditor } from "@/components/scenarios/ScenarioDataEditor";
+import { ScenarioMocksEditor } from "@/components/scenarios/ScenarioMocksEditor";
+import { TestSettingsEditor } from "@/components/scenarios/TestSettingsEditor";
+import { scenariosApi } from "@/lib/api/scenarios";
 import type {
   TestScenario,
   UpdateScenarioInput,
   DDLTable,
   TableData,
   MockEndpoint,
-} from '@/types/scenario';
-import { toast } from 'sonner';
+} from "@/types/scenario";
+import { toast } from "sonner";
 import {
   replaceConstantsInHeaders,
   replaceConstantsInObject,
-} from '@/utils/constants';
+} from "@/utils/constants";
 
 export default function ScenarioDetailPage() {
   const router = useRouter();
@@ -56,17 +56,17 @@ export default function ScenarioDetailPage() {
   const [isUpdated, setIsUpdated] = useState(false);
 
   // Basic info
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [tags, setTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState('');
+  const [tagInput, setTagInput] = useState("");
 
   // Target API
-  const [targetApiPath, setTargetApiPath] = useState('');
+  const [targetApiPath, setTargetApiPath] = useState("");
   const [targetApiMethod, setTargetApiMethod] = useState<
-    'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'HEAD' | 'OPTIONS'
-  >('GET');
-  const [targetApiUrl, setTargetApiUrl] = useState('');
+    "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "HEAD" | "OPTIONS"
+  >("GET");
+  const [targetApiUrl, setTargetApiUrl] = useState("");
   const [targetApiHeaders, setTargetApiHeaders] = useState<
     Record<string, string>
   >({});
@@ -79,7 +79,7 @@ export default function ScenarioDetailPage() {
 
   // Test settings
   const [testHeaders, setTestHeaders] = useState<Record<string, string>>({});
-  const [testBody, setTestBody] = useState('');
+  const [testBody, setTestBody] = useState("");
 
   // Load scenario
   useEffect(() => {
@@ -90,29 +90,29 @@ export default function ScenarioDetailPage() {
       try {
         const data = await scenariosApi.getById(id);
         setName(data.name);
-        setDescription(data.description || '');
+        setDescription(data.description || "");
         setTags(data.tags || []);
         setTargetApiMethod(data.targetApi.method);
-        setTargetApiUrl(data.targetApi.url || '');
+        setTargetApiUrl(data.targetApi.url || "");
         setTargetApiHeaders(data.targetApi.headers || {});
         setTargetApiBody(data.targetApi.body);
         setTables(data.tables || []);
         setTableData(data.tableData || []);
         setMockApis(data.mockApis || []);
         setTestHeaders(data.testSettings?.headers || {});
-        setTestBody(data.testSettings?.body || '');
+        setTestBody(data.testSettings?.body || "");
 
         // 適用状態を確認
-        const appliedScenarioId = localStorage.getItem('appliedScenarioId');
+        const appliedScenarioId = localStorage.getItem("appliedScenarioId");
         setIsApplied(appliedScenarioId === id);
 
         // 初期データのロード完了をマーク
         setInitialDataLoaded(true);
       } catch (error) {
-        console.error('Failed to load scenario:', error);
-        toast.error('シナリオが見つかりません');
+        console.error("Failed to load scenario:", error);
+        toast.error("シナリオが見つかりません");
         // シナリオが見つからない場合はホームに戻る
-        router.push('/');
+        router.push("/");
       } finally {
         setIsLoading(false);
       }
@@ -150,32 +150,32 @@ export default function ScenarioDetailPage() {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasUnsavedChanges) {
         e.preventDefault();
-        e.returnValue = '';
+        e.returnValue = "";
       }
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
 
     // リンククリックをインターセプト
     const handleClick = (e: MouseEvent) => {
       if (!hasUnsavedChanges) return;
 
       const target = e.target as HTMLElement;
-      const link = target.closest('a');
+      const link = target.closest("a");
 
       if (link && link.href && !link.href.includes(`/scenarios/${id}`)) {
-        if (!confirm('変更が保存されていません。このページを離れますか？')) {
+        if (!confirm("変更が保存されていません。このページを離れますか？")) {
           e.preventDefault();
           e.stopPropagation();
         }
       }
     };
 
-    document.addEventListener('click', handleClick, true);
+    document.addEventListener("click", handleClick, true);
 
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      document.removeEventListener('click', handleClick, true);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      document.removeEventListener("click", handleClick, true);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasUnsavedChanges, id]);
@@ -183,7 +183,7 @@ export default function ScenarioDetailPage() {
   const handleAddTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
       setTags([...tags, tagInput.trim()]);
-      setTagInput('');
+      setTagInput("");
     }
   };
 
@@ -195,12 +195,12 @@ export default function ScenarioDetailPage() {
     e.preventDefault();
 
     if (!name.trim()) {
-      toast.error('シナリオ名を入力してください');
+      toast.error("シナリオ名を入力してください");
       return;
     }
 
     if (!targetApiUrl.trim()) {
-      toast.error('対象APIのURLを入力してください');
+      toast.error("対象APIのURLを入力してください");
       return;
     }
 
@@ -234,16 +234,16 @@ export default function ScenarioDetailPage() {
       };
 
       await scenariosApi.update(id, update);
-      
+
       // React Queryのキャッシュを無効化してシナリオリストを更新
-      await queryClient.invalidateQueries({ queryKey: ['scenarios'] });
-      
+      await queryClient.invalidateQueries({ queryKey: ["scenarios"] });
+
       setHasUnsavedChanges(false);
       setIsUpdated(true);
-      toast.success('シナリオを更新しました');
+      toast.success("シナリオを更新しました");
     } catch (error) {
-      console.error('Failed to update scenario:', error);
-      toast.error('シナリオの更新に失敗しました');
+      console.error("Failed to update scenario:", error);
+      toast.error("シナリオの更新に失敗しました");
     } finally {
       setIsSubmitting(false);
     }
@@ -252,7 +252,7 @@ export default function ScenarioDetailPage() {
   const handleApply = async () => {
     if (
       !confirm(
-        'このシナリオを適用しますか？\nテーブル作成・データ投入・モックAPI設定が実行されます。'
+        "このシナリオを適用しますか？\nテーブル作成・データ投入・モックAPI設定が実行されます。",
       )
     ) {
       return;
@@ -279,16 +279,16 @@ export default function ScenarioDetailPage() {
       const result = await scenariosApi.apply(id);
 
       // 適用成功後、LocalStorageに保存
-      localStorage.setItem('appliedScenarioId', id);
+      localStorage.setItem("appliedScenarioId", id);
       setIsApplied(true);
 
       toast.success(
-        `シナリオを適用しました\nテーブル: ${result.tablesCreated}個\nデータ: ${result.dataInserted}行\nモックAPI: ${result.mocksConfigured}個`
+        `シナリオを適用しました\nテーブル: ${result.tablesCreated}個\nデータ: ${result.dataInserted}行\nモックAPI: ${result.mocksConfigured}個`,
       );
     } catch (error) {
-      console.error('Failed to apply scenario:', error);
+      console.error("Failed to apply scenario:", error);
       toast.error(
-        error instanceof Error ? error.message : 'シナリオの適用に失敗しました'
+        error instanceof Error ? error.message : "シナリオの適用に失敗しました",
       );
     } finally {
       setIsApplying(false);
@@ -309,11 +309,7 @@ export default function ScenarioDetailPage() {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.back()}
-          >
+          <Button variant="ghost" size="sm" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             戻る
           </Button>
@@ -331,7 +327,7 @@ export default function ScenarioDetailPage() {
           disabled={isApplying}
         >
           <Play className="h-4 w-4 mr-2" />
-          {isApplying ? '適用中...' : 'シナリオを適用'}
+          {isApplying ? "適用中..." : "シナリオを適用"}
         </Button>
       </div>
 
@@ -369,7 +365,7 @@ export default function ScenarioDetailPage() {
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
+                    if (e.key === "Enter") {
                       e.preventDefault();
                       handleAddTag();
                     }
@@ -474,7 +470,7 @@ export default function ScenarioDetailPage() {
             onClick={() => {
               if (
                 hasUnsavedChanges &&
-                !confirm('変更が保存されていません。このページを離れますか？')
+                !confirm("変更が保存されていません。このページを離れますか？")
               ) {
                 return;
               }
@@ -486,7 +482,7 @@ export default function ScenarioDetailPage() {
           </Button>
           <Button type="submit" disabled={isSubmitting}>
             <Save className="h-4 w-4 mr-2" />
-            {isSubmitting ? '更新中...' : '更新'}
+            {isSubmitting ? "更新中..." : "更新"}
           </Button>
           {isUpdated && (
             <Button

@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { Database, Heart } from 'lucide-react';
+import { Database, Heart } from "lucide-react";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();

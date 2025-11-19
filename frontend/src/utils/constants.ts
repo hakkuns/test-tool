@@ -7,7 +7,7 @@
  * TST + 13桁のタイムスタンプ
  */
 function generateSeq(): string {
-  const timestamp = Date.now().toString().padStart(13, '0');
+  const timestamp = Date.now().toString().padStart(13, "0");
   return `TST${timestamp}`;
 }
 
@@ -79,15 +79,15 @@ export function replaceConstantsInObject<T>(obj: T): T {
     return obj;
   }
 
-  if (typeof obj === 'string') {
+  if (typeof obj === "string") {
     return replaceConstants(obj) as T;
   }
 
   if (Array.isArray(obj)) {
-    return obj.map(item => replaceConstantsInObject(item)) as T;
+    return obj.map((item) => replaceConstantsInObject(item)) as T;
   }
 
-  if (typeof obj === 'object') {
+  if (typeof obj === "object") {
     const result: any = {};
     for (const [key, value] of Object.entries(obj)) {
       result[key] = replaceConstantsInObject(value);
@@ -102,16 +102,16 @@ export function replaceConstantsInObject<T>(obj: T): T {
  * ヘッダー配列内の定数を変換
  */
 export function replaceConstantsInHeaders(
-  headers: Array<{ key: string; value: string }>
+  headers: Array<{ key: string; value: string }>,
 ): Array<{ key: string; value: string }>;
 export function replaceConstantsInHeaders(
-  headers: Record<string, string>
+  headers: Record<string, string>,
 ): Record<string, string>;
 export function replaceConstantsInHeaders(
-  headers: Array<{ key: string; value: string }> | Record<string, string>
+  headers: Array<{ key: string; value: string }> | Record<string, string>,
 ): Array<{ key: string; value: string }> | Record<string, string> {
   if (Array.isArray(headers)) {
-    return headers.map(header => ({
+    return headers.map((header) => ({
       key: header.key,
       value: replaceConstants(header.value),
     }));

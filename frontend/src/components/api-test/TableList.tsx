@@ -1,26 +1,26 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Database, Eye, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
-import { API_URL } from '@/lib/api';
-import { ScrollArea } from '@/components/ui/scroll-area';
+} from "@/components/ui/dialog";
+import { Database, Eye, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { API_URL } from "@/lib/api";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface TableListProps {
   tables: string[];
@@ -28,7 +28,7 @@ interface TableListProps {
 
 export function TableList({ tables }: TableListProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedTable, setSelectedTable] = useState<string>('');
+  const [selectedTable, setSelectedTable] = useState<string>("");
   const [tableData, setTableData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -38,15 +38,17 @@ export function TableList({ tables }: TableListProps) {
     setIsDialogOpen(true);
 
     try {
-      const response = await fetch(`${API_URL}/api/database/data/${tableName}?decrypt=true`);
+      const response = await fetch(
+        `${API_URL}/api/database/data/${tableName}?decrypt=true`,
+      );
       if (!response.ok) {
         throw new Error(`Failed to fetch data: ${response.statusText}`);
       }
       const result = await response.json();
       setTableData(result.data);
     } catch (error) {
-      console.error('Error fetching table data:', error);
-      toast.error('データの取得に失敗しました');
+      console.error("Error fetching table data:", error);
+      toast.error("データの取得に失敗しました");
       setIsDialogOpen(false);
     } finally {
       setIsLoading(false);
@@ -55,7 +57,7 @@ export function TableList({ tables }: TableListProps) {
 
   const closeDialog = () => {
     setIsDialogOpen(false);
-    setSelectedTable('');
+    setSelectedTable("");
     setTableData(null);
   };
 
@@ -109,7 +111,7 @@ export function TableList({ tables }: TableListProps) {
             <DialogDescription>
               {tableData
                 ? `${tableData.rows?.length || 0}行のデータ`
-                : 'データを読み込み中...'}
+                : "データを読み込み中..."}
             </DialogDescription>
           </DialogHeader>
           <ScrollArea className="h-[60vh] w-full">

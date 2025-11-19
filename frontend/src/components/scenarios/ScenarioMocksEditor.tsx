@@ -1,24 +1,24 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { JsonEditor } from '@/components/ui/json-editor';
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { JsonEditor } from "@/components/ui/json-editor";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -26,13 +26,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, FileText, Edit } from 'lucide-react';
-import { ConstantsTooltip } from '@/components/ui/constants-tooltip';
-import type { MockEndpoint } from '@/types/scenario';
-import { toast } from 'sonner';
+} from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Trash2, FileText, Edit } from "lucide-react";
+import { ConstantsTooltip } from "@/components/ui/constants-tooltip";
+import type { MockEndpoint } from "@/types/scenario";
+import { toast } from "sonner";
 
 interface HeaderEntry {
   key: string;
@@ -44,9 +44,9 @@ interface ScenarioMocksEditorProps {
   onChange: (mocks: MockEndpoint[]) => void;
 }
 
-type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 
-const HTTP_METHODS: HttpMethod[] = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
+const HTTP_METHODS: HttpMethod[] = ["GET", "POST", "PUT", "DELETE", "PATCH"];
 
 export function ScenarioMocksEditor({
   mocks,
@@ -55,26 +55,26 @@ export function ScenarioMocksEditor({
   const [isEditing, setIsEditing] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [currentMock, setCurrentMock] = useState<Partial<MockEndpoint>>({
-    id: '',
-    name: '',
+    id: "",
+    name: "",
     enabled: true,
     priority: 0,
-    path: '',
-    method: 'GET',
+    path: "",
+    method: "GET",
     response: {
       status: 200,
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: null,
     },
-    createdAt: '',
-    updatedAt: '',
+    createdAt: "",
+    updatedAt: "",
   });
   const [headerEntries, setHeaderEntries] = useState<HeaderEntry[]>([
-    { key: 'Content-Type', value: 'application/json' },
+    { key: "Content-Type", value: "application/json" },
   ]);
-  const [bodyText, setBodyText] = useState('');
+  const [bodyText, setBodyText] = useState("");
 
   // currentMockが変更されたときにheaderEntriesとbodyTextを更新
   useEffect(() => {
@@ -83,28 +83,28 @@ export function ScenarioMocksEditor({
         ([key, value]) => ({
           key,
           value,
-        })
+        }),
       );
       setHeaderEntries(
         entries.length > 0
           ? entries
-          : [{ key: 'Content-Type', value: 'application/json' }]
+          : [{ key: "Content-Type", value: "application/json" }],
       );
     }
 
     if (currentMock.response?.body) {
       setBodyText(
-        typeof currentMock.response.body === 'string'
+        typeof currentMock.response.body === "string"
           ? currentMock.response.body
-          : JSON.stringify(currentMock.response.body, null, 2)
+          : JSON.stringify(currentMock.response.body, null, 2),
       );
     } else {
-      setBodyText('');
+      setBodyText("");
     }
   }, [currentMock]);
 
   const handleAddHeader = () => {
-    setHeaderEntries([...headerEntries, { key: '', value: '' }]);
+    setHeaderEntries([...headerEntries, { key: "", value: "" }]);
   };
 
   const handleRemoveHeader = (index: number) => {
@@ -114,8 +114,8 @@ export function ScenarioMocksEditor({
 
   const handleHeaderChange = (
     index: number,
-    field: 'key' | 'value',
-    value: string
+    field: "key" | "value",
+    value: string,
   ) => {
     const newEntries = [...headerEntries];
     newEntries[index][field] = value;
@@ -125,24 +125,24 @@ export function ScenarioMocksEditor({
   const handleAdd = () => {
     setIsEditing(true);
     setEditingIndex(null);
-    setHeaderEntries([{ key: 'Content-Type', value: 'application/json' }]);
-    setBodyText('');
+    setHeaderEntries([{ key: "Content-Type", value: "application/json" }]);
+    setBodyText("");
     setCurrentMock({
-      id: '',
-      name: '',
+      id: "",
+      name: "",
       enabled: true,
       priority: 0,
-      path: '',
-      method: 'GET',
+      path: "",
+      method: "GET",
       response: {
         status: 200,
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: null,
       },
-      createdAt: '',
-      updatedAt: '',
+      createdAt: "",
+      updatedAt: "",
     });
   };
 
@@ -156,12 +156,12 @@ export function ScenarioMocksEditor({
 
   const handleSave = () => {
     if (!currentMock.path) {
-      toast.error('パスを入力してください');
+      toast.error("パスを入力してください");
       return;
     }
 
     if (!currentMock.method) {
-      toast.error('HTTPメソッドを選択してください');
+      toast.error("HTTPメソッドを選択してください");
       return;
     }
 
@@ -209,66 +209,66 @@ export function ScenarioMocksEditor({
       const updated = [...mocks];
       updated[editingIndex] = mock;
       onChange(updated);
-      toast.success('モックAPIを更新しました');
+      toast.success("モックAPIを更新しました");
     } else {
       onChange([...mocks, mock]);
-      toast.success('モックAPIを追加しました');
+      toast.success("モックAPIを追加しました");
     }
 
     setIsEditing(false);
     setEditingIndex(null);
     setCurrentMock({
-      id: '',
-      name: '',
+      id: "",
+      name: "",
       enabled: true,
       priority: 0,
-      path: '',
-      method: 'GET',
+      path: "",
+      method: "GET",
       response: {
         status: 200,
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: null,
       },
-      createdAt: '',
-      updatedAt: '',
+      createdAt: "",
+      updatedAt: "",
     });
   };
 
   const handleRemove = (index: number) => {
     onChange(mocks.filter((_, i) => i !== index));
-    toast.success('モックAPIを削除しました');
+    toast.success("モックAPIを削除しました");
   };
 
   const handleCancel = () => {
     setIsEditing(false);
     setEditingIndex(null);
-    setHeaderEntries([{ key: 'Content-Type', value: 'application/json' }]);
-    setBodyText('');
+    setHeaderEntries([{ key: "Content-Type", value: "application/json" }]);
+    setBodyText("");
     setCurrentMock({
-      id: '',
-      name: '',
+      id: "",
+      name: "",
       enabled: true,
       priority: 0,
-      path: '',
-      method: 'GET',
+      path: "",
+      method: "GET",
       response: {
         status: 200,
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: null,
       },
-      createdAt: '',
-      updatedAt: '',
+      createdAt: "",
+      updatedAt: "",
     });
   };
 
   const handleImportJSON = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
@@ -278,12 +278,12 @@ export function ScenarioMocksEditor({
         const data = JSON.parse(text);
         if (Array.isArray(data)) {
           onChange(data);
-          toast.success('モックAPIをインポートしました');
+          toast.success("モックAPIをインポートしました");
         } else {
-          toast.error('無効なJSON形式です');
+          toast.error("無効なJSON形式です");
         }
       } catch (error) {
-        toast.error('JSONの読み込みに失敗しました');
+        toast.error("JSONの読み込みに失敗しました");
       }
     };
     input.click();
@@ -291,18 +291,18 @@ export function ScenarioMocksEditor({
 
   const getMethodBadgeColor = (method: string) => {
     switch (method) {
-      case 'GET':
-        return 'bg-blue-500';
-      case 'POST':
-        return 'bg-green-500';
-      case 'PUT':
-        return 'bg-yellow-500';
-      case 'DELETE':
-        return 'bg-red-500';
-      case 'PATCH':
-        return 'bg-purple-500';
+      case "GET":
+        return "bg-blue-500";
+      case "POST":
+        return "bg-green-500";
+      case "PUT":
+        return "bg-yellow-500";
+      case "DELETE":
+        return "bg-red-500";
+      case "PATCH":
+        return "bg-purple-500";
       default:
-        return 'bg-gray-500';
+        return "bg-gray-500";
     }
   };
 
@@ -370,8 +370,8 @@ export function ScenarioMocksEditor({
                       <div className="font-mono text-xs text-muted-foreground max-w-md truncate">
                         {mock.response.body
                           ? JSON.stringify(mock.response.body).slice(0, 50) +
-                            '...'
-                          : 'なし'}
+                            "..."
+                          : "なし"}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -409,8 +409,8 @@ export function ScenarioMocksEditor({
             <CardHeader>
               <CardTitle className="text-lg">
                 {editingIndex !== null
-                  ? 'モックAPIを編集'
-                  : '新しいモックAPIを追加'}
+                  ? "モックAPIを編集"
+                  : "新しいモックAPIを追加"}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -418,7 +418,7 @@ export function ScenarioMocksEditor({
                 <Label htmlFor="mock-name">名前</Label>
                 <Input
                   id="mock-name"
-                  value={currentMock.name || ''}
+                  value={currentMock.name || ""}
                   onChange={(e) =>
                     setCurrentMock({ ...currentMock, name: e.target.value })
                   }
@@ -470,7 +470,7 @@ export function ScenarioMocksEditor({
                 <Label htmlFor="mock-path">パス *</Label>
                 <Input
                   id="mock-path"
-                  value={currentMock.path || ''}
+                  value={currentMock.path || ""}
                   onChange={(e) =>
                     setCurrentMock({ ...currentMock, path: e.target.value })
                   }
@@ -511,7 +511,7 @@ export function ScenarioMocksEditor({
                           placeholder="キー"
                           value={header.key}
                           onChange={(e) =>
-                            handleHeaderChange(index, 'key', e.target.value)
+                            handleHeaderChange(index, "key", e.target.value)
                           }
                           className="flex-1"
                         />
@@ -519,7 +519,7 @@ export function ScenarioMocksEditor({
                           placeholder="値"
                           value={header.value}
                           onChange={(e) =>
-                            handleHeaderChange(index, 'value', e.target.value)
+                            handleHeaderChange(index, "value", e.target.value)
                           }
                           className="flex-1"
                         />
@@ -545,7 +545,7 @@ export function ScenarioMocksEditor({
                     </div>
                     <JsonEditor
                       value={bodyText}
-                      onChange={(value) => setBodyText(value || '')}
+                      onChange={(value) => setBodyText(value || "")}
                       height="256px"
                     />
                   </div>
@@ -556,7 +556,7 @@ export function ScenarioMocksEditor({
                   キャンセル
                 </Button>
                 <Button type="button" onClick={handleSave}>
-                  {editingIndex !== null ? '更新' : '追加'}
+                  {editingIndex !== null ? "更新" : "追加"}
                 </Button>
               </div>
             </CardContent>

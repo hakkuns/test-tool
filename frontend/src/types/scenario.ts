@@ -20,7 +20,7 @@ export interface MockEndpoint {
   name?: string;
   enabled: boolean;
   priority: number;
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+  method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
   path: string;
   requestMatch?: {
     query?: Record<string, string>;
@@ -40,7 +40,7 @@ export interface MockEndpoint {
 export interface ApiTestConfig {
   id?: string;
   name?: string;
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'HEAD' | 'OPTIONS';
+  method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "HEAD" | "OPTIONS";
   url: string;
   headers?: Record<string, string>;
   body?: any;
@@ -76,7 +76,7 @@ export interface TestScenario {
   };
   tags: string[];
   isFavorite?: boolean;
-  lastTestResult?: 'success' | 'failure' | 'unknown';
+  lastTestResult?: "success" | "failure" | "unknown";
   lastTestedAt?: string;
   createdAt: string;
   updatedAt: string;
@@ -115,7 +115,7 @@ export interface CreateScenarioInput {
   };
   tags: string[];
   isFavorite?: boolean;
-  lastTestResult?: 'success' | 'failure' | 'unknown';
+  lastTestResult?: "success" | "failure" | "unknown";
   lastTestedAt?: string;
 }
 
@@ -138,7 +138,7 @@ export interface UpdateScenarioInput {
   };
   tags?: string[];
   isFavorite?: boolean;
-  lastTestResult?: 'success' | 'failure' | 'unknown';
+  lastTestResult?: "success" | "failure" | "unknown";
   lastTestedAt?: string;
 }
 

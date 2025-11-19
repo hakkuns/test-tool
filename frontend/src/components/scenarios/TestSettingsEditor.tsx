@@ -1,20 +1,20 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useRef } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { JsonEditor } from '@/components/ui/json-editor';
+import { useState, useEffect, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { JsonEditor } from "@/components/ui/json-editor";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Trash2 } from 'lucide-react';
-import { ConstantsTooltip } from '@/components/ui/constants-tooltip';
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, Trash2 } from "lucide-react";
+import { ConstantsTooltip } from "@/components/ui/constants-tooltip";
 
 interface HeaderEntry {
   key: string;
@@ -37,13 +37,15 @@ export function TestSettingsEditor({
   onBodyChange,
 }: TestSettingsEditorProps) {
   // GETやDELETEではボディを送信すべきではない
-  const bodyAllowed = method ? !['GET', 'DELETE', 'HEAD', 'OPTIONS'].includes(method.toUpperCase()) : true;
+  const bodyAllowed = method
+    ? !["GET", "DELETE", "HEAD", "OPTIONS"].includes(method.toUpperCase())
+    : true;
   const [headerEntries, setHeaderEntries] = useState<HeaderEntry[]>(() => {
     const entries = Object.entries(headers).map(([key, value]) => ({
       key,
       value,
     }));
-    return entries.length > 0 ? entries : [{ key: '', value: '' }];
+    return entries.length > 0 ? entries : [{ key: "", value: "" }];
   });
 
   const isInternalUpdateRef = useRef(false);
@@ -60,11 +62,11 @@ export function TestSettingsEditor({
       key,
       value,
     }));
-    setHeaderEntries(entries.length > 0 ? entries : [{ key: '', value: '' }]);
+    setHeaderEntries(entries.length > 0 ? entries : [{ key: "", value: "" }]);
   }, [headers]);
 
   const handleAddHeader = () => {
-    setHeaderEntries([...headerEntries, { key: '', value: '' }]);
+    setHeaderEntries([...headerEntries, { key: "", value: "" }]);
   };
 
   const handleRemoveHeader = (index: number) => {
@@ -75,8 +77,8 @@ export function TestSettingsEditor({
 
   const handleHeaderChange = (
     index: number,
-    field: 'key' | 'value',
-    value: string
+    field: "key" | "value",
+    value: string,
   ) => {
     const newEntries = [...headerEntries];
     newEntries[index][field] = value;
@@ -107,7 +109,15 @@ export function TestSettingsEditor({
         <Tabs defaultValue="headers">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="headers">ヘッダー</TabsTrigger>
-            <TabsTrigger value="body" disabled={!bodyAllowed} title={!bodyAllowed ? `${method}メソッドではボディを送信できません` : ''}>
+            <TabsTrigger
+              value="body"
+              disabled={!bodyAllowed}
+              title={
+                !bodyAllowed
+                  ? `${method}メソッドではボディを送信できません`
+                  : ""
+              }
+            >
               ボディ
             </TabsTrigger>
           </TabsList>
@@ -138,7 +148,7 @@ export function TestSettingsEditor({
                     placeholder="キー"
                     value={header.key}
                     onChange={(e) =>
-                      handleHeaderChange(index, 'key', e.target.value)
+                      handleHeaderChange(index, "key", e.target.value)
                     }
                     className="flex-1"
                   />
@@ -146,7 +156,7 @@ export function TestSettingsEditor({
                     placeholder="値"
                     value={header.value}
                     onChange={(e) =>
-                      handleHeaderChange(index, 'value', e.target.value)
+                      handleHeaderChange(index, "value", e.target.value)
                     }
                     className="flex-1"
                   />
@@ -172,7 +182,7 @@ export function TestSettingsEditor({
               </div>
               <JsonEditor
                 value={body}
-                onChange={(value) => onBodyChange(value || '')}
+                onChange={(value) => onBodyChange(value || "")}
                 height="256px"
               />
             </div>

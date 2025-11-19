@@ -1,5 +1,5 @@
-import { db } from '../db';
-import { API_URL } from '../api';
+import { db } from "../db";
+import { API_URL } from "../api";
 import type {
   TestScenario,
   CreateScenarioInput,
@@ -7,7 +7,7 @@ import type {
   ScenarioExport,
   ApplyScenarioResult,
   ScenarioGroup,
-} from '@/types/scenario';
+} from "@/types/scenario";
 
 // UUIDを生成するヘルパー関数
 function generateId(): string {
@@ -24,7 +24,7 @@ export const scenariosApi = {
       .map((s) => ({ ...s, id: s.scenarioId }))
       .sort(
         (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       );
   },
 
@@ -32,9 +32,9 @@ export const scenariosApi = {
    * IDでシナリオを取得
    */
   getById: async (id: string): Promise<TestScenario> => {
-    const scenario = await db.scenarios.where('scenarioId').equals(id).first();
+    const scenario = await db.scenarios.where("scenarioId").equals(id).first();
     if (!scenario) {
-      throw new Error('Scenario not found');
+      throw new Error("Scenario not found");
     }
     return { ...scenario, id: scenario.scenarioId };
   },
@@ -61,11 +61,11 @@ export const scenariosApi = {
    */
   update: async (
     id: string,
-    input: UpdateScenarioInput
+    input: UpdateScenarioInput,
   ): Promise<TestScenario> => {
-    const existing = await db.scenarios.where('scenarioId').equals(id).first();
+    const existing = await db.scenarios.where("scenarioId").equals(id).first();
     if (!existing) {
-      throw new Error('Scenario not found');
+      throw new Error("Scenario not found");
     }
 
     const updated = {
@@ -82,9 +82,9 @@ export const scenariosApi = {
    * シナリオを削除
    */
   delete: async (id: string): Promise<void> => {
-    const scenario = await db.scenarios.where('scenarioId').equals(id).first();
+    const scenario = await db.scenarios.where("scenarioId").equals(id).first();
     if (!scenario) {
-      throw new Error('Scenario not found');
+      throw new Error("Scenario not found");
     }
     await db.scenarios.delete(scenario.id!);
   },
@@ -95,18 +95,18 @@ export const scenariosApi = {
   exportScenario: async (id: string): Promise<ScenarioExport> => {
     const scenario = await scenariosApi.getById(id);
     let group: ScenarioGroup | undefined;
-    
+
     // グループ情報があれば取得
     if (scenario.groupId) {
       try {
         group = await groupsApi.getById(scenario.groupId);
       } catch (error) {
-        console.warn('Group not found for scenario:', error);
+        console.warn("Group not found for scenario:", error);
       }
     }
 
     return {
-      version: '1.0.0',
+      version: "1.0.0",
       exportedAt: new Date().toISOString(),
       scenario,
       group,
@@ -122,18 +122,18 @@ export const scenariosApi = {
 
     for (const scenario of scenarios) {
       let group: ScenarioGroup | undefined;
-      
+
       // グループ情報があれば取得
       if (scenario.groupId) {
         try {
           group = await groupsApi.getById(scenario.groupId);
         } catch (error) {
-          console.warn('Group not found for scenario:', error);
+          console.warn("Group not found for scenario:", error);
         }
       }
 
       exports.push({
-        version: '1.0.0',
+        version: "1.0.0",
         exportedAt: new Date().toISOString(),
         scenario,
         group,
@@ -147,7 +147,7 @@ export const scenariosApi = {
    * シナリオをインポート
    */
   importScenario: async (
-    exportData: ScenarioExport | ScenarioExport[]
+    exportData: ScenarioExport | ScenarioExport[],
   ): Promise<TestScenario | TestScenario[]> => {
     const dataArray = Array.isArray(exportData) ? exportData : [exportData];
     const imported: TestScenario[] = [];
@@ -159,7 +159,7 @@ export const scenariosApi = {
       const group = data.group;
 
       if (!scenario) {
-        console.error('Invalid export data:', data);
+        console.error("Invalid export data:", data);
         continue;
       }
 
@@ -194,14 +194,14 @@ export const scenariosApi = {
         scenario;
 
       // scenarioIdはランタイムでのみ存在する可能性があるため、除外
-      if ('scenarioId' in rest) {
+      if ("scenarioId" in rest) {
         delete (rest as any).scenarioId;
       }
 
       // インポート時は常に新しいシナリオとして作成（複製を許可）
       const created = await scenariosApi.create({
         ...rest,
-        name: rest.name + ' (コピー)',
+        name: rest.name + " (コピー)",
         groupId: newGroupId, // 新しいグループIDまたはundefined
       });
       imported.push(created);
@@ -214,7 +214,7 @@ export const scenariosApi = {
    * ファイルからシナリオをインポート
    */
   importFromFile: async (
-    file: File
+    file: File,
   ): Promise<TestScenario | TestScenario[]> => {
     const text = await file.text();
     const exportData = JSON.parse(text);
@@ -235,13 +235,13 @@ export const scenariosApi = {
     // 1. テーブルを作成
     if (scenario.tables && scenario.tables.length > 0) {
       const sortedTables = [...scenario.tables].sort(
-        (a, b) => a.order - b.order
+        (a, b) => a.order - b.order,
       );
 
       const createResponse = await fetch(`${API_URL}/api/tables/create`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ tables: sortedTables }),
       });
@@ -249,11 +249,11 @@ export const scenariosApi = {
       if (!createResponse.ok) {
         const error = await createResponse
           .json()
-          .catch(() => ({ message: 'Unknown error' }));
+          .catch(() => ({ message: "Unknown error" }));
         throw new Error(
           `テーブル作成失敗: ${
             error.message || error.error || `HTTP ${createResponse.status}`
-          }`
+          }`,
         );
       }
 
@@ -265,33 +265,36 @@ export const scenariosApi = {
       for (const tableData of scenario.tableData) {
         // 空文字列やnullを除外してデータをクリーンアップ
         const cleanedRows = tableData.rows.map((row) => {
-          return Object.entries(row).reduce((acc, [key, value]) => {
-            if (value !== '' && value !== null && value !== undefined) {
-              acc[key] = value;
-            }
-            return acc;
-          }, {} as Record<string, any>);
+          return Object.entries(row).reduce(
+            (acc, [key, value]) => {
+              if (value !== "" && value !== null && value !== undefined) {
+                acc[key] = value;
+              }
+              return acc;
+            },
+            {} as Record<string, any>,
+          );
         });
 
         const importResponse = await fetch(
           `${API_URL}/api/database/data/import`,
           {
-            method: 'POST',
+            method: "POST",
             headers: {
-              'Content-Type': 'application/json',
+              "Content-Type": "application/json",
             },
             body: JSON.stringify({
               ...tableData,
               rows: cleanedRows,
             }),
-          }
+          },
         );
 
         if (!importResponse.ok) {
           const error = await importResponse
             .json()
-            .catch(() => ({ message: 'Unknown error' }));
-          console.error('Data import error:', {
+            .catch(() => ({ message: "Unknown error" }));
+          console.error("Data import error:", {
             status: importResponse.status,
             error,
             tableData,
@@ -303,28 +306,28 @@ export const scenariosApi = {
 
           // PostgreSQLの一般的なエラーパターンを検出
           if (
-            errorMessage.includes('duplicate key') ||
-            errorMessage.includes('重複')
+            errorMessage.includes("duplicate key") ||
+            errorMessage.includes("重複")
           ) {
             errorMessage = `主キーまたはユニークキーの重複: ${tableData.tableName}`;
           } else if (
-            errorMessage.includes('foreign key') ||
-            errorMessage.includes('外部キー')
+            errorMessage.includes("foreign key") ||
+            errorMessage.includes("外部キー")
           ) {
             errorMessage = `外部キー制約違反: ${tableData.tableName}`;
           } else if (
-            errorMessage.includes('not-null') ||
-            errorMessage.includes('null value')
+            errorMessage.includes("not-null") ||
+            errorMessage.includes("null value")
           ) {
             errorMessage = `NOT NULL制約違反: ${tableData.tableName}`;
           } else if (
-            errorMessage.includes('check constraint') ||
-            errorMessage.includes('チェック制約')
+            errorMessage.includes("check constraint") ||
+            errorMessage.includes("チェック制約")
           ) {
             errorMessage = `チェック制約違反: ${tableData.tableName}`;
           } else if (
-            errorMessage.includes('does not exist') ||
-            errorMessage.includes('存在しません')
+            errorMessage.includes("does not exist") ||
+            errorMessage.includes("存在しません")
           ) {
             errorMessage = `テーブルまたはカラムが存在しません: ${tableData.tableName}`;
           } else {
@@ -343,18 +346,18 @@ export const scenariosApi = {
     if (scenario.mockApis && scenario.mockApis.length > 0) {
       // 既存のモックを全削除
       const deleteResponse = await fetch(`${API_URL}/api/mock/endpoints`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
       if (!deleteResponse.ok) {
-        console.warn('Failed to delete existing mocks, continuing anyway...');
+        console.warn("Failed to delete existing mocks, continuing anyway...");
       }
 
       for (const mockApi of scenario.mockApis) {
         const mockResponse = await fetch(`${API_URL}/api/mock/endpoints`, {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             name: mockApi.name,
@@ -370,11 +373,11 @@ export const scenariosApi = {
         if (!mockResponse.ok) {
           const error = await mockResponse
             .json()
-            .catch(() => ({ message: 'Unknown error' }));
+            .catch(() => ({ message: "Unknown error" }));
           throw new Error(
             `モック設定失敗: ${
               error.message || error.error || `HTTP ${mockResponse.status}`
-            }`
+            }`,
           );
         }
 
@@ -395,7 +398,7 @@ export const scenariosApi = {
   searchByTags: async (tags: string[]): Promise<TestScenario[]> => {
     const allScenarios = await scenariosApi.getAll();
     return allScenarios.filter((scenario) =>
-      tags.some((tag) => scenario.tags.includes(tag))
+      tags.some((tag) => scenario.tags.includes(tag)),
     );
   },
 
@@ -404,9 +407,9 @@ export const scenariosApi = {
    */
   downloadAsJson: (data: ScenarioExport, filename?: string) => {
     const json = JSON.stringify(data, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
+    const blob = new Blob([json], { type: "application/json" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
     a.download =
       filename || `scenario_${data.scenario.name}_${Date.now()}.json`;
@@ -421,9 +424,9 @@ export const scenariosApi = {
    */
   downloadAllAsJson: (data: ScenarioExport[], filename?: string) => {
     const json = JSON.stringify(data, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
+    const blob = new Blob([json], { type: "application/json" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
     a.download = filename || `scenarios_${Date.now()}.json`;
     document.body.appendChild(a);
@@ -444,8 +447,8 @@ export const groupsApi = {
     const groups = await db.scenarioGroups.toArray();
 
     // デバッグログ（開発環境のみ）
-    if (process.env.NODE_ENV === 'development') {
-      console.log('IndexedDB scenarioGroups.toArray():', {
+    if (process.env.NODE_ENV === "development") {
+      console.log("IndexedDB scenarioGroups.toArray():", {
         count: groups.length,
         rawGroups: groups,
       });
@@ -455,7 +458,7 @@ export const groupsApi = {
       .map((g) => ({ ...g, id: g.groupId }))
       .sort(
         (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       );
   },
 
@@ -463,9 +466,9 @@ export const groupsApi = {
    * IDでグループを取得
    */
   getById: async (id: string): Promise<ScenarioGroup> => {
-    const group = await db.scenarioGroups.where('groupId').equals(id).first();
+    const group = await db.scenarioGroups.where("groupId").equals(id).first();
     if (!group) {
-      throw new Error('Group not found');
+      throw new Error("Group not found");
     }
     return { ...group, id: group.groupId };
   },
@@ -481,11 +484,11 @@ export const groupsApi = {
       // 同じ名前のグループが存在するかチェック
       const existingGroups = await db.scenarioGroups.toArray();
       const duplicateName = existingGroups.some(
-        (g) => g.name.toLowerCase() === input.name.toLowerCase()
+        (g) => g.name.toLowerCase() === input.name.toLowerCase(),
       );
 
       if (duplicateName) {
-        throw new Error('同じ名前のグループが既に存在します');
+        throw new Error("同じ名前のグループが既に存在します");
       }
 
       const now = new Date().toISOString();
@@ -500,7 +503,7 @@ export const groupsApi = {
       await db.scenarioGroups.add(group);
       return { ...group, id: groupId };
     } catch (error) {
-      console.error('Error creating group in IndexedDB:', error);
+      console.error("Error creating group in IndexedDB:", error);
       throw error;
     }
   },
@@ -510,22 +513,27 @@ export const groupsApi = {
    */
   update: async (
     id: string,
-    input: { name?: string; description?: string }
+    input: { name?: string; description?: string },
   ): Promise<ScenarioGroup> => {
-    const existing = await db.scenarioGroups.where('groupId').equals(id).first();
+    const existing = await db.scenarioGroups
+      .where("groupId")
+      .equals(id)
+      .first();
     if (!existing) {
-      throw new Error('Group not found');
+      throw new Error("Group not found");
     }
 
     // 名前を変更する場合、同じ名前のグループが存在するかチェック
     if (input.name && input.name !== existing.name) {
       const allGroups = await db.scenarioGroups.toArray();
       const duplicateName = allGroups.some(
-        (g) => g.groupId !== id && g.name.toLowerCase() === input.name!.toLowerCase()
+        (g) =>
+          g.groupId !== id &&
+          g.name.toLowerCase() === input.name!.toLowerCase(),
       );
 
       if (duplicateName) {
-        throw new Error('同じ名前のグループが既に存在します');
+        throw new Error("同じ名前のグループが既に存在します");
       }
     }
 
@@ -539,7 +547,10 @@ export const groupsApi = {
 
     // グループ名が変更された場合、そのグループに属するシナリオのgroupNameも更新
     if (input.name && input.name !== existing.name) {
-      const scenarios = await db.scenarios.where('groupId').equals(id).toArray();
+      const scenarios = await db.scenarios
+        .where("groupId")
+        .equals(id)
+        .toArray();
       for (const scenario of scenarios) {
         await db.scenarios.update(scenario.id!, {
           ...scenario,
@@ -555,13 +566,13 @@ export const groupsApi = {
    * グループを削除
    */
   delete: async (id: string): Promise<void> => {
-    const group = await db.scenarioGroups.where('groupId').equals(id).first();
+    const group = await db.scenarioGroups.where("groupId").equals(id).first();
     if (!group) {
-      throw new Error('Group not found');
+      throw new Error("Group not found");
     }
 
     // グループに属するシナリオのgroupIdとgroupNameをクリア
-    const scenarios = await db.scenarios.where('groupId').equals(id).toArray();
+    const scenarios = await db.scenarios.where("groupId").equals(id).toArray();
     for (const scenario of scenarios) {
       await db.scenarios.update(scenario.id!, {
         ...scenario,
@@ -577,7 +588,10 @@ export const groupsApi = {
    * グループに属するシナリオを取得
    */
   getScenarios: async (groupId: string): Promise<TestScenario[]> => {
-    const scenarios = await db.scenarios.where('groupId').equals(groupId).toArray();
+    const scenarios = await db.scenarios
+      .where("groupId")
+      .equals(groupId)
+      .toArray();
     return scenarios.map((s) => ({ ...s, id: s.scenarioId }));
   },
 
@@ -589,7 +603,7 @@ export const groupsApi = {
     const scenarios = await groupsApi.getScenarios(groupId);
 
     return {
-      version: '1.0.0',
+      version: "1.0.0",
       exportedAt: new Date().toISOString(),
       group,
       scenarios,
@@ -599,7 +613,9 @@ export const groupsApi = {
   /**
    * グループをシナリオと一緒にインポート
    */
-  importGroup: async (exportData: any): Promise<{
+  importGroup: async (
+    exportData: any,
+  ): Promise<{
     group: ScenarioGroup;
     scenarios: TestScenario[];
   }> => {
@@ -622,15 +638,16 @@ export const groupsApi = {
     // シナリオをインポート
     const importedScenarios: TestScenario[] = [];
     for (const scenario of scenariosData) {
-      const { id, createdAt, updatedAt, groupId, groupName, ...rest } = scenario;
+      const { id, createdAt, updatedAt, groupId, groupName, ...rest } =
+        scenario;
 
-      if ('scenarioId' in rest) {
+      if ("scenarioId" in rest) {
         delete (rest as any).scenarioId;
       }
 
       const created = await scenariosApi.create({
         ...rest,
-        name: rest.name + ' (コピー)',
+        name: rest.name + " (コピー)",
         groupId: group.id,
       });
       importedScenarios.push(created);

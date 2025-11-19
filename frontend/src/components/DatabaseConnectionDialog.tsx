@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,13 +9,13 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Database,
   Plus,
@@ -23,17 +23,17 @@ import {
   Check,
   Loader2,
   AlertCircle,
-} from 'lucide-react';
-import { toast } from 'sonner';
+} from "lucide-react";
+import { toast } from "sonner";
 import {
   getAllConnections,
   saveConnection,
   deleteConnection,
   setActiveConnection,
   useDefaultConnection,
-} from '@/lib/dbConnection';
-import type { DatabaseConnection } from '@/lib/db';
-import { API_URL } from '@/lib/api';
+} from "@/lib/dbConnection";
+import type { DatabaseConnection } from "@/lib/db";
+import { API_URL } from "@/lib/api";
 
 interface DatabaseConnectionDialogProps {
   open: boolean;
@@ -54,12 +54,12 @@ export function DatabaseConnectionDialog({
 
   // フォーム状態
   const [formData, setFormData] = useState({
-    name: '',
-    host: 'localhost',
+    name: "",
+    host: "localhost",
     port: 5432,
-    database: '',
-    username: '',
-    password: '',
+    database: "",
+    username: "",
+    password: "",
     ssl: false,
   });
 
@@ -69,8 +69,8 @@ export function DatabaseConnectionDialog({
       const conns = await getAllConnections();
       setConnections(conns);
     } catch (error) {
-      console.error('Failed to load connections:', error);
-      toast.error('接続情報の読み込みに失敗しました');
+      console.error("Failed to load connections:", error);
+      toast.error("接続情報の読み込みに失敗しました");
     }
   };
 
@@ -85,12 +85,12 @@ export function DatabaseConnectionDialog({
   // フォームリセット
   const resetForm = () => {
     setFormData({
-      name: '',
-      host: 'localhost',
+      name: "",
+      host: "localhost",
       port: 5432,
-      database: '',
-      username: '',
-      password: '',
+      database: "",
+      username: "",
+      password: "",
       ssl: false,
     });
     setTestResult(null);
@@ -99,7 +99,7 @@ export function DatabaseConnectionDialog({
   // 接続テスト
   const handleTestConnection = async () => {
     if (!formData.host || !formData.database || !formData.username) {
-      toast.error('ホスト、データベース名、ユーザー名は必須です');
+      toast.error("ホスト、データベース名、ユーザー名は必須です");
       return;
     }
 
@@ -108,9 +108,9 @@ export function DatabaseConnectionDialog({
 
     try {
       const response = await fetch(`${API_URL}/api/database/test-connection`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           host: formData.host,
@@ -127,22 +127,22 @@ export function DatabaseConnectionDialog({
       if (result.success) {
         setTestResult({
           success: true,
-          message: '接続に成功しました',
+          message: "接続に成功しました",
         });
-        toast.success('接続テストに成功しました');
+        toast.success("接続テストに成功しました");
       } else {
         setTestResult({
           success: false,
-          message: result.error || '接続に失敗しました',
+          message: result.error || "接続に失敗しました",
         });
-        toast.error('接続テストに失敗しました');
+        toast.error("接続テストに失敗しました");
       }
     } catch (error) {
       setTestResult({
         success: false,
-        message: error instanceof Error ? error.message : '接続エラー',
+        message: error instanceof Error ? error.message : "接続エラー",
       });
-      toast.error('接続テストに失敗しました');
+      toast.error("接続テストに失敗しました");
     } finally {
       setIsTesting(false);
     }
@@ -156,7 +156,7 @@ export function DatabaseConnectionDialog({
       !formData.database ||
       !formData.username
     ) {
-      toast.error('名前、ホスト、データベース名、ユーザー名は必須です');
+      toast.error("名前、ホスト、データベース名、ユーザー名は必須です");
       return;
     }
 
@@ -166,29 +166,29 @@ export function DatabaseConnectionDialog({
         isActive: false,
       });
 
-      toast.success('接続情報を保存しました');
+      toast.success("接続情報を保存しました");
       await loadConnections();
       setIsAdding(false);
       resetForm();
     } catch (error) {
-      console.error('Failed to save connection:', error);
-      toast.error('接続情報の保存に失敗しました');
+      console.error("Failed to save connection:", error);
+      toast.error("接続情報の保存に失敗しました");
     }
   };
 
   // 接続を削除
   const handleDeleteConnection = async (id: number) => {
-    if (!confirm('この接続情報を削除しますか？')) {
+    if (!confirm("この接続情報を削除しますか？")) {
       return;
     }
 
     try {
       await deleteConnection(id);
-      toast.success('接続情報を削除しました');
+      toast.success("接続情報を削除しました");
       await loadConnections();
     } catch (error) {
-      console.error('Failed to delete connection:', error);
-      toast.error('接続情報の削除に失敗しました');
+      console.error("Failed to delete connection:", error);
+      toast.error("接続情報の削除に失敗しました");
     }
   };
 
@@ -196,11 +196,11 @@ export function DatabaseConnectionDialog({
   const handleSetActive = async (id: number) => {
     try {
       await setActiveConnection(id);
-      toast.success('接続を切り替えました');
+      toast.success("接続を切り替えました");
       await loadConnections();
     } catch (error) {
-      console.error('Failed to set active connection:', error);
-      toast.error('接続の切り替えに失敗しました');
+      console.error("Failed to set active connection:", error);
+      toast.error("接続の切り替えに失敗しました");
     }
   };
 
@@ -208,11 +208,11 @@ export function DatabaseConnectionDialog({
   const handleUseDefault = async () => {
     try {
       await useDefaultConnection();
-      toast.success('デフォルト接続に戻しました');
+      toast.success("デフォルト接続に戻しました");
       await loadConnections();
     } catch (error) {
-      console.error('Failed to use default connection:', error);
-      toast.error('デフォルト接続への切り替えに失敗しました');
+      console.error("Failed to use default connection:", error);
+      toast.error("デフォルト接続への切り替えに失敗しました");
     }
   };
 
@@ -260,27 +260,35 @@ export function DatabaseConnectionDialog({
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
                         <div>
-                          <span className="font-medium">ホスト:</span> {activeConnection.host}
+                          <span className="font-medium">ホスト:</span>{" "}
+                          {activeConnection.host}
                         </div>
                         <div>
-                          <span className="font-medium">ポート:</span> {activeConnection.port}
+                          <span className="font-medium">ポート:</span>{" "}
+                          {activeConnection.port}
                         </div>
                         <div>
-                          <span className="font-medium">データベース:</span> {activeConnection.database}
+                          <span className="font-medium">データベース:</span>{" "}
+                          {activeConnection.database}
                         </div>
                         <div>
-                          <span className="font-medium">ユーザー:</span> {activeConnection.username}
+                          <span className="font-medium">ユーザー:</span>{" "}
+                          {activeConnection.username}
                         </div>
                         <div className="col-span-2">
-                          <span className="font-medium">SSL:</span> {activeConnection.ssl ? '有効' : '無効'}
+                          <span className="font-medium">SSL:</span>{" "}
+                          {activeConnection.ssl ? "有効" : "無効"}
                         </div>
                       </div>
                     </div>
                   ) : (
                     <div className="text-sm space-y-2">
-                      <p className="text-muted-foreground">デフォルト接続（バックエンド設定）</p>
+                      <p className="text-muted-foreground">
+                        デフォルト接続（バックエンド設定）
+                      </p>
                       <p className="text-xs text-muted-foreground">
-                        バックエンドの環境変数 DATABASE_URL で設定された接続を使用しています
+                        バックエンドの環境変数 DATABASE_URL
+                        で設定された接続を使用しています
                       </p>
                     </div>
                   )}
@@ -295,7 +303,7 @@ export function DatabaseConnectionDialog({
                 {connections.map((conn) => (
                   <Card
                     key={conn.id}
-                    className={conn.isActive ? 'border-primary' : ''}
+                    className={conn.isActive ? "border-primary" : ""}
                   >
                     <CardContent className="py-3">
                       <div className="flex items-start justify-between">
@@ -452,8 +460,8 @@ export function DatabaseConnectionDialog({
                     <div
                       className={`p-3 rounded-md flex items-start gap-2 ${
                         testResult.success
-                          ? 'bg-green-50 text-green-900'
-                          : 'bg-red-50 text-red-900'
+                          ? "bg-green-50 text-green-900"
+                          : "bg-red-50 text-red-900"
                       }`}
                     >
                       {testResult.success ? (
@@ -478,7 +486,7 @@ export function DatabaseConnectionDialog({
                           テスト中...
                         </>
                       ) : (
-                        '接続テスト'
+                        "接続テスト"
                       )}
                     </Button>
                     <Button

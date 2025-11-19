@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface ReadmeDialogProps {
   open: boolean;
@@ -18,16 +18,16 @@ interface ReadmeDialogProps {
 }
 
 export function ReadmeDialog({ open, onOpenChange }: ReadmeDialogProps) {
-  const [content, setContent] = useState('');
+  const [content, setContent] = useState("");
 
   useEffect(() => {
     if (open) {
-      fetch('/README.md')
+      fetch("/README.md")
         .then((res) => res.text())
         .then((text) => setContent(text))
         .catch((err) => {
-          console.error('Failed to load README:', err);
-          setContent('# エラー\n\nREADMEの読み込みに失敗しました。');
+          console.error("Failed to load README:", err);
+          setContent("# エラー\n\nREADMEの読み込みに失敗しました。");
         });
     }
   }, [open]);

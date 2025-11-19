@@ -1,8 +1,11 @@
-import Dexie, { type EntityTable } from 'dexie';
-import type { TestScenario as ScenarioType, ScenarioGroup } from '@/types/scenario';
+import Dexie, { type EntityTable } from "dexie";
+import type {
+  TestScenario as ScenarioType,
+  ScenarioGroup,
+} from "@/types/scenario";
 
 // シナリオの型（IndexedDB用にidをnumberに）
-export interface TestScenario extends Omit<ScenarioType, 'id'> {
+export interface TestScenario extends Omit<ScenarioType, "id"> {
   id?: number;
   scenarioId: string; // 元のUUID
 }
@@ -33,7 +36,7 @@ export interface MockEndpoint {
   name?: string;
   enabled: boolean;
   priority: number;
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+  method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
   path: string;
   requestMatch?: {
     query?: Record<string, string>;
@@ -54,7 +57,7 @@ export interface MockEndpoint {
 export interface ApiRequestHistory {
   id?: number;
   name?: string;
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+  method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
   url: string;
   headers: Record<string, string>;
   body?: string;
@@ -85,51 +88,51 @@ export interface DatabaseConnection {
 }
 
 // グループの型（IndexedDB用にidをnumberに）
-export interface ScenarioGroupDB extends Omit<ScenarioGroup, 'id'> {
+export interface ScenarioGroupDB extends Omit<ScenarioGroup, "id"> {
   id?: number;
   groupId: string; // 元のUUID
 }
 
 // IndexedDB データベース定義
-const db = new Dexie('PostgresTestHelperDB') as Dexie & {
-  scenarios: EntityTable<TestScenario, 'id'>;
-  scenarioGroups: EntityTable<ScenarioGroupDB, 'id'>;
-  ddlTables: EntityTable<DDLTable, 'id'>;
-  tableData: EntityTable<TableData, 'id'>;
-  mockEndpoints: EntityTable<MockEndpoint, 'id'>;
-  apiHistory: EntityTable<ApiRequestHistory, 'id'>;
-  dbConnections: EntityTable<DatabaseConnection, 'id'>;
+const db = new Dexie("PostgresTestHelperDB") as Dexie & {
+  scenarios: EntityTable<TestScenario, "id">;
+  scenarioGroups: EntityTable<ScenarioGroupDB, "id">;
+  ddlTables: EntityTable<DDLTable, "id">;
+  tableData: EntityTable<TableData, "id">;
+  mockEndpoints: EntityTable<MockEndpoint, "id">;
+  apiHistory: EntityTable<ApiRequestHistory, "id">;
+  dbConnections: EntityTable<DatabaseConnection, "id">;
 };
 
 // スキーマ定義
 db.version(1).stores({
-  ddlTables: '++id, name, order, createdAt',
-  tableData: '++id, tableName, createdAt',
-  mockEndpoints: '++id, path, method, priority, enabled, createdAt',
-  apiHistory: '++id, method, url, createdAt',
+  ddlTables: "++id, name, order, createdAt",
+  tableData: "++id, tableName, createdAt",
+  mockEndpoints: "++id, path, method, priority, enabled, createdAt",
+  apiHistory: "++id, method, url, createdAt",
 });
 
 // バージョン2: scenariosストアを追加
 db.version(2).stores({
-  scenarios: '++id, scenarioId, name, createdAt, updatedAt',
-  ddlTables: '++id, name, order, createdAt',
-  tableData: '++id, tableName, createdAt',
-  mockEndpoints: '++id, path, method, priority, enabled, createdAt',
-  apiHistory: '++id, method, url, createdAt',
+  scenarios: "++id, scenarioId, name, createdAt, updatedAt",
+  ddlTables: "++id, name, order, createdAt",
+  tableData: "++id, tableName, createdAt",
+  mockEndpoints: "++id, path, method, priority, enabled, createdAt",
+  apiHistory: "++id, method, url, createdAt",
 });
 
 // バージョン3: scenarioIdにユニーク制約を追加
 db.version(3)
   .stores({
-    scenarios: '++id, &scenarioId, name, createdAt, updatedAt',
-    ddlTables: '++id, name, order, createdAt',
-    tableData: '++id, tableName, createdAt',
-    mockEndpoints: '++id, path, method, priority, enabled, createdAt',
-    apiHistory: '++id, method, url, createdAt',
+    scenarios: "++id, &scenarioId, name, createdAt, updatedAt",
+    ddlTables: "++id, name, order, createdAt",
+    tableData: "++id, tableName, createdAt",
+    mockEndpoints: "++id, path, method, priority, enabled, createdAt",
+    apiHistory: "++id, method, url, createdAt",
   })
   .upgrade(async (trans) => {
     // 既存のシナリオから重複を削除
-    const scenarios = await trans.table('scenarios').toArray();
+    const scenarios = await trans.table("scenarios").toArray();
     const seen = new Set<string>();
     const toDelete: number[] = [];
 
@@ -146,22 +149,22 @@ db.version(3)
 
     // 重複レコードを削除
     for (const id of toDelete) {
-      await trans.table('scenarios').delete(id);
+      await trans.table("scenarios").delete(id);
     }
   });
 
 // バージョン4: 強制的にクリーンアップ
 db.version(4)
   .stores({
-    scenarios: '++id, &scenarioId, name, createdAt, updatedAt',
-    ddlTables: '++id, name, order, createdAt',
-    tableData: '++id, tableName, createdAt',
-    mockEndpoints: '++id, path, method, priority, enabled, createdAt',
-    apiHistory: '++id, method, url, createdAt',
+    scenarios: "++id, &scenarioId, name, createdAt, updatedAt",
+    ddlTables: "++id, name, order, createdAt",
+    tableData: "++id, tableName, createdAt",
+    mockEndpoints: "++id, path, method, priority, enabled, createdAt",
+    apiHistory: "++id, method, url, createdAt",
   })
   .upgrade(async (trans) => {
     // 再度重複チェック
-    const scenarios = await trans.table('scenarios').toArray();
+    const scenarios = await trans.table("scenarios").toArray();
     const seen = new Set<string>();
     const toDelete: number[] = [];
 
@@ -176,29 +179,29 @@ db.version(4)
     }
 
     for (const id of toDelete) {
-      await trans.table('scenarios').delete(id);
+      await trans.table("scenarios").delete(id);
     }
   });
 
 // バージョン5: データベース接続情報ストアを追加
 db.version(5).stores({
-  scenarios: '++id, &scenarioId, name, createdAt, updatedAt',
-  ddlTables: '++id, name, order, createdAt',
-  tableData: '++id, tableName, createdAt',
-  mockEndpoints: '++id, path, method, priority, enabled, createdAt',
-  apiHistory: '++id, method, url, createdAt',
-  dbConnections: '++id, name, isActive, createdAt, updatedAt',
+  scenarios: "++id, &scenarioId, name, createdAt, updatedAt",
+  ddlTables: "++id, name, order, createdAt",
+  tableData: "++id, tableName, createdAt",
+  mockEndpoints: "++id, path, method, priority, enabled, createdAt",
+  apiHistory: "++id, method, url, createdAt",
+  dbConnections: "++id, name, isActive, createdAt, updatedAt",
 });
 
 // バージョン6: シナリオグループストアを追加
 db.version(6).stores({
-  scenarios: '++id, &scenarioId, name, groupId, createdAt, updatedAt',
-  scenarioGroups: '++id, &groupId, name, createdAt, updatedAt',
-  ddlTables: '++id, name, order, createdAt',
-  tableData: '++id, tableName, createdAt',
-  mockEndpoints: '++id, path, method, priority, enabled, createdAt',
-  apiHistory: '++id, method, url, createdAt',
-  dbConnections: '++id, name, isActive, createdAt, updatedAt',
+  scenarios: "++id, &scenarioId, name, groupId, createdAt, updatedAt",
+  scenarioGroups: "++id, &groupId, name, createdAt, updatedAt",
+  ddlTables: "++id, name, order, createdAt",
+  tableData: "++id, tableName, createdAt",
+  mockEndpoints: "++id, path, method, priority, enabled, createdAt",
+  apiHistory: "++id, method, url, createdAt",
+  dbConnections: "++id, name, isActive, createdAt, updatedAt",
 });
 
 export { db };

@@ -1,155 +1,163 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Textarea } from '@/components/ui/textarea'
-import { Button } from '@/components/ui/button'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { FileText, Upload, AlertCircle, Database } from 'lucide-react'
-import { toast } from 'sonner'
-import { API_URL } from '@/lib/api'
-import { db } from '@/lib/db'
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { FileText, Upload, AlertCircle, Database } from "lucide-react";
+import { toast } from "sonner";
+import { API_URL } from "@/lib/api";
+import { db } from "@/lib/db";
 
 interface ParsedTable {
-  name: string
+  name: string;
   columns: Array<{
-    name: string
-    type: string
-    nullable: boolean
-    primaryKey: boolean
-    unique: boolean
-    defaultValue?: string
+    name: string;
+    type: string;
+    nullable: boolean;
+    primaryKey: boolean;
+    unique: boolean;
+    defaultValue?: string;
     references?: {
-      table: string
-      column: string
-    }
-  }>
+      table: string;
+      column: string;
+    };
+  }>;
   foreignKeys: Array<{
-    column: string
+    column: string;
     references: {
-      table: string
-      column: string
-    }
-  }>
-  order: number
+      table: string;
+      column: string;
+    };
+  }>;
+  order: number;
 }
 
 export function DDLUploader() {
-  const [ddlText, setDdlText] = useState('')
-  const [parsedTables, setParsedTables] = useState<ParsedTable[]>([])
-  const queryClient = useQueryClient()
+  const [ddlText, setDdlText] = useState("");
+  const [parsedTables, setParsedTables] = useState<ParsedTable[]>([]);
+  const queryClient = useQueryClient();
 
   const parseMutation = useMutation({
     mutationFn: async (ddls: string[]) => {
       const response = await fetch(`${API_URL}/api/tables/parse-multiple`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ddls }),
-      })
+      });
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to parse DDL')
+        const error = await response.json();
+        throw new Error(error.error || "Failed to parse DDL");
       }
 
-      return response.json()
+      return response.json();
     },
     onSuccess: async (data) => {
-      setParsedTables(data.tables)
-      
+      setParsedTables(data.tables);
+
       // IndexedDBに保存
       for (const table of data.tables) {
         await db.ddlTables.put({
           name: table.name,
           ddl: ddlText, // 元のDDLを保存
-          dependencies: table.foreignKeys.map((fk: ParsedTable['foreignKeys'][0]) => fk.references.table),
+          dependencies: table.foreignKeys.map(
+            (fk: ParsedTable["foreignKeys"][0]) => fk.references.table,
+          ),
           order: table.order,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-        })
+        });
       }
 
-      toast.success(`${data.tables.length}個のテーブル定義を解析しました`)
+      toast.success(`${data.tables.length}個のテーブル定義を解析しました`);
     },
     onError: (error: Error) => {
-      toast.error(`解析エラー: ${error.message}`)
+      toast.error(`解析エラー: ${error.message}`);
     },
-  })
+  });
 
   const handleParse = () => {
     if (!ddlText.trim()) {
-      toast.error('DDLを入力してください')
-      return
+      toast.error("DDLを入力してください");
+      return;
     }
 
     // セミコロンで分割して複数のDDLを抽出
     const ddls = ddlText
-      .split(';')
-      .map(ddl => ddl.trim())
-      .filter(ddl => ddl.length > 0)
-      .map(ddl => ddl + ';')
+      .split(";")
+      .map((ddl) => ddl.trim())
+      .filter((ddl) => ddl.length > 0)
+      .map((ddl) => ddl + ";");
 
     if (ddls.length === 0) {
-      toast.error('有効なDDLが見つかりません')
-      return
+      toast.error("有効なDDLが見つかりません");
+      return;
     }
 
-    parseMutation.mutate(ddls)
-  }
+    parseMutation.mutate(ddls);
+  };
 
   // PostgreSQLにDDLを実行
   const executeDDLMutation = useMutation({
     mutationFn: async (ddls: string[]) => {
       const response = await fetch(`${API_URL}/api/database/execute-ddls`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ddls }),
-      })
+      });
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to execute DDL')
+        const error = await response.json();
+        throw new Error(error.error || "Failed to execute DDL");
       }
 
-      return response.json()
+      return response.json();
     },
     onSuccess: (data) => {
-      toast.success('DDLをPostgreSQLで実行しました')
-      queryClient.invalidateQueries({ queryKey: ['database-tables'] })
+      toast.success("DDLをPostgreSQLで実行しました");
+      queryClient.invalidateQueries({ queryKey: ["database-tables"] });
     },
     onError: (error: Error) => {
-      toast.error(`DDL実行エラー: ${error.message}`)
+      toast.error(`DDL実行エラー: ${error.message}`);
     },
-  })
+  });
 
   const handleExecuteDDL = () => {
     if (parsedTables.length === 0) {
-      toast.error('先にDDLを解析してください')
-      return
+      toast.error("先にDDLを解析してください");
+      return;
     }
 
     // 解析済みのDDLを実行（依存順に並んでいる）
     const ddls = ddlText
-      .split(';')
-      .map(ddl => ddl.trim())
-      .filter(ddl => ddl.length > 0)
-      .map(ddl => ddl + ';')
+      .split(";")
+      .map((ddl) => ddl.trim())
+      .filter((ddl) => ddl.length > 0)
+      .map((ddl) => ddl + ";");
 
-    executeDDLMutation.mutate(ddls)
-  }
+    executeDDLMutation.mutate(ddls);
+  };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-    const reader = new FileReader()
+    const reader = new FileReader();
     reader.onload = (e) => {
-      const content = e.target?.result as string
-      setDdlText(content)
-    }
-    reader.readAsText(file)
-  }
+      const content = e.target?.result as string;
+      setDdlText(content);
+    };
+    reader.readAsText(file);
+  };
 
   return (
     <Card>
@@ -191,22 +199,22 @@ export function DDLUploader() {
         </div>
 
         <div className="flex gap-2">
-          <Button 
-            onClick={handleParse} 
+          <Button
+            onClick={handleParse}
             disabled={parseMutation.isPending}
             className="flex-1"
           >
-            {parseMutation.isPending ? '解析中...' : 'テーブルを解析'}
+            {parseMutation.isPending ? "解析中..." : "テーブルを解析"}
           </Button>
 
-          <Button 
-            onClick={handleExecuteDDL} 
+          <Button
+            onClick={handleExecuteDDL}
             disabled={executeDDLMutation.isPending || parsedTables.length === 0}
             variant="default"
             className="flex-1"
           >
             <Database className="mr-2 h-4 w-4" />
-            {executeDDLMutation.isPending ? '実行中...' : 'PostgreSQLで実行'}
+            {executeDDLMutation.isPending ? "実行中..." : "PostgreSQLで実行"}
           </Button>
         </div>
 
@@ -234,5 +242,5 @@ export function DDLUploader() {
         )}
       </CardContent>
     </Card>
-  )
+  );
 }

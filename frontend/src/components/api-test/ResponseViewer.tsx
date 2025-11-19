@@ -1,35 +1,39 @@
-'use client'
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Button } from '@/components/ui/button'
-import { Copy, Check, FileJson, Loader2 } from 'lucide-react'
-import { useState } from 'react'
-import { toast } from 'sonner'
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
+import { Copy, Check, FileJson, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 
 interface ResponseViewerProps {
   response: {
-    status: number
-    statusText: string
-    headers: Record<string, string>
-    body: any
-    duration: number
-    timestamp: string
-  } | null
+    status: number;
+    statusText: string;
+    headers: Record<string, string>;
+    body: any;
+    duration: number;
+    timestamp: string;
+  } | null;
   error?: {
-    error: string
-    message: string
-    duration: number
-    timestamp: string
-  } | null
-  isLoading?: boolean
+    error: string;
+    message: string;
+    duration: number;
+    timestamp: string;
+  } | null;
+  isLoading?: boolean;
 }
 
-export function ResponseViewer({ response, error, isLoading }: ResponseViewerProps) {
-  const [copiedBody, setCopiedBody] = useState(false)
-  const [copiedHeaders, setCopiedHeaders] = useState(false)
+export function ResponseViewer({
+  response,
+  error,
+  isLoading,
+}: ResponseViewerProps) {
+  const [copiedBody, setCopiedBody] = useState(false);
+  const [copiedHeaders, setCopiedHeaders] = useState(false);
 
   if (isLoading) {
     return (
@@ -46,7 +50,7 @@ export function ResponseViewer({ response, error, isLoading }: ResponseViewerPro
           </p>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   if (!response && !error) {
@@ -58,7 +62,7 @@ export function ResponseViewer({ response, error, isLoading }: ResponseViewerPro
           </p>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   if (error) {
@@ -83,81 +87,81 @@ export function ResponseViewer({ response, error, isLoading }: ResponseViewerPro
               <span className="font-medium">実行時間:</span> {error.duration}ms
             </div>
             <div>
-              <span className="font-medium">時刻:</span>{' '}
+              <span className="font-medium">時刻:</span>{" "}
               {new Date(error.timestamp).toLocaleTimeString()}
             </div>
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
-  if (!response) return null
+  if (!response) return null;
 
   const getStatusColor = (status: number) => {
-    if (status >= 200 && status < 300) return 'bg-green-500'
-    if (status >= 300 && status < 400) return 'bg-blue-500'
-    if (status >= 400 && status < 500) return 'bg-yellow-500'
-    return 'bg-red-500'
-  }
+    if (status >= 200 && status < 300) return "bg-green-500";
+    if (status >= 300 && status < 400) return "bg-blue-500";
+    if (status >= 400 && status < 500) return "bg-yellow-500";
+    return "bg-red-500";
+  };
 
   const formatBody = (body: any) => {
-    if (typeof body === 'string') {
+    if (typeof body === "string") {
       try {
-        return JSON.stringify(JSON.parse(body), null, 2)
+        return JSON.stringify(JSON.parse(body), null, 2);
       } catch {
-        return body
+        return body;
       }
     }
-    return JSON.stringify(body, null, 2)
-  }
+    return JSON.stringify(body, null, 2);
+  };
 
   const handleCopyBody = async () => {
     try {
-      const formattedBody = formatBody(response.body)
-      await navigator.clipboard.writeText(formattedBody)
-      setCopiedBody(true)
-      toast.success('レスポンスボディをコピーしました')
-      setTimeout(() => setCopiedBody(false), 2000)
+      const formattedBody = formatBody(response.body);
+      await navigator.clipboard.writeText(formattedBody);
+      setCopiedBody(true);
+      toast.success("レスポンスボディをコピーしました");
+      setTimeout(() => setCopiedBody(false), 2000);
     } catch (err) {
-      toast.error('コピーに失敗しました')
+      toast.error("コピーに失敗しました");
     }
-  }
+  };
 
   const handleCopyHeaders = async () => {
     try {
       const headersText = Object.entries(response.headers)
         .map(([key, value]) => `${key}: ${value}`)
-        .join('\n')
-      await navigator.clipboard.writeText(headersText)
-      setCopiedHeaders(true)
-      toast.success('ヘッダーをコピーしました')
-      setTimeout(() => setCopiedHeaders(false), 2000)
+        .join("\n");
+      await navigator.clipboard.writeText(headersText);
+      setCopiedHeaders(true);
+      toast.success("ヘッダーをコピーしました");
+      setTimeout(() => setCopiedHeaders(false), 2000);
     } catch (err) {
-      toast.error('コピーに失敗しました')
+      toast.error("コピーに失敗しました");
     }
-  }
+  };
 
   const handleOpenInVSCode = async () => {
     try {
-      const formattedBody = formatBody(response.body)
+      const formattedBody = formatBody(response.body);
 
       // 一時ファイルとして保存するためのAPIエンドポイントを呼び出す
-      const blob = new Blob([formattedBody], { type: 'application/json' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `response-${Date.now()}.json`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
+      const blob = new Blob([formattedBody], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `response-${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
 
-      toast.success('レスポンスをダウンロードしました')
+      toast.success("レスポンスをダウンロードしました");
     } catch (err) {
-      toast.error('ダウンロードに失敗しました')
+      toast.error("ダウンロードに失敗しました");
     }
-  }
+  };
 
   return (
     <Card>
@@ -244,7 +248,7 @@ export function ResponseViewer({ response, error, isLoading }: ResponseViewerPro
               <div className="p-4 space-y-2">
                 {Object.entries(response.headers).map(([key, value]) => (
                   <div key={key} className="text-sm">
-                    <span className="font-medium">{key}:</span>{' '}
+                    <span className="font-medium">{key}:</span>{" "}
                     <span className="text-muted-foreground">{value}</span>
                   </div>
                 ))}
@@ -254,5 +258,5 @@ export function ResponseViewer({ response, error, isLoading }: ResponseViewerPro
         </Tabs>
       </CardContent>
     </Card>
-  )
+  );
 }

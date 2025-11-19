@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useRef } from 'react';
-import { Editor } from '@monaco-editor/react';
-import { useTheme } from 'next-themes';
-import { Button } from '@/components/ui/button';
-import { Code } from 'lucide-react';
-import type { editor } from 'monaco-editor';
+import { useRef } from "react";
+import { Editor } from "@monaco-editor/react";
+import { useTheme } from "next-themes";
+import { Button } from "@/components/ui/button";
+import { Code } from "lucide-react";
+import type { editor } from "monaco-editor";
 
 interface JsonEditorProps {
   value: string;
@@ -19,7 +19,7 @@ interface JsonEditorProps {
 export function JsonEditor({
   value,
   onChange,
-  height = '200px',
+  height = "200px",
   disabled = false,
   readOnly = false,
   showFormatButton = true,
@@ -37,7 +37,7 @@ export function JsonEditor({
 
   const handleFormat = () => {
     if (editorRef.current) {
-      editorRef.current.getAction('editor.action.formatDocument')?.run();
+      editorRef.current.getAction("editor.action.formatDocument")?.run();
     }
   };
 
@@ -124,13 +124,14 @@ export function JsonEditor({
           value={value}
           onChange={handleEditorChange}
           onMount={handleEditorDidMount}
-          theme={theme === 'dark' ? 'vs-dark' : 'light'}
+          theme={theme === "dark" ? "vs-dark" : "light"}
           options={{
             minimap: { enabled: false },
             fontSize: 14,
-            fontFamily: '"Cascadia Code", "Fira Code", "Consolas", "Monaco", monospace',
+            fontFamily:
+              '"Cascadia Code", "Fira Code", "Consolas", "Monaco", monospace',
             fontLigatures: true,
-            lineNumbers: 'on',
+            lineNumbers: "on",
             lineNumbersMinChars: 4,
             glyphMargin: false,
             folding: true,
@@ -138,15 +139,15 @@ export function JsonEditor({
             scrollBeyondLastLine: false,
             automaticLayout: true,
             tabSize: 2,
-            wordWrap: 'on',
+            wordWrap: "on",
             formatOnPaste: true,
             formatOnType: false,
             readOnly: disabled || readOnly,
             domReadOnly: disabled || readOnly,
             padding: { top: 8, bottom: 8 },
             scrollbar: {
-              vertical: 'visible',
-              horizontal: 'visible',
+              vertical: "visible",
+              horizontal: "visible",
               verticalScrollbarSize: 14,
               horizontalScrollbarSize: 14,
               useShadows: true,
@@ -155,11 +156,11 @@ export function JsonEditor({
             hideCursorInOverviewRuler: true,
             overviewRulerBorder: false,
             fixedOverflowWidgets: true,
-            renderLineHighlight: 'all',
+            renderLineHighlight: "all",
             renderLineHighlightOnlyWhenFocus: false,
             smoothScrolling: true,
-            cursorBlinking: 'blink',
-            cursorSmoothCaretAnimation: 'off',
+            cursorBlinking: "blink",
+            cursorSmoothCaretAnimation: "off",
             bracketPairColorization: {
               enabled: true,
             },

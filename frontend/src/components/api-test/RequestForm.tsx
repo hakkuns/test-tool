@@ -1,27 +1,27 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { JsonEditor } from '@/components/ui/json-editor';
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { JsonEditor } from "@/components/ui/json-editor";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Trash2, RefreshCw, Copy, Check } from 'lucide-react';
-import { ConstantsTooltip } from '@/components/ui/constants-tooltip';
-import type { TestScenario } from '@/types/scenario';
+} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, Trash2, RefreshCw, Copy, Check } from "lucide-react";
+import { ConstantsTooltip } from "@/components/ui/constants-tooltip";
+import type { TestScenario } from "@/types/scenario";
 import {
   replaceConstantsInHeaders,
   replaceConstantsInObject,
-} from '@/utils/constants';
-import { toast } from 'sonner';
+} from "@/utils/constants";
+import { toast } from "sonner";
 
 interface HeaderEntry {
   key: string;
@@ -47,35 +47,35 @@ export function RequestForm({
   initialData,
   originalScenario,
 }: RequestFormProps) {
-  const [method, setMethod] = useState('GET');
-  const [url, setUrl] = useState('http://localhost:8080/api/');
+  const [method, setMethod] = useState("GET");
+  const [url, setUrl] = useState("http://localhost:8080/api/");
   const [headers, setHeaders] = useState<HeaderEntry[]>([
-    { key: 'Content-Type', value: 'application/json' },
+    { key: "Content-Type", value: "application/json" },
   ]);
-  const [body, setBody] = useState('{\n  \n}');
-  const [requestTimeout, setRequestTimeout] = useState('30000');
+  const [body, setBody] = useState("{\n  \n}");
+  const [requestTimeout, setRequestTimeout] = useState("30000");
   const [copiedCurl, setCopiedCurl] = useState(false);
 
   // curlコマンドを生成
   const generateCurlCommand = () => {
     let curl = `curl -X ${method}`;
-    
+
     // URL
     curl += ` '${url}'`;
-    
+
     // ヘッダー
     for (const header of headers) {
       if (header.key && header.value) {
         curl += ` \\\n  -H '${header.key}: ${header.value}'`;
       }
     }
-    
+
     // ボディ（GET/HEAD以外）
-    if (method !== 'GET' && method !== 'HEAD' && body.trim()) {
+    if (method !== "GET" && method !== "HEAD" && body.trim()) {
       const escapedBody = body.replace(/'/g, "'\\''");
       curl += ` \\\n  -d '${escapedBody}'`;
     }
-    
+
     return curl;
   };
 
@@ -85,11 +85,11 @@ export function RequestForm({
       const curlCommand = generateCurlCommand();
       await navigator.clipboard.writeText(curlCommand);
       setCopiedCurl(true);
-      toast.success('curlコマンドをコピーしました');
+      toast.success("curlコマンドをコピーしました");
       setTimeout(() => setCopiedCurl(false), 2000);
     } catch (err) {
-      toast.error('コピーに失敗しました');
-      console.error('Failed to copy:', err);
+      toast.error("コピーに失敗しました");
+      console.error("Failed to copy:", err);
     }
   };
 
@@ -103,12 +103,12 @@ export function RequestForm({
       if (initialData.testSettings) {
         if (initialData.testSettings.headers) {
           const headerEntries = Object.entries(
-            initialData.testSettings.headers
+            initialData.testSettings.headers,
           ).map(([key, value]) => ({ key, value }));
           setHeaders(
             headerEntries.length > 0
               ? headerEntries
-              : [{ key: 'Content-Type', value: 'application/json' }]
+              : [{ key: "Content-Type", value: "application/json" }],
           );
         }
         if (initialData.testSettings.body) {
@@ -116,14 +116,14 @@ export function RequestForm({
         }
       } else {
         // testSettingsがない場合はデフォルト
-        setHeaders([{ key: 'Content-Type', value: 'application/json' }]);
-        setBody('{\n  \n}');
+        setHeaders([{ key: "Content-Type", value: "application/json" }]);
+        setBody("{\n  \n}");
       }
     }
   }, [initialData]);
 
   const handleAddHeader = () => {
-    setHeaders([...headers, { key: '', value: '' }]);
+    setHeaders([...headers, { key: "", value: "" }]);
   };
 
   const handleRemoveHeader = (index: number) => {
@@ -132,8 +132,8 @@ export function RequestForm({
 
   const handleHeaderChange = (
     index: number,
-    field: 'key' | 'value',
-    value: string
+    field: "key" | "value",
+    value: string,
   ) => {
     const newHeaders = [...headers];
     newHeaders[index][field] = value;
@@ -149,7 +149,7 @@ export function RequestForm({
     // 元のヘッダーから定数を再変換
     if (originalScenario.testSettings.headers) {
       const originalHeaders = Object.entries(
-        originalScenario.testSettings.headers
+        originalScenario.testSettings.headers,
       ).map(([key, value]) => ({ key, value }));
       const convertedHeaders = replaceConstantsInHeaders(originalHeaders);
       setHeaders(convertedHeaders);
@@ -181,7 +181,7 @@ export function RequestForm({
 
     // ボディはGET/HEADでは送信しない
     const requestBody =
-      method !== 'GET' && method !== 'HEAD' ? body : undefined;
+      method !== "GET" && method !== "HEAD" ? body : undefined;
 
     await onSubmit({
       method,
@@ -305,7 +305,7 @@ export function RequestForm({
                       placeholder="キー"
                       value={header.key}
                       onChange={(e) =>
-                        handleHeaderChange(index, 'key', e.target.value)
+                        handleHeaderChange(index, "key", e.target.value)
                       }
                       className="flex-1"
                     />
@@ -313,7 +313,7 @@ export function RequestForm({
                       placeholder="値"
                       value={header.value}
                       onChange={(e) =>
-                        handleHeaderChange(index, 'value', e.target.value)
+                        handleHeaderChange(index, "value", e.target.value)
                       }
                       className="flex-1"
                     />
@@ -332,7 +332,7 @@ export function RequestForm({
 
             {/* ボディタブ */}
             <TabsContent value="body" className="space-y-4 mt-2">
-              {(method === 'GET' || method === 'HEAD') ? (
+              {method === "GET" || method === "HEAD" ? (
                 <p className="text-sm text-muted-foreground py-8 text-center">
                   {method} リクエストではボディを送信できません
                 </p>
@@ -345,7 +345,7 @@ export function RequestForm({
                     </div>
                     <JsonEditor
                       value={body}
-                      onChange={(value) => setBody(value || '')}
+                      onChange={(value) => setBody(value || "")}
                       height="256px"
                     />
                   </div>
@@ -374,7 +374,7 @@ export function RequestForm({
           </Tabs>
 
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? '送信中...' : 'リクエストを送信'}
+            {isLoading ? "送信中..." : "リクエストを送信"}
           </Button>
         </form>
       </CardContent>

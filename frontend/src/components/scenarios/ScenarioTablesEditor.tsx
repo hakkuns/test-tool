@@ -1,17 +1,17 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
   TableBody,
@@ -19,10 +19,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Plus, Trash2, FileText } from 'lucide-react';
-import type { DDLTable } from '@/types/scenario';
-import { toast } from 'sonner';
+} from "@/components/ui/table";
+import { Plus, Trash2, FileText } from "lucide-react";
+import type { DDLTable } from "@/types/scenario";
+import { toast } from "sonner";
 
 interface ScenarioTablesEditorProps {
   tables: DDLTable[];
@@ -35,15 +35,15 @@ export function ScenarioTablesEditor({
 }: ScenarioTablesEditorProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [newTable, setNewTable] = useState<Partial<DDLTable>>({
-    name: '',
-    ddl: '',
+    name: "",
+    ddl: "",
     dependencies: [],
     order: 0,
   });
 
   const handleAdd = () => {
     if (!newTable.name || !newTable.ddl) {
-      toast.error('テーブル名とDDLを入力してください');
+      toast.error("テーブル名とDDLを入力してください");
       return;
     }
 
@@ -55,20 +55,20 @@ export function ScenarioTablesEditor({
     };
 
     onChange([...tables, table]);
-    setNewTable({ name: '', ddl: '', dependencies: [], order: 0 });
+    setNewTable({ name: "", ddl: "", dependencies: [], order: 0 });
     setIsAdding(false);
-    toast.success('テーブルを追加しました');
+    toast.success("テーブルを追加しました");
   };
 
   const handleRemove = (index: number) => {
     onChange(tables.filter((_, i) => i !== index));
-    toast.success('テーブルを削除しました');
+    toast.success("テーブルを削除しました");
   };
 
   const handleImportJSON = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
@@ -78,12 +78,12 @@ export function ScenarioTablesEditor({
         const data = JSON.parse(text);
         if (Array.isArray(data)) {
           onChange(data);
-          toast.success('テーブル定義をインポートしました');
+          toast.success("テーブル定義をインポートしました");
         } else {
-          toast.error('無効なJSON形式です');
+          toast.error("無効なJSON形式です");
         }
       } catch (error) {
-        toast.error('JSONの読み込みに失敗しました');
+        toast.error("JSONの読み込みに失敗しました");
       }
     };
     input.click();
@@ -147,7 +147,7 @@ export function ScenarioTablesEditor({
                     <TableCell>
                       {table.dependencies.length > 0 ? (
                         <span className="text-xs text-muted-foreground">
-                          {table.dependencies.join(', ')}
+                          {table.dependencies.join(", ")}
                         </span>
                       ) : (
                         <span className="text-xs text-muted-foreground">
@@ -187,7 +187,7 @@ export function ScenarioTablesEditor({
                 <Label htmlFor="table-name">テーブル名 *</Label>
                 <Input
                   id="table-name"
-                  value={newTable.name || ''}
+                  value={newTable.name || ""}
                   onChange={(e) =>
                     setNewTable({ ...newTable, name: e.target.value })
                   }
@@ -198,7 +198,7 @@ export function ScenarioTablesEditor({
                 <Label htmlFor="table-ddl">DDL (CREATE TABLE文) *</Label>
                 <Textarea
                   id="table-ddl"
-                  value={newTable.ddl || ''}
+                  value={newTable.ddl || ""}
                   onChange={(e) =>
                     setNewTable({ ...newTable, ddl: e.target.value })
                   }
@@ -211,12 +211,12 @@ export function ScenarioTablesEditor({
                 <Label htmlFor="table-deps">依存テーブル (カンマ区切り)</Label>
                 <Input
                   id="table-deps"
-                  value={newTable.dependencies?.join(', ') || ''}
+                  value={newTable.dependencies?.join(", ") || ""}
                   onChange={(e) =>
                     setNewTable({
                       ...newTable,
                       dependencies: e.target.value
-                        .split(',')
+                        .split(",")
                         .map((s) => s.trim())
                         .filter(Boolean),
                     })
@@ -231,8 +231,8 @@ export function ScenarioTablesEditor({
                   onClick={() => {
                     setIsAdding(false);
                     setNewTable({
-                      name: '',
-                      ddl: '',
+                      name: "",
+                      ddl: "",
                       dependencies: [],
                       order: 0,
                     });

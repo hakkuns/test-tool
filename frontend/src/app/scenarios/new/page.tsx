@@ -1,39 +1,39 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from "@/components/ui/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { ScenarioTablesEditor } from '@/components/scenarios/ScenarioTablesEditor';
-import { ScenarioDataEditor } from '@/components/scenarios/ScenarioDataEditor';
-import { ScenarioMocksEditor } from '@/components/scenarios/ScenarioMocksEditor';
-import { TestSettingsEditor } from '@/components/scenarios/TestSettingsEditor';
-import { scenariosApi, groupsApi } from '@/lib/api/scenarios';
-import { FileJson, Upload } from 'lucide-react';
+} from "@/components/ui/select";
+import { ScenarioTablesEditor } from "@/components/scenarios/ScenarioTablesEditor";
+import { ScenarioDataEditor } from "@/components/scenarios/ScenarioDataEditor";
+import { ScenarioMocksEditor } from "@/components/scenarios/ScenarioMocksEditor";
+import { TestSettingsEditor } from "@/components/scenarios/TestSettingsEditor";
+import { scenariosApi, groupsApi } from "@/lib/api/scenarios";
+import { FileJson, Upload } from "lucide-react";
 import type {
   CreateScenarioInput,
   DDLTable,
   TableData,
   MockEndpoint,
   ScenarioGroup,
-} from '@/types/scenario';
-import { toast } from 'sonner';
+} from "@/types/scenario";
+import { toast } from "sonner";
 
 export default function NewScenarioPage() {
   const router = useRouter();
@@ -41,21 +41,21 @@ export default function NewScenarioPage() {
   const [groups, setGroups] = useState<ScenarioGroup[]>([]);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isCreated, setIsCreated] = useState(false);
-  const [createdScenarioId, setCreatedScenarioId] = useState<string>('');
+  const [createdScenarioId, setCreatedScenarioId] = useState<string>("");
 
   // Basic info
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [groupId, setGroupId] = useState<string>('');
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [groupId, setGroupId] = useState<string>("");
   const [tags, setTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState('');
+  const [tagInput, setTagInput] = useState("");
 
   // Target API
-  const [targetApiPath, setTargetApiPath] = useState('');
+  const [targetApiPath, setTargetApiPath] = useState("");
   const [targetApiMethod, setTargetApiMethod] = useState<
-    'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'HEAD' | 'OPTIONS'
-  >('GET');
-  const [targetApiUrl, setTargetApiUrl] = useState('');
+    "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "HEAD" | "OPTIONS"
+  >("GET");
+  const [targetApiUrl, setTargetApiUrl] = useState("");
   const [targetApiHeaders, setTargetApiHeaders] = useState<
     Record<string, string>
   >({});
@@ -68,7 +68,7 @@ export default function NewScenarioPage() {
 
   // Test settings
   const [testHeaders, setTestHeaders] = useState<Record<string, string>>({});
-  const [testBody, setTestBody] = useState('');
+  const [testBody, setTestBody] = useState("");
 
   // グループ一覧を取得
   useEffect(() => {
@@ -77,7 +77,7 @@ export default function NewScenarioPage() {
         const data = await groupsApi.getAll();
         setGroups(data);
       } catch (error) {
-        console.error('Failed to fetch groups:', error);
+        console.error("Failed to fetch groups:", error);
       }
     };
     fetchGroups();
@@ -92,7 +92,7 @@ export default function NewScenarioPage() {
         targetApiUrl.trim() ||
         tables.length > 0 ||
         tableData.length > 0 ||
-        mockApis.length > 0
+        mockApis.length > 0,
     );
     setHasUnsavedChanges(hasData);
   }, [name, description, tags, targetApiUrl, tables, tableData, mockApis]);
@@ -102,32 +102,32 @@ export default function NewScenarioPage() {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasUnsavedChanges) {
         e.preventDefault();
-        e.returnValue = '';
+        e.returnValue = "";
       }
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
 
     // リンククリックをインターセプト
     const handleClick = (e: MouseEvent) => {
       if (!hasUnsavedChanges) return;
 
       const target = e.target as HTMLElement;
-      const link = target.closest('a');
+      const link = target.closest("a");
 
-      if (link && link.href && !link.href.includes('/scenarios/new')) {
-        if (!confirm('変更が保存されていません。このページを離れますか？')) {
+      if (link && link.href && !link.href.includes("/scenarios/new")) {
+        if (!confirm("変更が保存されていません。このページを離れますか？")) {
           e.preventDefault();
           e.stopPropagation();
         }
       }
     };
 
-    document.addEventListener('click', handleClick, true);
+    document.addEventListener("click", handleClick, true);
 
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      document.removeEventListener('click', handleClick, true);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      document.removeEventListener("click", handleClick, true);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasUnsavedChanges]);
@@ -135,7 +135,7 @@ export default function NewScenarioPage() {
   const handleAddTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
       setTags([...tags, tagInput.trim()]);
-      setTagInput('');
+      setTagInput("");
     }
   };
 
@@ -144,9 +144,9 @@ export default function NewScenarioPage() {
   };
 
   const handleImportJSON = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
@@ -178,20 +178,20 @@ export default function NewScenarioPage() {
         if (scenarioData.mockApis) setMockApis(scenarioData.mockApis);
         if (scenarioData.testSettings) {
           setTestHeaders(scenarioData.testSettings.headers || {});
-          setTestBody(scenarioData.testSettings.body || '');
+          setTestBody(scenarioData.testSettings.body || "");
         }
 
-        toast.success('シナリオをインポートしました');
+        toast.success("シナリオをインポートしました");
       } catch (error) {
-        console.error('Import error:', error);
-        toast.error('JSONの読み込みに失敗しました');
+        console.error("Import error:", error);
+        toast.error("JSONの読み込みに失敗しました");
       }
     };
     input.click();
   };
 
   const handleExportJSON = () => {
-    const data: Omit<CreateScenarioInput, 'id' | 'createdAt' | 'updatedAt'> = {
+    const data: Omit<CreateScenarioInput, "id" | "createdAt" | "updatedAt"> = {
       name,
       description: description || undefined,
       targetApi: {
@@ -218,26 +218,26 @@ export default function NewScenarioPage() {
     };
 
     const json = JSON.stringify(data, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
+    const blob = new Blob([json], { type: "application/json" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `scenario-${name || 'new'}.json`;
+    a.download = `scenario-${name || "new"}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success('シナリオをエクスポートしました');
+    toast.success("シナリオをエクスポートしました");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!name.trim()) {
-      toast.error('シナリオ名を入力してください');
+      toast.error("シナリオ名を入力してください");
       return;
     }
 
     if (!targetApiUrl.trim()) {
-      toast.error('対象APIのURLを入力してください');
+      toast.error("対象APIのURLを入力してください");
       return;
     }
 
@@ -275,10 +275,10 @@ export default function NewScenarioPage() {
       setHasUnsavedChanges(false);
       setIsCreated(true);
       setCreatedScenarioId(result.id);
-      toast.success('シナリオを作成しました');
+      toast.success("シナリオを作成しました");
     } catch (error) {
-      console.error('Failed to create scenario:', error);
-      toast.error('シナリオの作成に失敗しました');
+      console.error("Failed to create scenario:", error);
+      toast.error("シナリオの作成に失敗しました");
     } finally {
       setIsSubmitting(false);
     }
@@ -329,9 +329,9 @@ export default function NewScenarioPage() {
             <div className="space-y-2">
               <Label htmlFor="group">グループ</Label>
               <Select
-                value={groupId || 'none'}
+                value={groupId || "none"}
                 onValueChange={(value) =>
-                  setGroupId(value === 'none' ? '' : value)
+                  setGroupId(value === "none" ? "" : value)
                 }
               >
                 <SelectTrigger>
@@ -354,7 +354,7 @@ export default function NewScenarioPage() {
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
+                    if (e.key === "Enter") {
                       e.preventDefault();
                       handleAddTag();
                     }
@@ -459,7 +459,7 @@ export default function NewScenarioPage() {
             onClick={() => {
               if (
                 hasUnsavedChanges &&
-                !confirm('変更が保存されていません。このページを離れますか？')
+                !confirm("変更が保存されていません。このページを離れますか？")
               ) {
                 return;
               }
@@ -470,13 +470,15 @@ export default function NewScenarioPage() {
             キャンセル
           </Button>
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? '作成中...' : '作成'}
+            {isSubmitting ? "作成中..." : "作成"}
           </Button>
           {isCreated && createdScenarioId && (
             <Button
               type="button"
               variant="secondary"
-              onClick={() => router.push(`/api-test?scenario=${createdScenarioId}`)}
+              onClick={() =>
+                router.push(`/api-test?scenario=${createdScenarioId}`)
+              }
             >
               API Test
             </Button>

@@ -1,23 +1,23 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -25,12 +25,12 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Switch } from '@/components/ui/switch';
-import { Plus, Trash2, FileText, Key, Link, Lock } from 'lucide-react';
-import type { TableData } from '@/types/scenario';
-import { toast } from 'sonner';
-import { getDatabaseTables, getTableSchema, getTableKeyInfo } from '@/lib/api';
+} from "@/components/ui/table";
+import { Switch } from "@/components/ui/switch";
+import { Plus, Trash2, FileText, Key, Link, Lock } from "lucide-react";
+import type { TableData } from "@/types/scenario";
+import { toast } from "sonner";
+import { getDatabaseTables, getTableSchema, getTableKeyInfo } from "@/lib/api";
 
 interface ScenarioDataEditorProps {
   tableData: TableData[];
@@ -43,7 +43,7 @@ export function ScenarioDataEditor({
   availableTables,
   onChange,
 }: ScenarioDataEditorProps) {
-  const [selectedTable, setSelectedTable] = useState<string>('');
+  const [selectedTable, setSelectedTable] = useState<string>("");
   const [columns, setColumns] = useState<string[]>([]);
   const [rows, setRows] = useState<Record<string, any>[]>([]);
   const [isReadOnly, setIsReadOnly] = useState<boolean>(false);
@@ -79,7 +79,7 @@ export function ScenarioDataEditor({
 
   // デフォルト値からオートインクリメントや自動設定を判定
   const parseColumnDefault = (
-    columnDefault: string | null
+    columnDefault: string | null,
   ): { hasDefault: boolean; isAutoIncrement: boolean } => {
     if (!columnDefault) {
       return { hasDefault: false, isAutoIncrement: false };
@@ -89,16 +89,16 @@ export function ScenarioDataEditor({
 
     // オートインクリメント（シーケンス）の検出
     const isAutoIncrement =
-      defaultLower.includes('nextval') ||
-      defaultLower.includes('auto_increment') ||
-      defaultLower.includes('identity');
+      defaultLower.includes("nextval") ||
+      defaultLower.includes("auto_increment") ||
+      defaultLower.includes("identity");
 
     // CURRENT_TIMESTAMP, NOW(), などの自動設定値
     const hasAutoDefault =
-      defaultLower.includes('current_timestamp') ||
-      defaultLower.includes('now()') ||
-      defaultLower.includes('current_date') ||
-      defaultLower.includes('current_time');
+      defaultLower.includes("current_timestamp") ||
+      defaultLower.includes("now()") ||
+      defaultLower.includes("current_date") ||
+      defaultLower.includes("current_time");
 
     return {
       hasDefault: hasAutoDefault || isAutoIncrement,
@@ -114,7 +114,7 @@ export function ScenarioDataEditor({
         const tableNames = result.tables.map((t) => t.table_name);
         setDbTables(tableNames);
       } catch (error) {
-        console.error('Failed to load tables:', error);
+        console.error("Failed to load tables:", error);
         // データベース接続エラーの場合は警告のみ表示
         // シナリオ作成は続行可能
       }
@@ -152,7 +152,7 @@ export function ScenarioDataEditor({
             schema.columns.forEach((col) => {
               const defaultInfo = parseColumnDefault(col.column_default);
               colInfo[col.column_name] = {
-                isNullable: col.is_nullable === 'YES',
+                isNullable: col.is_nullable === "YES",
                 dataType: col.data_type,
                 hasDefault: defaultInfo.hasDefault,
                 isAutoIncrement: defaultInfo.isAutoIncrement,
@@ -164,7 +164,7 @@ export function ScenarioDataEditor({
             const keys = await getTableKeyInfo(selectedTable);
             setKeyInfo(keys);
           } catch (error) {
-            console.error('Failed to load schema:', error);
+            console.error("Failed to load schema:", error);
             setColumnInfo({});
             setKeyInfo({ primaryKeys: [], foreignKeys: [] });
           }
@@ -186,7 +186,7 @@ export function ScenarioDataEditor({
             schema.columns.forEach((col) => {
               const defaultInfo = parseColumnDefault(col.column_default);
               colInfo[col.column_name] = {
-                isNullable: col.is_nullable === 'YES',
+                isNullable: col.is_nullable === "YES",
                 dataType: col.data_type,
                 hasDefault: defaultInfo.hasDefault,
                 isAutoIncrement: defaultInfo.isAutoIncrement,
@@ -200,7 +200,7 @@ export function ScenarioDataEditor({
             const keys = await getTableKeyInfo(selectedTable);
             setKeyInfo(keys);
           } catch (error) {
-            console.error('Failed to load schema:', error);
+            console.error("Failed to load schema:", error);
             setColumns([]);
             setRows([]);
             setColumnInfo({});
@@ -224,7 +224,7 @@ export function ScenarioDataEditor({
             schema.columns.forEach((col) => {
               const defaultInfo = parseColumnDefault(col.column_default);
               colInfo[col.column_name] = {
-                isNullable: col.is_nullable === 'YES',
+                isNullable: col.is_nullable === "YES",
                 dataType: col.data_type,
                 hasDefault: defaultInfo.hasDefault,
                 isAutoIncrement: defaultInfo.isAutoIncrement,
@@ -238,7 +238,7 @@ export function ScenarioDataEditor({
             const keys = await getTableKeyInfo(selectedTable);
             setKeyInfo(keys);
           } catch (error) {
-            console.error('Failed to load schema:', error);
+            console.error("Failed to load schema:", error);
             // スキーマ取得に失敗した場合は空にする
             setColumns([]);
             setRows([]);
@@ -264,7 +264,7 @@ export function ScenarioDataEditor({
   const handleAddRow = () => {
     const newRow: Record<string, any> = {};
     columns.forEach((col) => {
-      newRow[col] = '';
+      newRow[col] = "";
     });
     setRows([...rows, newRow]);
   };
@@ -276,7 +276,7 @@ export function ScenarioDataEditor({
   const handleCellChange = (
     rowIndex: number,
     colName: string,
-    value: string
+    value: string,
   ) => {
     const newRows = [...rows];
     newRows[rowIndex] = { ...newRows[rowIndex], [colName]: value };
@@ -285,35 +285,36 @@ export function ScenarioDataEditor({
 
   const handleSave = () => {
     if (!selectedTable) {
-      toast.error('テーブルを選択してください');
+      toast.error("テーブルを選択してください");
       return;
     }
 
     if (columns.length === 0) {
-      toast.error('カラムを追加してください');
+      toast.error("カラムを追加してください");
       return;
     }
 
     // 参照のみの場合は、行が空でもOK
     if (!isReadOnly && rows.length === 0) {
-      toast.error('少なくとも1行のデータを追加してください');
+      toast.error("少なくとも1行のデータを追加してください");
       return;
     }
 
     // bytea型カラムを暗号化カラムとして検出
     const encryptedColumns = columns.filter(
-      (col) => columnInfo[col] && columnInfo[col].dataType === 'bytea'
+      (col) => columnInfo[col] && columnInfo[col].dataType === "bytea",
     );
 
     const newData: TableData = {
       tableName: selectedTable,
       rows: isReadOnly ? [] : rows,
       readOnly: isReadOnly,
-      encryptedColumns: encryptedColumns.length > 0 ? encryptedColumns : undefined,
+      encryptedColumns:
+        encryptedColumns.length > 0 ? encryptedColumns : undefined,
     };
 
     const existingIndex = tableData.findIndex(
-      (d) => d.tableName === selectedTable
+      (d) => d.tableName === selectedTable,
     );
     if (existingIndex >= 0) {
       const updated = [...tableData];
@@ -325,23 +326,23 @@ export function ScenarioDataEditor({
 
     toast.success(
       isReadOnly
-        ? 'テーブルを参照のみとして保存しました'
-        : 'テーブルデータを保存しました'
+        ? "テーブルを参照のみとして保存しました"
+        : "テーブルデータを保存しました",
     );
   };
 
   const handleRemoveTableData = (tableName: string) => {
     onChange(tableData.filter((d) => d.tableName !== tableName));
     if (selectedTable === tableName) {
-      setSelectedTable('');
+      setSelectedTable("");
     }
-    toast.success('テーブルデータを削除しました');
+    toast.success("テーブルデータを削除しました");
   };
 
   const handleImportJSON = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
@@ -351,12 +352,12 @@ export function ScenarioDataEditor({
         const data = JSON.parse(text);
         if (Array.isArray(data)) {
           onChange(data);
-          toast.success('テーブルデータをインポートしました');
+          toast.success("テーブルデータをインポートしました");
         } else {
-          toast.error('無効なJSON形式です');
+          toast.error("無効なJSON形式です");
         }
       } catch (error) {
-        toast.error('JSONの読み込みに失敗しました');
+        toast.error("JSONの読み込みに失敗しました");
       }
     };
     input.click();
@@ -485,8 +486,8 @@ export function ScenarioDataEditor({
                             key={index}
                             className={`min-w-[150px] whitespace-nowrap ${
                               isGrayedOut
-                                ? 'bg-muted/50 text-muted-foreground'
-                                : ''
+                                ? "bg-muted/50 text-muted-foreground"
+                                : ""
                             }`}
                           >
                             <div className="flex items-center gap-1">
@@ -497,16 +498,16 @@ export function ScenarioDataEditor({
                                 </div>
                               )}
                               {keyInfo.foreignKeys.some(
-                                (fk) => fk.column === col
+                                (fk) => fk.column === col,
                               ) && (
                                 <div
                                   title={`外部キー: ${
                                     keyInfo.foreignKeys.find(
-                                      (fk) => fk.column === col
+                                      (fk) => fk.column === col,
                                     )?.references.table
                                   }.${
                                     keyInfo.foreignKeys.find(
-                                      (fk) => fk.column === col
+                                      (fk) => fk.column === col,
                                     )?.references.column
                                   }`}
                                 >
@@ -514,7 +515,7 @@ export function ScenarioDataEditor({
                                 </div>
                               )}
                               {columnInfo[col] &&
-                                columnInfo[col].dataType === 'bytea' && (
+                                columnInfo[col].dataType === "bytea" && (
                                   <div title="暗号化カラム (bytea)">
                                     <Lock className="h-3 w-3 text-purple-600" />
                                   </div>
@@ -549,26 +550,26 @@ export function ScenarioDataEditor({
                         {columns.map((col, colIndex) => {
                           const colMeta = columnInfo[col];
                           const dataType =
-                            colMeta?.dataType?.toLowerCase() || '';
+                            colMeta?.dataType?.toLowerCase() || "";
                           const isGrayedOut = shouldGrayOut(col);
 
                           // データ型に応じた入力フィールドを選択
-                          if (dataType.includes('bool')) {
+                          if (dataType.includes("bool")) {
                             // Boolean型
                             return (
                               <TableCell
                                 key={colIndex}
                                 className={`min-w-[150px] ${
-                                  isGrayedOut ? 'bg-muted/30' : ''
+                                  isGrayedOut ? "bg-muted/30" : ""
                                 }`}
                               >
                                 <Select
-                                  value={row[col]?.toString() || 'null'}
+                                  value={row[col]?.toString() || "null"}
                                   onValueChange={(value) =>
                                     handleCellChange(
                                       rowIndex,
                                       col,
-                                      value === 'null' ? '' : value
+                                      value === "null" ? "" : value,
                                     )
                                   }
                                   disabled={isGrayedOut}
@@ -587,29 +588,29 @@ export function ScenarioDataEditor({
                               </TableCell>
                             );
                           } else if (
-                            dataType.includes('int') ||
-                            dataType.includes('numeric') ||
-                            dataType.includes('decimal') ||
-                            dataType.includes('float') ||
-                            dataType.includes('double') ||
-                            dataType.includes('real')
+                            dataType.includes("int") ||
+                            dataType.includes("numeric") ||
+                            dataType.includes("decimal") ||
+                            dataType.includes("float") ||
+                            dataType.includes("double") ||
+                            dataType.includes("real")
                           ) {
                             // 数値型
                             return (
                               <TableCell
                                 key={colIndex}
                                 className={`min-w-[150px] ${
-                                  isGrayedOut ? 'bg-muted/30' : ''
+                                  isGrayedOut ? "bg-muted/30" : ""
                                 }`}
                               >
                                 <Input
                                   type="number"
-                                  value={row[col] ?? ''}
+                                  value={row[col] ?? ""}
                                   onChange={(e) =>
                                     handleCellChange(
                                       rowIndex,
                                       col,
-                                      e.target.value
+                                      e.target.value,
                                     )
                                   }
                                   className="h-8 min-w-[140px]"
@@ -617,37 +618,37 @@ export function ScenarioDataEditor({
                                     colMeta &&
                                     !colMeta.isNullable &&
                                     !isGrayedOut
-                                      ? '必須'
-                                      : ''
+                                      ? "必須"
+                                      : ""
                                   }
                                   disabled={isGrayedOut}
                                 />
                               </TableCell>
                             );
                           } else if (
-                            dataType.includes('date') ||
-                            dataType.includes('timestamp')
+                            dataType.includes("date") ||
+                            dataType.includes("timestamp")
                           ) {
                             // 日付型
                             return (
                               <TableCell
                                 key={colIndex}
                                 className={`min-w-[150px] ${
-                                  isGrayedOut ? 'bg-muted/30' : ''
+                                  isGrayedOut ? "bg-muted/30" : ""
                                 }`}
                               >
                                 <Input
                                   type={
-                                    dataType.includes('timestamp')
-                                      ? 'datetime-local'
-                                      : 'date'
+                                    dataType.includes("timestamp")
+                                      ? "datetime-local"
+                                      : "date"
                                   }
-                                  value={row[col] ?? ''}
+                                  value={row[col] ?? ""}
                                   onChange={(e) =>
                                     handleCellChange(
                                       rowIndex,
                                       col,
-                                      e.target.value
+                                      e.target.value,
                                     )
                                   }
                                   className="h-8 min-w-[140px]"
@@ -655,8 +656,8 @@ export function ScenarioDataEditor({
                                     colMeta &&
                                     !colMeta.isNullable &&
                                     !isGrayedOut
-                                      ? '必須'
-                                      : ''
+                                      ? "必須"
+                                      : ""
                                   }
                                   disabled={isGrayedOut}
                                 />
@@ -668,17 +669,17 @@ export function ScenarioDataEditor({
                               <TableCell
                                 key={colIndex}
                                 className={`min-w-[150px] ${
-                                  isGrayedOut ? 'bg-muted/30' : ''
+                                  isGrayedOut ? "bg-muted/30" : ""
                                 }`}
                               >
                                 <Input
                                   type="text"
-                                  value={row[col] ?? ''}
+                                  value={row[col] ?? ""}
                                   onChange={(e) =>
                                     handleCellChange(
                                       rowIndex,
                                       col,
-                                      e.target.value
+                                      e.target.value,
                                     )
                                   }
                                   className="h-8 min-w-[140px]"
@@ -686,8 +687,8 @@ export function ScenarioDataEditor({
                                     colMeta &&
                                     !colMeta.isNullable &&
                                     !isGrayedOut
-                                      ? '必須'
-                                      : ''
+                                      ? "必須"
+                                      : ""
                                   }
                                   disabled={isGrayedOut}
                                 />

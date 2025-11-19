@@ -1,17 +1,17 @@
 export const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 // API呼び出し用のヘルパー関数
 async function fetchAPI<T>(
   endpoint: string,
-  options?: RequestInit
+  options?: RequestInit,
 ): Promise<T> {
   const url = `${API_URL}${endpoint}`;
 
   const response = await fetch(url, {
     ...options,
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...options?.headers,
     },
   });
@@ -19,7 +19,7 @@ async function fetchAPI<T>(
   if (!response.ok) {
     const error = await response
       .json()
-      .catch(() => ({ message: 'Unknown error' }));
+      .catch(() => ({ message: "Unknown error" }));
     throw new Error(error.message || `HTTP ${response.status}`);
   }
 
@@ -29,7 +29,7 @@ async function fetchAPI<T>(
 // Health check
 export async function checkHealth() {
   return fetchAPI<{ status: string; message: string; timestamp: string }>(
-    '/health'
+    "/health",
   );
 }
 
@@ -55,8 +55,8 @@ export async function proxyRequest(data: {
     message?: string;
     duration?: number;
     timestamp?: string;
-  }>('/api/proxy/request', {
-    method: 'POST',
+  }>("/api/proxy/request", {
+    method: "POST",
     body: JSON.stringify(data),
   });
 }
@@ -67,7 +67,7 @@ export interface MockEndpoint {
   name?: string;
   enabled: boolean;
   priority: number;
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+  method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
   path: string;
   requestMatch?: {
     query?: Record<string, string>;
@@ -105,19 +105,19 @@ export async function getMockEndpoints() {
     success: boolean;
     data: MockEndpoint[];
     count: number;
-  }>('/api/mock/endpoints');
+  }>("/api/mock/endpoints");
 }
 
 // Mock API - エンドポイント作成
 export async function createMockEndpoint(
-  data: Omit<MockEndpoint, 'id' | 'createdAt' | 'updatedAt'>
+  data: Omit<MockEndpoint, "id" | "createdAt" | "updatedAt">,
 ) {
   return fetchAPI<{
     success: boolean;
     data: MockEndpoint;
     message: string;
-  }>('/api/mock/endpoints', {
-    method: 'POST',
+  }>("/api/mock/endpoints", {
+    method: "POST",
     body: JSON.stringify(data),
   });
 }
@@ -125,14 +125,14 @@ export async function createMockEndpoint(
 // Mock API - エンドポイント更新
 export async function updateMockEndpoint(
   id: string,
-  data: Partial<Omit<MockEndpoint, 'id' | 'createdAt' | 'updatedAt'>>
+  data: Partial<Omit<MockEndpoint, "id" | "createdAt" | "updatedAt">>,
 ) {
   return fetchAPI<{
     success: boolean;
     data: MockEndpoint;
     message: string;
   }>(`/api/mock/endpoints/${id}`, {
-    method: 'PUT',
+    method: "PUT",
     body: JSON.stringify(data),
   });
 }
@@ -143,7 +143,7 @@ export async function deleteMockEndpoint(id: string) {
     success: boolean;
     message: string;
   }>(`/api/mock/endpoints/${id}`, {
-    method: 'DELETE',
+    method: "DELETE",
   });
 }
 
@@ -152,8 +152,8 @@ export async function deleteAllMockEndpoints() {
   return fetchAPI<{
     success: boolean;
     message: string;
-  }>('/api/mock/endpoints', {
-    method: 'DELETE',
+  }>("/api/mock/endpoints", {
+    method: "DELETE",
   });
 }
 
@@ -163,7 +163,7 @@ export async function exportMockEndpoints() {
     success: boolean;
     data: MockEndpoint[];
     exportedAt: string;
-  }>('/api/mock/export');
+  }>("/api/mock/export");
 }
 
 // Mock API - インポート
@@ -172,8 +172,8 @@ export async function importMockEndpoints(endpoints: MockEndpoint[]) {
     success: boolean;
     message: string;
     count: number;
-  }>('/api/mock/import', {
-    method: 'POST',
+  }>("/api/mock/import", {
+    method: "POST",
     body: JSON.stringify(endpoints),
   });
 }
@@ -184,7 +184,7 @@ export async function getMockLogs() {
     success: boolean;
     data: MockRequestLog[];
     count: number;
-  }>('/api/mock/logs');
+  }>("/api/mock/logs");
 }
 
 // Mock API - リクエストログクリア
@@ -193,8 +193,8 @@ export async function clearMockLogs() {
     success: boolean;
     message: string;
     clearedCount: number;
-  }>('/api/mock/logs', {
-    method: 'DELETE',
+  }>("/api/mock/logs", {
+    method: "DELETE",
   });
 }
 
@@ -205,7 +205,7 @@ export async function getDatabaseTables() {
       table_name: string;
       column_count: string;
     }>;
-  }>('/api/database/tables');
+  }>("/api/database/tables");
 }
 
 // Database API - DB接続状態確認
@@ -213,7 +213,7 @@ export async function checkDatabaseConnection() {
   return fetchAPI<{
     status: string;
     database: string;
-  }>('/api/tables/health');
+  }>("/api/tables/health");
 }
 
 // Database API - テーブルスキーマ取得

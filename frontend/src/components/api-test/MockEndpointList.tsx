@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   Card,
@@ -6,13 +6,13 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Copy } from 'lucide-react';
-import type { MockEndpoint } from '@/lib/api';
-import { toast } from 'sonner';
-import { API_URL } from '@/lib/api';
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Copy } from "lucide-react";
+import type { MockEndpoint } from "@/lib/api";
+import { toast } from "sonner";
+import { API_URL } from "@/lib/api";
 
 interface MockEndpointListProps {
   endpoints: MockEndpoint[];
@@ -31,18 +31,18 @@ export function MockEndpointList({ endpoints }: MockEndpointListProps) {
 
   const getMethodBadgeColor = (method: string) => {
     switch (method) {
-      case 'GET':
-        return 'bg-blue-500';
-      case 'POST':
-        return 'bg-green-500';
-      case 'PUT':
-        return 'bg-yellow-500';
-      case 'DELETE':
-        return 'bg-red-500';
-      case 'PATCH':
-        return 'bg-purple-500';
+      case "GET":
+        return "bg-blue-500";
+      case "POST":
+        return "bg-green-500";
+      case "PUT":
+        return "bg-yellow-500";
+      case "DELETE":
+        return "bg-red-500";
+      case "PATCH":
+        return "bg-purple-500";
       default:
-        return 'bg-gray-500';
+        return "bg-gray-500";
     }
   };
 
@@ -59,13 +59,13 @@ export function MockEndpointList({ endpoints }: MockEndpointListProps) {
 
     // POSTやPUTの場合、サンプルボディを追加
     if (
-      (endpoint.method === 'POST' ||
-        endpoint.method === 'PUT' ||
-        endpoint.method === 'PATCH') &&
+      (endpoint.method === "POST" ||
+        endpoint.method === "PUT" ||
+        endpoint.method === "PATCH") &&
       endpoint.requestMatch?.body
     ) {
       curlCommand += ` \\\n  -d '${JSON.stringify(
-        endpoint.requestMatch.body
+        endpoint.requestMatch.body,
       )}'`;
     }
 
@@ -75,7 +75,7 @@ export function MockEndpointList({ endpoints }: MockEndpointListProps) {
   const copyCurlCommand = (endpoint: MockEndpoint) => {
     const curlCommand = generateCurlCommand(endpoint);
     navigator.clipboard.writeText(curlCommand);
-    toast.success('curlコマンドをコピーしました');
+    toast.success("curlコマンドをコピーしました");
   };
 
   return (

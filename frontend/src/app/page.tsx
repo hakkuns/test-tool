@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Plus,
   Download,
@@ -36,10 +36,10 @@ import {
   Search,
   X,
   Copy,
-} from 'lucide-react';
-import { scenariosApi, groupsApi } from '@/lib/api/scenarios';
-import type { TestScenario, ScenarioGroup } from '@/types/scenario';
-import { toast } from 'sonner';
+} from "lucide-react";
+import { scenariosApi, groupsApi } from "@/lib/api/scenarios";
+import type { TestScenario, ScenarioGroup } from "@/types/scenario";
+import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,7 +49,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from "@/components/ui/alert-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -57,16 +57,16 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -74,7 +74,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 
 export default function Home() {
   const router = useRouter();
@@ -86,12 +86,14 @@ export default function Home() {
   const [scenarioToDelete, setScenarioToDelete] = useState<string | null>(null);
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<ScenarioGroup | null>(null);
-  const [groupName, setGroupName] = useState('');
-  const [groupDescription, setGroupDescription] = useState('');
-  
+  const [groupName, setGroupName] = useState("");
+  const [groupDescription, setGroupDescription] = useState("");
+
   // 検索とフィルター
-  const [searchText, setSearchText] = useState('');
-  const [selectedGroupFilter, setSelectedGroupFilter] = useState<string | 'all' | 'ungrouped'>('all');
+  const [searchText, setSearchText] = useState("");
+  const [selectedGroupFilter, setSelectedGroupFilter] = useState<
+    string | "all" | "ungrouped"
+  >("all");
 
   // データ取得
   const fetchData = async () => {
@@ -105,17 +107,17 @@ export default function Home() {
         groupsData = await groupsApi.getAll();
       } catch (groupError) {
         console.warn(
-          'Failed to fetch groups, continuing without groups:',
-          groupError
+          "Failed to fetch groups, continuing without groups:",
+          groupError,
         );
-        toast.error('グループの取得に失敗しました（シナリオは表示されます）');
+        toast.error("グループの取得に失敗しました（シナリオは表示されます）");
       }
 
       setScenarios(scenariosData);
       setGroups(groupsData);
     } catch (error) {
-      toast.error('データの取得に失敗しました');
-      console.error('Fetch error:', error);
+      toast.error("データの取得に失敗しました");
+      console.error("Fetch error:", error);
     } finally {
       setIsLoading(false);
     }
@@ -141,11 +143,11 @@ export default function Home() {
     if (group) {
       setEditingGroup(group);
       setGroupName(group.name);
-      setGroupDescription(group.description || '');
+      setGroupDescription(group.description || "");
     } else {
       setEditingGroup(null);
-      setGroupName('');
-      setGroupDescription('');
+      setGroupName("");
+      setGroupDescription("");
     }
     setGroupDialogOpen(true);
   };
@@ -153,7 +155,7 @@ export default function Home() {
   // グループ保存
   const handleSaveGroup = async () => {
     if (!groupName.trim()) {
-      toast.error('グループ名を入力してください');
+      toast.error("グループ名を入力してください");
       return;
     }
 
@@ -163,19 +165,21 @@ export default function Home() {
           name: groupName,
           description: groupDescription,
         });
-        toast.success('グループを更新しました');
+        toast.success("グループを更新しました");
       } else {
         const created = await groupsApi.create({
           name: groupName,
           description: groupDescription,
         });
-        toast.success('グループを作成しました');
+        toast.success("グループを作成しました");
       }
       setGroupDialogOpen(false);
       await fetchData();
     } catch (error) {
-      console.error('Group save error:', error);
-      toast.error(`グループの保存に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
+      console.error("Group save error:", error);
+      toast.error(
+        `グループの保存に失敗しました: ${error instanceof Error ? error.message : "不明なエラー"}`,
+      );
     }
   };
 
@@ -183,7 +187,7 @@ export default function Home() {
   const handleDeleteGroup = async (groupId: string) => {
     if (
       !confirm(
-        'このグループを削除しますか？\nグループ内のシナリオは削除されません。'
+        "このグループを削除しますか？\nグループ内のシナリオは削除されません。",
       )
     ) {
       return;
@@ -191,10 +195,10 @@ export default function Home() {
 
     try {
       await groupsApi.delete(groupId);
-      toast.success('グループを削除しました');
+      toast.success("グループを削除しました");
       await fetchData();
     } catch (error) {
-      toast.error('グループの削除に失敗しました');
+      toast.error("グループの削除に失敗しました");
       console.error(error);
     }
   };
@@ -204,24 +208,26 @@ export default function Home() {
     try {
       const exportData = await groupsApi.exportGroup(groupId);
       const json = JSON.stringify(exportData, null, 2);
-      const blob = new Blob([json], { type: 'application/json' });
+      const blob = new Blob([json], { type: "application/json" });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
       a.download = `group_${groupName}_${Date.now()}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast.success('グループをエクスポートしました');
+      toast.success("グループをエクスポートしました");
     } catch (error) {
-      toast.error('グループのエクスポートに失敗しました');
+      toast.error("グループのエクスポートに失敗しました");
       console.error(error);
     }
   };
 
   // グループインポート
-  const handleImportGroup = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImportGroup = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -231,28 +237,28 @@ export default function Home() {
 
       // グループファイルのフォーマットを検証
       if (!exportData.group || !exportData.scenarios) {
-        toast.error('グループインポートファイルの形式が正しくありません');
-        event.target.value = '';
+        toast.error("グループインポートファイルの形式が正しくありません");
+        event.target.value = "";
         return;
       }
 
       if (!exportData.group.name) {
-        toast.error('グループ名が見つかりません');
-        event.target.value = '';
+        toast.error("グループ名が見つかりません");
+        event.target.value = "";
         return;
       }
 
       const result = await groupsApi.importGroup(exportData);
       toast.success(
-        `グループ「${result.group.name}」をインポートしました（${result.scenarios.length}個のシナリオ）`
+        `グループ「${result.group.name}」をインポートしました（${result.scenarios.length}個のシナリオ）`,
       );
       await fetchData();
     } catch (error) {
-      toast.error('グループのインポートに失敗しました');
+      toast.error("グループのインポートに失敗しました");
       console.error(error);
     }
 
-    event.target.value = '';
+    event.target.value = "";
   };
 
   // シナリオ削除
@@ -261,10 +267,10 @@ export default function Home() {
 
     try {
       await scenariosApi.delete(scenarioToDelete);
-      toast.success('シナリオを削除しました');
+      toast.success("シナリオを削除しました");
       await fetchData();
     } catch (error) {
-      toast.error('シナリオの削除に失敗しました');
+      toast.error("シナリオの削除に失敗しました");
       console.error(error);
     } finally {
       setDeleteDialogOpen(false);
@@ -290,17 +296,17 @@ export default function Home() {
         tags: original.tags || [],
         groupId: original.groupId,
       });
-      toast.success('シナリオをコピーしました');
+      toast.success("シナリオをコピーしました");
       await fetchData();
-      
+
       // コピー後、コピー元のグループにフィルターを切り替える
       if (original.groupId) {
         setSelectedGroupFilter(original.groupId);
       } else {
-        setSelectedGroupFilter('ungrouped');
+        setSelectedGroupFilter("ungrouped");
       }
     } catch (error) {
-      toast.error('シナリオのコピーに失敗しました');
+      toast.error("シナリオのコピーに失敗しました");
       console.error(error);
     }
   };
@@ -310,9 +316,9 @@ export default function Home() {
     try {
       const exportData = await scenariosApi.exportScenario(id);
       scenariosApi.downloadAsJson(exportData);
-      toast.success('シナリオをエクスポートしました');
+      toast.success("シナリオをエクスポートしました");
     } catch (error) {
-      toast.error('エクスポートに失敗しました');
+      toast.error("エクスポートに失敗しました");
       console.error(error);
     }
   };
@@ -329,8 +335,10 @@ export default function Home() {
       // フォーマットを検証
       // グループファイルの場合はエラー
       if (exportData.group && exportData.scenarios) {
-        toast.error('グループファイルです。「グループインポート」を使用してください');
-        event.target.value = '';
+        toast.error(
+          "グループファイルです。「グループインポート」を使用してください",
+        );
+        event.target.value = "";
         return;
       }
 
@@ -339,28 +347,28 @@ export default function Home() {
       for (const data of dataArray) {
         const scenario = data.scenario || data;
         if (!scenario || !scenario.name) {
-          toast.error('シナリオインポートファイルの形式が正しくありません');
-          event.target.value = '';
+          toast.error("シナリオインポートファイルの形式が正しくありません");
+          event.target.value = "";
           return;
         }
       }
 
       await scenariosApi.importFromFile(file);
-      toast.success('シナリオをインポートしました');
+      toast.success("シナリオをインポートしました");
       await fetchData();
     } catch (error) {
-      toast.error('インポートに失敗しました');
+      toast.error("インポートに失敗しました");
       console.error(error);
     }
 
-    event.target.value = '';
+    event.target.value = "";
   };
 
   // シナリオ適用
   const handleApply = async (id: string, name: string) => {
     if (
       !confirm(
-        `シナリオ "${name}" を適用しますか？\n既存のテーブルとモックAPIに影響します。`
+        `シナリオ "${name}" を適用しますか？\n既存のテーブルとモックAPIに影響します。`,
       )
     ) {
       return;
@@ -369,10 +377,10 @@ export default function Home() {
     try {
       const result = await scenariosApi.apply(id);
       toast.success(
-        `シナリオを適用しました\nテーブル: ${result.tablesCreated}個\nデータ: ${result.dataInserted}行\nモックAPI: ${result.mocksConfigured}個`
+        `シナリオを適用しました\nテーブル: ${result.tablesCreated}個\nデータ: ${result.dataInserted}行\nモックAPI: ${result.mocksConfigured}個`,
       );
     } catch (error) {
-      toast.error('シナリオの適用に失敗しました');
+      toast.error("シナリオの適用に失敗しました");
       console.error(error);
     }
   };
@@ -380,7 +388,7 @@ export default function Home() {
   // シナリオのグループを変更
   const handleMoveToGroup = async (
     scenarioId: string,
-    newGroupId: string | undefined
+    newGroupId: string | undefined,
   ) => {
     try {
       const scenario = scenarios.find((s) => s.id === scenarioId);
@@ -389,10 +397,10 @@ export default function Home() {
       await scenariosApi.update(scenarioId, {
         groupId: newGroupId,
       });
-      toast.success('シナリオを移動しました');
+      toast.success("シナリオを移動しました");
       await fetchData();
     } catch (error) {
-      toast.error('シナリオの移動に失敗しました');
+      toast.error("シナリオの移動に失敗しました");
       console.error(error);
     }
   };
@@ -406,15 +414,15 @@ export default function Home() {
       await scenariosApi.update(scenarioId, {
         isFavorite: !scenario.isFavorite,
       });
-      
+
       // ローカルステートを更新
       setScenarios((prev) =>
         prev.map((s) =>
-          s.id === scenarioId ? { ...s, isFavorite: !s.isFavorite } : s
-        )
+          s.id === scenarioId ? { ...s, isFavorite: !s.isFavorite } : s,
+        ),
       );
     } catch (error) {
-      toast.error('お気に入りの更新に失敗しました');
+      toast.error("お気に入りの更新に失敗しました");
       console.error(error);
     }
   };
@@ -422,7 +430,7 @@ export default function Home() {
   // テスト結果の更新
   const handleUpdateTestResult = async (
     scenarioId: string,
-    result: 'success' | 'failure' | 'unknown'
+    result: "success" | "failure" | "unknown",
   ) => {
     try {
       const now = new Date().toISOString();
@@ -436,15 +444,15 @@ export default function Home() {
         prev.map((s) =>
           s.id === scenarioId
             ? { ...s, lastTestResult: result, lastTestedAt: now }
-            : s
-        )
+            : s,
+        ),
       );
 
       const resultText =
-        result === 'success' ? '成功' : result === 'failure' ? '失敗' : '不明';
+        result === "success" ? "成功" : result === "failure" ? "失敗" : "不明";
       toast.success(`テスト結果を「${resultText}」に更新しました`);
     } catch (error) {
-      toast.error('テスト結果の更新に失敗しました');
+      toast.error("テスト結果の更新に失敗しました");
       console.error(error);
     }
   };
@@ -459,15 +467,15 @@ export default function Home() {
       filtered = filtered.filter(
         (s) =>
           s.name.toLowerCase().includes(searchLower) ||
-          s.description?.toLowerCase().includes(searchLower)
+          s.description?.toLowerCase().includes(searchLower),
       );
     }
 
     // グループフィルター
-    if (selectedGroupFilter !== 'all') {
-      if (selectedGroupFilter === 'ungrouped') {
+    if (selectedGroupFilter !== "all") {
+      if (selectedGroupFilter === "ungrouped") {
         filtered = filtered.filter(
-          (s) => !s.groupId || !existingGroupIds.has(s.groupId)
+          (s) => !s.groupId || !existingGroupIds.has(s.groupId),
         );
       } else {
         filtered = filtered.filter((s) => s.groupId === selectedGroupFilter);
@@ -505,19 +513,19 @@ export default function Home() {
         if (a.isFavorite && !b.isFavorite) return -1;
         if (!a.isFavorite && b.isFavorite) return 1;
         // 作成日時で降順
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        return (
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
       }),
   }));
 
   // グループフィルターが適用されている場合の表示制御
   const shouldShowGroup = (groupId: string) => {
-    return (
-      selectedGroupFilter === 'all' || selectedGroupFilter === groupId
-    );
+    return selectedGroupFilter === "all" || selectedGroupFilter === groupId;
   };
 
   const shouldShowUngrouped =
-    selectedGroupFilter === 'all' || selectedGroupFilter === 'ungrouped';
+    selectedGroupFilter === "all" || selectedGroupFilter === "ungrouped";
 
   if (isLoading) {
     return (
@@ -543,7 +551,7 @@ export default function Home() {
           />
           {searchText && (
             <button
-              onClick={() => setSearchText('')}
+              onClick={() => setSearchText("")}
               className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
               <X className="h-4 w-4" />
@@ -612,7 +620,7 @@ export default function Home() {
             onChange={handleImport}
             className="hidden"
           />
-          <Button onClick={() => router.push('/scenarios/new')} size="default">
+          <Button onClick={() => router.push("/scenarios/new")} size="default">
             <Plus className="h-4 w-4 mr-2" />
             新規作成
           </Button>
@@ -620,7 +628,7 @@ export default function Home() {
       </div>
 
       {/* 検索結果の件数表示 */}
-      {(searchText || selectedGroupFilter !== 'all') && (
+      {(searchText || selectedGroupFilter !== "all") && (
         <div className="text-sm text-muted-foreground">
           {filteredScenarios.length}件のシナリオが見つかりました
           {searchText && ` (検索: "${searchText}")`}
@@ -635,7 +643,7 @@ export default function Home() {
             <p className="text-muted-foreground mb-4">
               シナリオがまだありません
             </p>
-            <Button onClick={() => router.push('/scenarios/new')}>
+            <Button onClick={() => router.push("/scenarios/new")}>
               <Plus className="h-4 w-4 mr-2" />
               最初のシナリオを作成
             </Button>
@@ -651,8 +659,8 @@ export default function Home() {
             <Button
               variant="outline"
               onClick={() => {
-                setSearchText('');
-                setSelectedGroupFilter('all');
+                setSearchText("");
+                setSelectedGroupFilter("all");
               }}
             >
               検索条件をクリア
@@ -663,85 +671,88 @@ export default function Home() {
         <div className="space-y-3">
           {/* グループ化されたシナリオ */}
           {groupedScenarios
-            .filter(({ group, scenarios: groupScenarios }) => 
-              shouldShowGroup(group.id) && groupScenarios.length > 0
+            .filter(
+              ({ group, scenarios: groupScenarios }) =>
+                shouldShowGroup(group.id) && groupScenarios.length > 0,
             )
             .map(({ group, scenarios: groupScenarios }) => (
-            <div key={group.id} className="space-y-1">
-              <div className="flex items-center hover:bg-muted/50 p-1.5 rounded-lg transition-colors">
-                <button
-                  onClick={() => toggleGroup(group.id)}
-                  className="flex items-center gap-2"
-                >
-                  {expandedGroups.has(group.id) ? (
-                    <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                  ) : (
-                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                  )}
-                  <Folder className="h-5 w-5 text-primary" />
-                  <h2 className="text-lg font-semibold">{group.name}</h2>
-                  <Badge variant="secondary" className="text-xs ml-1">{groupScenarios.length}件</Badge>
-                  {group.description && (
-                    <span className="text-sm text-muted-foreground ml-2 hidden lg:inline">
-                      {group.description}
-                    </span>
-                  )}
-                </button>
-                <div className="flex-1" />
-                <div className="flex gap-1">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleExportGroup(group.id, group.name)}
-                    className="h-8 w-8 p-0"
-                    title="グループをエクスポート"
+              <div key={group.id} className="space-y-1">
+                <div className="flex items-center hover:bg-muted/50 p-1.5 rounded-lg transition-colors">
+                  <button
+                    onClick={() => toggleGroup(group.id)}
+                    className="flex items-center gap-2"
                   >
-                    <Download className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => openGroupDialog(group)}
-                    className="h-8 w-8 p-0"
-                    title="グループを編集"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleDeleteGroup(group.id)}
-                    className="h-8 w-8 p-0"
-                    title="グループを削除"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                    {expandedGroups.has(group.id) ? (
+                      <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                    ) : (
+                      <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                    )}
+                    <Folder className="h-5 w-5 text-primary" />
+                    <h2 className="text-lg font-semibold">{group.name}</h2>
+                    <Badge variant="secondary" className="text-xs ml-1">
+                      {groupScenarios.length}件
+                    </Badge>
+                    {group.description && (
+                      <span className="text-sm text-muted-foreground ml-2 hidden lg:inline">
+                        {group.description}
+                      </span>
+                    )}
+                  </button>
+                  <div className="flex-1" />
+                  <div className="flex gap-1">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleExportGroup(group.id, group.name)}
+                      className="h-8 w-8 p-0"
+                      title="グループをエクスポート"
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => openGroupDialog(group)}
+                      className="h-8 w-8 p-0"
+                      title="グループを編集"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleDeleteGroup(group.id)}
+                      className="h-8 w-8 p-0"
+                      title="グループを削除"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
 
-              {expandedGroups.has(group.id) && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pl-9">
-                  {groupScenarios.map((scenario) => (
-                    <ScenarioCard
-                      key={scenario.id}
-                      scenario={scenario}
-                      groups={groups}
-                      onExport={handleExport}
-                      onCopy={handleCopy}
-                      onDelete={(id) => {
-                        setScenarioToDelete(id);
-                        setDeleteDialogOpen(true);
-                      }}
-                      onMoveToGroup={handleMoveToGroup}
-                      onToggleFavorite={handleToggleFavorite}
-                      onUpdateTestResult={handleUpdateTestResult}
-                      router={router}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
+                {expandedGroups.has(group.id) && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pl-9">
+                    {groupScenarios.map((scenario) => (
+                      <ScenarioCard
+                        key={scenario.id}
+                        scenario={scenario}
+                        groups={groups}
+                        onExport={handleExport}
+                        onCopy={handleCopy}
+                        onDelete={(id) => {
+                          setScenarioToDelete(id);
+                          setDeleteDialogOpen(true);
+                        }}
+                        onMoveToGroup={handleMoveToGroup}
+                        onToggleFavorite={handleToggleFavorite}
+                        onUpdateTestResult={handleUpdateTestResult}
+                        router={router}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
 
           {/* グループ化されていないシナリオ */}
           {shouldShowUngrouped && ungroupedScenarios.length > 0 && (
@@ -749,7 +760,9 @@ export default function Home() {
               <div className="flex items-center gap-2 p-1.5">
                 <FileJson className="h-5 w-5 text-muted-foreground" />
                 <h2 className="text-lg font-semibold">未分類</h2>
-                <Badge variant="secondary" className="text-xs">{ungroupedScenarios.length}件</Badge>
+                <Badge variant="secondary" className="text-xs">
+                  {ungroupedScenarios.length}件
+                </Badge>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pl-9">
                 {ungroupedScenarios.map((scenario) => (
@@ -796,7 +809,7 @@ export default function Home() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingGroup ? 'グループ編集' : 'グループ作成'}
+              {editingGroup ? "グループ編集" : "グループ作成"}
             </DialogTitle>
             <DialogDescription>
               シナリオをグループ化して管理できます
@@ -839,18 +852,18 @@ export default function Home() {
 // HTTPメソッドの色を取得
 function getMethodColor(method: string): string {
   switch (method) {
-    case 'GET':
-      return 'bg-blue-500 text-white border-blue-500';
-    case 'POST':
-      return 'bg-green-500 text-white border-green-500';
-    case 'PUT':
-      return 'bg-yellow-500 text-white border-yellow-500';
-    case 'PATCH':
-      return 'bg-purple-500 text-white border-purple-500';
-    case 'DELETE':
-      return 'bg-red-500 text-white border-red-500';
+    case "GET":
+      return "bg-blue-500 text-white border-blue-500";
+    case "POST":
+      return "bg-green-500 text-white border-green-500";
+    case "PUT":
+      return "bg-yellow-500 text-white border-yellow-500";
+    case "PATCH":
+      return "bg-purple-500 text-white border-purple-500";
+    case "DELETE":
+      return "bg-red-500 text-white border-red-500";
     default:
-      return 'bg-gray-500 text-white border-gray-500';
+      return "bg-gray-500 text-white border-gray-500";
   }
 }
 
@@ -871,7 +884,7 @@ function ScenarioCard({
   onToggleFavorite: (id: string) => void;
   onUpdateTestResult: (
     id: string,
-    result: 'success' | 'failure' | 'unknown'
+    result: "success" | "failure" | "unknown",
   ) => void;
   onExport: (id: string) => void;
   onCopy: (id: string, name: string) => void;
@@ -951,26 +964,31 @@ function ScenarioCard({
         <div className="flex items-center justify-end gap-4 text-xs text-muted-foreground mb-3">
           <div className="flex items-center gap-1">
             <Table className="h-3.5 w-3.5" />
-            <span className="font-medium">{scenario.tableData?.length || 0}</span>
+            <span className="font-medium">
+              {scenario.tableData?.length || 0}
+            </span>
           </div>
           <div className="flex items-center gap-1">
             <Rows className="h-3.5 w-3.5" />
             <span className="font-medium">
-              {scenario.tableData?.reduce((sum, t) => sum + t.rows.length, 0) || 0}
+              {scenario.tableData?.reduce((sum, t) => sum + t.rows.length, 0) ||
+                0}
             </span>
           </div>
           <div className="flex items-center gap-1">
             <Network className="h-3.5 w-3.5" />
-            <span className="font-medium">{scenario.mockApis?.length || 0}</span>
+            <span className="font-medium">
+              {scenario.mockApis?.length || 0}
+            </span>
           </div>
-          
+
           {/* テスト結果 */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-1 hover:opacity-70 transition-opacity">
-                {scenario.lastTestResult === 'success' ? (
+                {scenario.lastTestResult === "success" ? (
                   <CircleCheck className="h-4 w-4 text-green-500" />
-                ) : scenario.lastTestResult === 'failure' ? (
+                ) : scenario.lastTestResult === "failure" ? (
                   <CircleX className="h-4 w-4 text-red-500" />
                 ) : (
                   <CircleHelp className="h-4 w-4 text-gray-400" />
@@ -981,19 +999,19 @@ function ScenarioCard({
               <DropdownMenuLabel>テスト結果</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                onClick={() => onUpdateTestResult(scenario.id, 'success')}
+                onClick={() => onUpdateTestResult(scenario.id, "success")}
               >
                 <CircleCheck className="h-4 w-4 mr-2 text-green-500" />
                 成功
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => onUpdateTestResult(scenario.id, 'failure')}
+                onClick={() => onUpdateTestResult(scenario.id, "failure")}
               >
                 <CircleX className="h-4 w-4 mr-2 text-red-500" />
                 失敗
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => onUpdateTestResult(scenario.id, 'unknown')}
+                onClick={() => onUpdateTestResult(scenario.id, "unknown")}
               >
                 <CircleHelp className="h-4 w-4 mr-2 text-gray-400" />
                 未テスト
@@ -1030,7 +1048,7 @@ function ScenarioCard({
           </Button>
           <div className="flex-1" />
           <span className="text-xs text-muted-foreground">
-            {new Date(scenario.createdAt).toLocaleDateString('ja-JP')}
+            {new Date(scenario.createdAt).toLocaleDateString("ja-JP")}
           </span>
         </div>
       </CardContent>

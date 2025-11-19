@@ -1,44 +1,50 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useMemo } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { RequestForm } from '@/components/api-test/RequestForm';
-import { ResponseViewer } from '@/components/api-test/ResponseViewer';
+import { useState, useEffect, useMemo } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { RequestForm } from "@/components/api-test/RequestForm";
+import { ResponseViewer } from "@/components/api-test/ResponseViewer";
 import {
   RequestHistory,
   type HistoryItem,
-} from '@/components/api-test/RequestHistory';
-import { MockEndpointList } from '@/components/api-test/MockEndpointList';
-import { TableList } from '@/components/api-test/TableList';
-import { MockLogViewer } from '@/components/api-test/MockLogViewer';
-import { proxyRequest, getMockEndpoints, clearMockLogs, getMockLogs, type MockRequestLog } from '@/lib/api';
-import { scenariosApi, groupsApi } from '@/lib/api/scenarios';
-import type { TestScenario, ScenarioGroup } from '@/types/scenario';
-import { toast } from 'sonner';
+} from "@/components/api-test/RequestHistory";
+import { MockEndpointList } from "@/components/api-test/MockEndpointList";
+import { TableList } from "@/components/api-test/TableList";
+import { MockLogViewer } from "@/components/api-test/MockLogViewer";
+import {
+  proxyRequest,
+  getMockEndpoints,
+  clearMockLogs,
+  getMockLogs,
+  type MockRequestLog,
+} from "@/lib/api";
+import { scenariosApi, groupsApi } from "@/lib/api/scenarios";
+import type { TestScenario, ScenarioGroup } from "@/types/scenario";
+import { toast } from "sonner";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from "@/components/ui/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { PlayCircle, Loader2, CheckCircle2, XCircle, Edit } from 'lucide-react';
-import { useRouter, useSearchParams } from 'next/navigation';
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { PlayCircle, Loader2, CheckCircle2, XCircle, Edit } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   replaceConstantsInHeaders,
   replaceConstantsInObject,
-} from '@/utils/constants';
+} from "@/utils/constants";
 
-const HISTORY_KEY = 'api-test-history';
+const HISTORY_KEY = "api-test-history";
 const MAX_HISTORY = 50;
 
 // シナリオのハッシュを計算する関数（変更検知用）
@@ -69,28 +75,32 @@ export default function ApiTestPage() {
   const [mockLogs, setMockLogs] = useState<MockRequestLog[]>([]);
 
   // シナリオ関連
-  const [selectedScenarioId, setSelectedScenarioId] = useState<string>('');
+  const [selectedScenarioId, setSelectedScenarioId] = useState<string>("");
   const [isApplied, setIsApplied] = useState(false);
-  const [appliedScenarioHash, setAppliedScenarioHash] = useState<string>('');
-  const [groupFilter, setGroupFilter] = useState<string>('all');
+  const [appliedScenarioHash, setAppliedScenarioHash] = useState<string>("");
+  const [groupFilter, setGroupFilter] = useState<string>("all");
 
   // シナリオ一覧を取得（useQuery）
-  const { data: scenarios = [], isLoading: isScenariosLoading, dataUpdatedAt } = useQuery<
-    TestScenario[]
-  >({
-    queryKey: ['scenarios'],
+  const {
+    data: scenarios = [],
+    isLoading: isScenariosLoading,
+    dataUpdatedAt,
+  } = useQuery<TestScenario[]>({
+    queryKey: ["scenarios"],
     queryFn: async () => {
       const data = await scenariosApi.getAll();
       // デバッグログ
-      if (process.env.NODE_ENV === 'development') {
-        console.log('シナリオ一覧取得:', {
+      if (process.env.NODE_ENV === "development") {
+        console.log("シナリオ一覧取得:", {
           count: data.length,
-          scenariosWithGroup: data.filter((s) => s.groupId).map((s) => ({
-            id: s.id,
-            name: s.name,
-            groupId: s.groupId,
-            groupIdType: typeof s.groupId,
-          })),
+          scenariosWithGroup: data
+            .filter((s) => s.groupId)
+            .map((s) => ({
+              id: s.id,
+              name: s.name,
+              groupId: s.groupId,
+              groupIdType: typeof s.groupId,
+            })),
         });
       }
       return data;
@@ -99,12 +109,12 @@ export default function ApiTestPage() {
 
   // グループ一覧を取得（useQuery）
   const { data: groups = [] } = useQuery<ScenarioGroup[]>({
-    queryKey: ['scenario-groups'],
+    queryKey: ["scenario-groups"],
     queryFn: async () => {
       const data = await groupsApi.getAll();
       // デバッグログ
-      if (process.env.NODE_ENV === 'development') {
-        console.log('グループ一覧取得:', {
+      if (process.env.NODE_ENV === "development") {
+        console.log("グループ一覧取得:", {
           count: data.length,
           groups: data.map((g) => ({
             id: g.id,
@@ -119,27 +129,33 @@ export default function ApiTestPage() {
 
   // フィルタリングされたシナリオ
   const filteredScenarios = useMemo(() => {
-    if (groupFilter === 'all') {
+    if (groupFilter === "all") {
       return scenarios;
     }
-    if (groupFilter === 'ungrouped') {
+    if (groupFilter === "ungrouped") {
       return scenarios.filter((s) => !s.groupId);
     }
     // groupIdとgroupFilterの両方を比較（型変換なしで直接比較）
     const filtered = scenarios.filter((s) => s.groupId === groupFilter);
 
     // デバッグログ（開発中のみ）
-    if (process.env.NODE_ENV === 'development' && filtered.length === 0 && scenarios.some((s) => s.groupId)) {
-      console.log('グループフィルタリングデバッグ:', {
+    if (
+      process.env.NODE_ENV === "development" &&
+      filtered.length === 0 &&
+      scenarios.some((s) => s.groupId)
+    ) {
+      console.log("グループフィルタリングデバッグ:", {
         groupFilter,
         groupFilterType: typeof groupFilter,
         totalScenarios: scenarios.length,
-        scenariosWithGroupId: scenarios.filter((s) => s.groupId).map((s) => ({
-          name: s.name,
-          groupId: s.groupId,
-          groupIdType: typeof s.groupId,
-          match: s.groupId === groupFilter,
-        })),
+        scenariosWithGroupId: scenarios
+          .filter((s) => s.groupId)
+          .map((s) => ({
+            name: s.name,
+            groupId: s.groupId,
+            groupIdType: typeof s.groupId,
+            match: s.groupId === groupFilter,
+          })),
       });
     }
 
@@ -148,7 +164,7 @@ export default function ApiTestPage() {
 
   // モックエンドポイント一覧を取得（useQuery）
   const { data: mockEndpointsData } = useQuery({
-    queryKey: ['mock-endpoints'],
+    queryKey: ["mock-endpoints"],
     queryFn: async () => {
       const result = await getMockEndpoints();
       return result;
@@ -186,7 +202,7 @@ export default function ApiTestPage() {
       ? replaceConstantsInHeaders(scenario.testSettings.headers)
       : {};
 
-    let convertedBody = scenario.testSettings?.body || '';
+    let convertedBody = scenario.testSettings?.body || "";
     if (convertedBody) {
       try {
         const parsedBody = JSON.parse(convertedBody);
@@ -214,16 +230,16 @@ export default function ApiTestPage() {
       try {
         setHistory(JSON.parse(savedHistory));
       } catch (e) {
-        console.error('Failed to load history:', e);
+        console.error("Failed to load history:", e);
       }
     }
 
     // クエリパラメータからシナリオIDを取得
-    const scenarioIdFromQuery = searchParams.get('scenario');
+    const scenarioIdFromQuery = searchParams.get("scenario");
 
     // 適用中のシナリオを確認
-    const appliedScenarioId = localStorage.getItem('appliedScenarioId');
-    const savedHash = localStorage.getItem('appliedScenarioHash');
+    const appliedScenarioId = localStorage.getItem("appliedScenarioId");
+    const savedHash = localStorage.getItem("appliedScenarioHash");
 
     // クエリパラメータにシナリオIDがある場合は優先
     if (scenarioIdFromQuery) {
@@ -252,19 +268,30 @@ export default function ApiTestPage() {
     // シナリオのロードが完了し、かつデータが存在する場合のみチェック
     // dataUpdatedAtが0でない（データが取得済み）かつローディングが完了している場合
     // 適用済みシナリオのみをチェック（未適用のシナリオは選択しているだけなのでチェック不要）
-    if (!isScenariosLoading && dataUpdatedAt > 0 && selectedScenarioId && isApplied) {
+    if (
+      !isScenariosLoading &&
+      dataUpdatedAt > 0 &&
+      selectedScenarioId &&
+      isApplied
+    ) {
       const scenarioExists = scenarios.some((s) => s.id === selectedScenarioId);
       if (!scenarioExists) {
         // 適用済みシナリオが存在しない場合、リセット
-        setSelectedScenarioId('');
+        setSelectedScenarioId("");
         setIsApplied(false);
-        setAppliedScenarioHash('');
-        localStorage.removeItem('appliedScenarioId');
-        localStorage.removeItem('appliedScenarioHash');
-        toast.error('適用されていたシナリオが削除されました');
+        setAppliedScenarioHash("");
+        localStorage.removeItem("appliedScenarioId");
+        localStorage.removeItem("appliedScenarioHash");
+        toast.error("適用されていたシナリオが削除されました");
       }
     }
-  }, [scenarios, selectedScenarioId, isScenariosLoading, dataUpdatedAt, isApplied]);
+  }, [
+    scenarios,
+    selectedScenarioId,
+    isScenariosLoading,
+    dataUpdatedAt,
+    isApplied,
+  ]);
 
   // 履歴をLocalStorageに保存
   const saveHistory = (newHistory: HistoryItem[]) => {
@@ -305,7 +332,7 @@ export default function ApiTestPage() {
     onSuccess: async (result, variables) => {
       if (result.success && result.response) {
         setResponse(result.response);
-        toast.success('リクエストが正常に完了しました');
+        toast.success("リクエストが正常に完了しました");
 
         // レスポンス受信後にモックログを取得
         try {
@@ -314,7 +341,7 @@ export default function ApiTestPage() {
             setMockLogs(logsResult.data);
           }
         } catch (err) {
-          console.error('Failed to fetch mock logs:', err);
+          console.error("Failed to fetch mock logs:", err);
         }
 
         // 履歴に追加
@@ -340,19 +367,19 @@ export default function ApiTestPage() {
         saveHistory(newHistory);
       } else {
         setError(result);
-        toast.error('リクエストに失敗しました');
+        toast.error("リクエストに失敗しました");
       }
     },
     onError: (err) => {
-      console.error('Request error:', err);
+      console.error("Request error:", err);
       const errorData = {
-        error: 'リクエストに失敗しました',
-        message: err instanceof Error ? err.message : '不明なエラー',
+        error: "リクエストに失敗しました",
+        message: err instanceof Error ? err.message : "不明なエラー",
         duration: 0,
         timestamp: new Date().toISOString(),
       };
       setError(errorData);
-      toast.error('リクエストに失敗しました');
+      toast.error("リクエストに失敗しました");
     },
   });
 
@@ -385,14 +412,14 @@ export default function ApiTestPage() {
   const handleDeleteHistory = (id: string) => {
     const newHistory = history.filter((item) => item.id !== id);
     saveHistory(newHistory);
-    toast.success('履歴項目を削除しました');
+    toast.success("履歴項目を削除しました");
   };
 
   // 全履歴削除
   const handleClearHistory = () => {
-    if (confirm('すべての履歴を削除してよろしいですか?')) {
+    if (confirm("すべての履歴を削除してよろしいですか?")) {
       saveHistory([]);
-      toast.success('履歴をクリアしました');
+      toast.success("履歴をクリアしました");
     }
   };
 
@@ -404,32 +431,32 @@ export default function ApiTestPage() {
     onSuccess: async (result, scenarioId) => {
       // 適用成功後、シナリオのハッシュを計算してLocalStorageに保存
       const scenario = scenarios.find((s) => s.id === scenarioId);
-      const hash = scenario ? calculateScenarioHash(scenario) : '';
-      
-      localStorage.setItem('appliedScenarioId', scenarioId);
-      localStorage.setItem('appliedScenarioHash', hash);
+      const hash = scenario ? calculateScenarioHash(scenario) : "";
+
+      localStorage.setItem("appliedScenarioId", scenarioId);
+      localStorage.setItem("appliedScenarioHash", hash);
       setIsApplied(true);
       setAppliedScenarioHash(hash);
 
       // モックエンドポイントとシナリオ一覧を即座に再取得
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['mock-endpoints'] }),
-        queryClient.invalidateQueries({ queryKey: ['scenarios'] }),
+        queryClient.invalidateQueries({ queryKey: ["mock-endpoints"] }),
+        queryClient.invalidateQueries({ queryKey: ["scenarios"] }),
       ]);
 
       toast.success(
-        `シナリオを適用しました\nテーブル: ${result.tablesCreated}個\nデータ: ${result.dataInserted}行\nモックAPI: ${result.mocksConfigured}個`
+        `シナリオを適用しました\nテーブル: ${result.tablesCreated}個\nデータ: ${result.dataInserted}行\nモックAPI: ${result.mocksConfigured}個`,
       );
 
       // シナリオにテスト設定がある場合は通知
       if (scenario?.testSettings) {
-        toast.info('フォームにテスト設定を適用しました');
+        toast.info("フォームにテスト設定を適用しました");
       }
     },
     onError: (error) => {
-      console.error('Failed to apply scenario:', error);
+      console.error("Failed to apply scenario:", error);
       toast.error(
-        error instanceof Error ? error.message : 'シナリオの適用に失敗しました'
+        error instanceof Error ? error.message : "シナリオの適用に失敗しました",
       );
       setIsApplied(false);
     },
@@ -438,7 +465,7 @@ export default function ApiTestPage() {
   // シナリオ適用
   const handleApplyScenario = async () => {
     if (!selectedScenarioId) {
-      toast.error('シナリオを選択してください');
+      toast.error("シナリオを選択してください");
       return;
     }
 
@@ -464,107 +491,103 @@ export default function ApiTestPage() {
     <div className="container mx-auto p-8 space-y-6">
       {/* シナリオから適用 - 1行に配置 */}
       <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg">
-            <Select
-              value={groupFilter}
-              onValueChange={setGroupFilter}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="グループ" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">すべて</SelectItem>
-                <SelectItem value="ungrouped">未分類</SelectItem>
-                {groups.map((group) => (
-                  <SelectItem key={group.id} value={group.id}>
-                    {group.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
-              value={selectedScenarioId}
-              onValueChange={(value) => {
-                const appliedScenarioId = localStorage.getItem('appliedScenarioId');
-                setSelectedScenarioId(value);
-                
-                // 現在適用中のシナリオを選択した場合は、適用済み状態を維持
-                if (value === appliedScenarioId) {
-                  setIsApplied(true);
-                } else {
-                  // 別のシナリオを選択した場合は、未適用状態にする
-                  setIsApplied(false);
-                }
-              }}
-            >
-              <SelectTrigger className="flex-1">
-                <SelectValue placeholder="シナリオを選択..." />
-              </SelectTrigger>
-              <SelectContent className="min-w-[300px]">
-                {filteredScenarios.length > 0 ? (
-                  filteredScenarios.map((scenario) => (
-                    <SelectItem key={scenario.id} value={scenario.id}>
-                      {scenario.name}
-                    </SelectItem>
-                  ))
-                ) : (
-                  <div className="px-2 py-6 text-center text-sm text-muted-foreground">
-                    このグループにシナリオがありません
-                  </div>
-                )}
-              </SelectContent>
-            </Select>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() =>
-                router.push(`/scenarios/${selectedScenarioId}`)
-              }
-              disabled={!selectedScenarioId}
-              title="シナリオを編集"
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
-            <Button
-              onClick={handleApplyScenario}
-              disabled={
-                !selectedScenarioId || applyScenarioMutation.isPending
-              }
-            >
-              {applyScenarioMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  適用中...
-                </>
-              ) : (
-                <>
-                  <PlayCircle className="h-4 w-4 mr-2" />
-                  適用
-                </>
-              )}
-            </Button>
-            {selectedScenarioId && (
-              <div className="flex items-center gap-2">
-                {isApplied ? (
-                  <>
-                    <Badge className="bg-green-500">
-                      <CheckCircle2 className="h-3 w-3 mr-1" />
-                      適用済み
-                    </Badge>
-                    {isScenarioModified && (
-                      <Badge variant="outline" className="border-yellow-500 text-yellow-700 bg-yellow-50">
-                        再適用が必要
-                      </Badge>
-                    )}
-                  </>
-                ) : (
-                  <Badge variant="secondary">
-                    <XCircle className="h-3 w-3 mr-1" />
-                    未適用
-                  </Badge>
-                )}
+        <Select value={groupFilter} onValueChange={setGroupFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="グループ" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">すべて</SelectItem>
+            <SelectItem value="ungrouped">未分類</SelectItem>
+            {groups.map((group) => (
+              <SelectItem key={group.id} value={group.id}>
+                {group.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
+          value={selectedScenarioId}
+          onValueChange={(value) => {
+            const appliedScenarioId = localStorage.getItem("appliedScenarioId");
+            setSelectedScenarioId(value);
+
+            // 現在適用中のシナリオを選択した場合は、適用済み状態を維持
+            if (value === appliedScenarioId) {
+              setIsApplied(true);
+            } else {
+              // 別のシナリオを選択した場合は、未適用状態にする
+              setIsApplied(false);
+            }
+          }}
+        >
+          <SelectTrigger className="flex-1">
+            <SelectValue placeholder="シナリオを選択..." />
+          </SelectTrigger>
+          <SelectContent className="min-w-[300px]">
+            {filteredScenarios.length > 0 ? (
+              filteredScenarios.map((scenario) => (
+                <SelectItem key={scenario.id} value={scenario.id}>
+                  {scenario.name}
+                </SelectItem>
+              ))
+            ) : (
+              <div className="px-2 py-6 text-center text-sm text-muted-foreground">
+                このグループにシナリオがありません
               </div>
             )}
+          </SelectContent>
+        </Select>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => router.push(`/scenarios/${selectedScenarioId}`)}
+          disabled={!selectedScenarioId}
+          title="シナリオを編集"
+        >
+          <Edit className="h-4 w-4" />
+        </Button>
+        <Button
+          onClick={handleApplyScenario}
+          disabled={!selectedScenarioId || applyScenarioMutation.isPending}
+        >
+          {applyScenarioMutation.isPending ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              適用中...
+            </>
+          ) : (
+            <>
+              <PlayCircle className="h-4 w-4 mr-2" />
+              適用
+            </>
+          )}
+        </Button>
+        {selectedScenarioId && (
+          <div className="flex items-center gap-2">
+            {isApplied ? (
+              <>
+                <Badge className="bg-green-500">
+                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                  適用済み
+                </Badge>
+                {isScenarioModified && (
+                  <Badge
+                    variant="outline"
+                    className="border-yellow-500 text-yellow-700 bg-yellow-50"
+                  >
+                    再適用が必要
+                  </Badge>
+                )}
+              </>
+            ) : (
+              <Badge variant="secondary">
+                <XCircle className="h-3 w-3 mr-1" />
+                未適用
+              </Badge>
+            )}
           </div>
+        )}
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* 左側: リクエストフォーム */}
@@ -587,7 +610,11 @@ export default function ApiTestPage() {
 
         {/* 右側: レスポンス表示 */}
         <div className="space-y-6">
-          <ResponseViewer response={response} error={error} isLoading={requestMutation.isPending} />
+          <ResponseViewer
+            response={response}
+            error={error}
+            isLoading={requestMutation.isPending}
+          />
           <MockLogViewer logs={mockLogs} endpoints={mockEndpoints} />
         </div>
       </div>

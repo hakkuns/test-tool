@@ -1,22 +1,22 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { CheckCircle2, XCircle, Play, Loader2 } from 'lucide-react';
-import { proxyRequest } from '@/lib/api';
-import { toast } from 'sonner';
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { CheckCircle2, XCircle, Play, Loader2 } from "lucide-react";
+import { proxyRequest } from "@/lib/api";
+import { toast } from "sonner";
 
 interface ApiTestSectionProps {
   targetApi: {
@@ -37,16 +37,18 @@ export function ApiTestSection({
   const [isApplying, setIsApplying] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [testBody, setTestBody] = useState(
-    targetApi.body ? JSON.stringify(targetApi.body, null, 2) : ''
+    targetApi.body ? JSON.stringify(targetApi.body, null, 2) : "",
   );
   const [testHeaders, setTestHeaders] = useState(
-    targetApi.headers ? JSON.stringify(targetApi.headers, null, 2) : '{}'
+    targetApi.headers ? JSON.stringify(targetApi.headers, null, 2) : "{}",
   );
   const [response, setResponse] = useState<any>(null);
   const [error, setError] = useState<any>(null);
 
   // GETやDELETEではボディを送信すべきではない
-  const bodyAllowed = !['GET', 'DELETE', 'HEAD', 'OPTIONS'].includes(targetApi.method.toUpperCase());
+  const bodyAllowed = !["GET", "DELETE", "HEAD", "OPTIONS"].includes(
+    targetApi.method.toUpperCase(),
+  );
 
   const handleApply = async () => {
     setIsApplying(true);
@@ -59,7 +61,7 @@ export function ApiTestSection({
 
   const handleTest = async () => {
     if (!isApplied) {
-      toast.error('先にシナリオを適用してください');
+      toast.error("先にシナリオを適用してください");
       return;
     }
 
@@ -82,7 +84,7 @@ export function ApiTestSection({
         try {
           parsedHeaders = JSON.parse(testHeaders);
         } catch (e) {
-          toast.error('ヘッダーのJSON形式が不正です');
+          toast.error("ヘッダーのJSON形式が不正です");
           return;
         }
       }
@@ -96,7 +98,7 @@ export function ApiTestSection({
 
       if (result.success && result.response) {
         setResponse(result.response);
-        toast.success('テストが成功しました');
+        toast.success("テストが成功しました");
       } else {
         // エラーレスポンスの詳細を含める
         const errorDetail = {
@@ -105,28 +107,28 @@ export function ApiTestSection({
           requestMethod: targetApi.method,
         };
         setError(errorDetail);
-        toast.error(result.message || 'テストが失敗しました');
+        toast.error(result.message || "テストが失敗しました");
       }
     } catch (err) {
-      console.error('Test error:', err);
+      console.error("Test error:", err);
       const errorData = {
-        error: 'Request failed',
-        message: err instanceof Error ? err.message : 'Unknown error',
+        error: "Request failed",
+        message: err instanceof Error ? err.message : "Unknown error",
         requestUrl: targetApi.url,
         requestMethod: targetApi.method,
       };
       setError(errorData);
-      toast.error('テストの実行に失敗しました');
+      toast.error("テストの実行に失敗しました");
     } finally {
       setIsTesting(false);
     }
   };
 
   const getStatusColor = (status: number) => {
-    if (status >= 200 && status < 300) return 'text-green-600';
-    if (status >= 300 && status < 400) return 'text-blue-600';
-    if (status >= 400 && status < 500) return 'text-yellow-600';
-    return 'text-red-600';
+    if (status >= 200 && status < 300) return "text-green-600";
+    if (status >= 300 && status < 400) return "text-blue-600";
+    if (status >= 400 && status < 500) return "text-yellow-600";
+    return "text-red-600";
   };
 
   return (
@@ -161,7 +163,7 @@ export function ApiTestSection({
           <Button
             onClick={handleApply}
             disabled={isApplying || isApplied}
-            variant={isApplied ? 'outline' : 'default'}
+            variant={isApplied ? "outline" : "default"}
           >
             {isApplying ? (
               <>
@@ -169,9 +171,9 @@ export function ApiTestSection({
                 適用中...
               </>
             ) : isApplied ? (
-              '適用済み'
+              "適用済み"
             ) : (
-              'シナリオを適用'
+              "シナリオを適用"
             )}
           </Button>
         </div>
@@ -244,7 +246,7 @@ export function ApiTestSection({
                       <span className="font-semibold">ステータス:</span>
                       <span
                         className={`font-bold ${getStatusColor(
-                          response.status
+                          response.status,
                         )}`}
                       >
                         {response.status}
@@ -265,7 +267,7 @@ export function ApiTestSection({
                       <div>
                         <span className="font-semibold">レスポンスボディ:</span>
                         <pre className="mt-1 p-2 bg-white rounded text-xs overflow-auto max-h-64">
-                          {typeof response.body === 'string'
+                          {typeof response.body === "string"
                             ? response.body
                             : JSON.stringify(response.body, null, 2)}
                         </pre>
@@ -294,8 +296,8 @@ export function ApiTestSection({
                     {error.message && (
                       <div className="text-sm mt-1">{error.message}</div>
                     )}
-                    {error.error === 'Network error' &&
-                      error.requestUrl?.includes('localhost') && (
+                    {error.error === "Network error" &&
+                      error.requestUrl?.includes("localhost") && (
                         <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
                           <span className="font-semibold">💡 ヒント:</span>
                           <p className="mt-1">

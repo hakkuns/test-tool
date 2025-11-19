@@ -1,11 +1,11 @@
-import { db, type DatabaseConnection } from './db';
+import { db, type DatabaseConnection } from "./db";
 
 /**
  * アクティブなDB接続を取得
  */
 export async function getActiveConnection(): Promise<DatabaseConnection | null> {
   const connections = await db.dbConnections
-    .where('isActive')
+    .where("isActive")
     .equals(1)
     .toArray();
   return connections[0] || null;
@@ -15,14 +15,14 @@ export async function getActiveConnection(): Promise<DatabaseConnection | null> 
  * すべてのDB接続を取得
  */
 export async function getAllConnections(): Promise<DatabaseConnection[]> {
-  return db.dbConnections.orderBy('createdAt').reverse().toArray();
+  return db.dbConnections.orderBy("createdAt").reverse().toArray();
 }
 
 /**
  * DB接続を保存
  */
 export async function saveConnection(
-  connection: Omit<DatabaseConnection, 'id' | 'createdAt' | 'updatedAt'>
+  connection: Omit<DatabaseConnection, "id" | "createdAt" | "updatedAt">,
 ): Promise<number> {
   const now = new Date().toISOString();
 
@@ -45,7 +45,7 @@ export async function saveConnection(
  */
 export async function updateConnection(
   id: number,
-  updates: Partial<Omit<DatabaseConnection, 'id' | 'createdAt'>>
+  updates: Partial<Omit<DatabaseConnection, "id" | "createdAt">>,
 ): Promise<void> {
   const now = new Date().toISOString();
 

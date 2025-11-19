@@ -1,22 +1,15 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import {
-  Database,
-  TestTube,
-  Home,
-  BookOpen,
-  Menu,
-  X,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { checkDatabaseConnection } from '@/lib/api';
-import { ReadmeDialog } from '@/components/ReadmeDialog';
-import { DatabaseConnectionDialog } from '@/components/DatabaseConnectionDialog';
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Database, TestTube, Home, BookOpen, Menu, X } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { checkDatabaseConnection } from "@/lib/api";
+import { ReadmeDialog } from "@/components/ReadmeDialog";
+import { DatabaseConnectionDialog } from "@/components/DatabaseConnectionDialog";
 
 export function Navigation() {
   const pathname = usePathname();
@@ -35,7 +28,7 @@ export function Navigation() {
   const checkDbConnection = async () => {
     try {
       const result = await checkDatabaseConnection();
-      setDbConnected(result.database === 'connected');
+      setDbConnected(result.database === "connected");
     } catch (error) {
       setDbConnected(false);
     }
@@ -43,13 +36,13 @@ export function Navigation() {
 
   const links = [
     {
-      href: '/',
-      label: 'ホーム',
+      href: "/",
+      label: "ホーム",
       icon: Home,
     },
     {
-      href: '/api-test',
-      label: 'APIテスト',
+      href: "/api-test",
+      label: "APIテスト",
       icon: TestTube,
     },
   ];
@@ -77,10 +70,10 @@ export function Navigation() {
                   key={link.href}
                   href={link.href}
                   className={cn(
-                    'flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                    "flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors",
                     isActive
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
                   )}
                 >
                   <Icon className="h-4 w-4" />
@@ -137,11 +130,17 @@ export function Navigation() {
             >
               <Database className="h-4 w-4" />
               {dbConnected === null ? (
-                <Badge variant="secondary" className="text-xs h-2 w-2 p-0 rounded-full" />
+                <Badge
+                  variant="secondary"
+                  className="text-xs h-2 w-2 p-0 rounded-full"
+                />
               ) : dbConnected ? (
                 <Badge className="bg-green-500 h-2 w-2 p-0 rounded-full" />
               ) : (
-                <Badge variant="destructive" className="h-2 w-2 p-0 rounded-full" />
+                <Badge
+                  variant="destructive"
+                  className="h-2 w-2 p-0 rounded-full"
+                />
               )}
             </Button>
 
@@ -174,10 +173,10 @@ export function Navigation() {
                   href={link.href}
                   onClick={() => setMobileMenuOpen(false)}
                   className={cn(
-                    'flex items-center space-x-3 px-4 py-3 rounded-md text-sm font-medium transition-colors',
+                    "flex items-center space-x-3 px-4 py-3 rounded-md text-sm font-medium transition-colors",
                     isActive
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
                   )}
                 >
                   <Icon className="h-5 w-5" />

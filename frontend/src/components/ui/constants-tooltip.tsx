@@ -1,12 +1,12 @@
-'use client'
+"use client";
 
-import { Info } from 'lucide-react'
+import { Info } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip'
+} from "@/components/ui/tooltip";
 
 /**
  * 定数機能の説明をツールチップで表示するコンポーネント
@@ -39,5 +39,5 @@ export function ConstantsTooltip() {
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
-  )
+  );
 }

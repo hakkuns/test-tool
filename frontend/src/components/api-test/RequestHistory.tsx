@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Trash2, Play } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Trash2, Play } from "lucide-react";
 
 export interface HistoryItem {
   id: string;
@@ -36,18 +36,18 @@ export function RequestHistory({
 }: RequestHistoryProps) {
   const getMethodColor = (method: string) => {
     switch (method) {
-      case 'GET':
-        return 'bg-blue-500';
-      case 'POST':
-        return 'bg-green-500';
-      case 'PUT':
-        return 'bg-yellow-500';
-      case 'DELETE':
-        return 'bg-red-500';
-      case 'PATCH':
-        return 'bg-purple-500';
+      case "GET":
+        return "bg-blue-500";
+      case "POST":
+        return "bg-green-500";
+      case "PUT":
+        return "bg-yellow-500";
+      case "DELETE":
+        return "bg-red-500";
+      case "PATCH":
+        return "bg-purple-500";
       default:
-        return 'bg-gray-500';
+        return "bg-gray-500";
     }
   };
 
@@ -88,7 +88,7 @@ export function RequestHistory({
                   <div className="flex items-center gap-2 mb-1">
                     <Badge
                       className={`${getMethodColor(
-                        item.method
+                        item.method,
                       )} text-white text-xs`}
                     >
                       {item.method}
