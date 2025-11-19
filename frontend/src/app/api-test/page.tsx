@@ -1,33 +1,21 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { RequestForm } from "@/components/api-test/RequestForm";
-import { ResponseViewer } from "@/components/api-test/ResponseViewer";
-import {
-  RequestHistory,
-  type HistoryItem,
-} from "@/components/api-test/RequestHistory";
-import { MockEndpointList } from "@/components/api-test/MockEndpointList";
-import { TableList } from "@/components/api-test/TableList";
-import { MockLogViewer } from "@/components/api-test/MockLogViewer";
-import {
-  proxyRequest,
-  getMockEndpoints,
-  clearMockLogs,
-  getMockLogs,
-  type MockRequestLog,
-} from "@/lib/api";
-import { scenariosApi, groupsApi } from "@/lib/api/scenarios";
-import type { TestScenario, ScenarioGroup } from "@/types/scenario";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { CheckCircle2, Edit, Loader2, PlayCircle, XCircle } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
+import { MockEndpointList } from "@/components/api-test/MockEndpointList";
+import { MockLogViewer } from "@/components/api-test/MockLogViewer";
+import { RequestForm } from "@/components/api-test/RequestForm";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  type HistoryItem,
+  RequestHistory,
+} from "@/components/api-test/RequestHistory";
+import { ResponseViewer } from "@/components/api-test/ResponseViewer";
+import { TableList } from "@/components/api-test/TableList";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -35,10 +23,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { PlayCircle, Loader2, CheckCircle2, XCircle, Edit } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import {
+  clearMockLogs,
+  getMockEndpoints,
+  getMockLogs,
+  type MockRequestLog,
+  proxyRequest,
+} from "@/lib/api";
+import { groupsApi, scenariosApi } from "@/lib/api/scenarios";
+import type { ScenarioGroup, TestScenario } from "@/types/scenario";
 import {
   replaceConstantsInHeaders,
   replaceConstantsInObject,
@@ -65,7 +58,7 @@ function calculateScenarioHash(scenario: TestScenario): string {
   return hash.toString(36);
 }
 
-export default function ApiTestPage() {
+function ApiTestPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
@@ -619,5 +612,13 @@ export default function ApiTestPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ApiTestPage() {
+  return (
+    <Suspense fallback={<div className="container mx-auto p-8">読み込み中...</div>}>
+      <ApiTestPageContent />
+    </Suspense>
   );
 }
