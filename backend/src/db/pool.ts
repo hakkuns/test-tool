@@ -22,9 +22,8 @@ pool.on('error', (err) => {
 export async function testConnection(): Promise<boolean> {
   try {
     const client = await pool.connect()
-    const result = await client.query('SELECT NOW()')
+    await client.query('SELECT NOW()')
     client.release()
-    console.log('✅ PostgreSQL connected:', result.rows[0].now)
     return true
   } catch (error) {
     console.error('❌ PostgreSQL connection error:', error)

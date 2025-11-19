@@ -55,7 +55,7 @@ export function RequestHistory({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Request History</CardTitle>
+          <CardTitle>リクエスト履歴</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-center text-muted-foreground">
@@ -70,9 +70,9 @@ export function RequestHistory({
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>Request History ({history.length})</CardTitle>
+          <CardTitle>リクエスト履歴 ({history.length})</CardTitle>
           <Button variant="outline" size="sm" onClick={onClear}>
-            Clear All
+            すべて削除
           </Button>
         </div>
       </CardHeader>
@@ -120,7 +120,7 @@ export function RequestHistory({
                     variant="ghost"
                     size="icon"
                     onClick={() => onReplay(item)}
-                    title="Replay"
+                    title="再実行"
                   >
                     <Play className="h-4 w-4" />
                   </Button>
@@ -128,7 +128,7 @@ export function RequestHistory({
                     variant="ghost"
                     size="icon"
                     onClick={() => onDelete(item.id)}
-                    title="Delete"
+                    title="削除"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

@@ -153,7 +153,16 @@ export const scenariosApi = {
     const imported: TestScenario[] = [];
     const groupIdMap = new Map<string, string>(); // 元のgroupId -> 新しいgroupId
 
-    for (const { scenario, group } of dataArray) {
+    for (const data of dataArray) {
+      // データの構造を確認
+      const scenario = data.scenario || data;
+      const group = data.group;
+
+      if (!scenario) {
+        console.error('Invalid export data:', data);
+        continue;
+      }
+
       let newGroupId: string | undefined;
 
       // グループ情報がある場合、グループを復元または取得
@@ -433,6 +442,15 @@ export const groupsApi = {
    */
   getAll: async (): Promise<ScenarioGroup[]> => {
     const groups = await db.scenarioGroups.toArray();
+
+    // デバッグログ（開発環境のみ）
+    if (process.env.NODE_ENV === 'development') {
+      console.log('IndexedDB scenarioGroups.toArray():', {
+        count: groups.length,
+        rawGroups: groups,
+      });
+    }
+
     return groups
       .map((g) => ({ ...g, id: g.groupId }))
       .sort(
@@ -479,9 +497,7 @@ export const groupsApi = {
         updatedAt: now,
       };
 
-      console.log('Creating group in IndexedDB:', group);
       await db.scenarioGroups.add(group);
-      console.log('Group created successfully');
       return { ...group, id: groupId };
     } catch (error) {
       console.error('Error creating group in IndexedDB:', error);

@@ -5,12 +5,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Database,
-  FileJson,
-  Settings,
   TestTube,
   Home,
-  FlaskConical,
   BookOpen,
+  Menu,
+  X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +23,7 @@ export function Navigation() {
   const [dbConnected, setDbConnected] = useState<boolean | null>(null);
   const [readmeOpen, setReadmeOpen] = useState(false);
   const [dbDialogOpen, setDbDialogOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     checkDbConnection();
@@ -44,12 +44,12 @@ export function Navigation() {
   const links = [
     {
       href: '/',
-      label: 'Home',
+      label: 'ホーム',
       icon: Home,
     },
     {
       href: '/api-test',
-      label: 'API Test',
+      label: 'APIテスト',
       icon: TestTube,
     },
   ];
@@ -60,12 +60,14 @@ export function Navigation() {
         <div className="flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center space-x-2">
             <Database className="h-6 w-6" />
-            <span className="font-bold text-lg sm:text-xl">
-              Testing Assistant Suite
+            <span className="font-bold text-base sm:text-lg md:text-xl">
+              <span className="hidden sm:inline">Testing Assistant Suite</span>
+              <span className="sm:hidden">TAS</span>
             </span>
           </Link>
 
-          <div className="flex items-center space-x-1">
+          {/* デスクトップメニュー */}
+          <div className="hidden md:flex items-center space-x-1">
             {links.map((link) => {
               const Icon = link.icon;
               const isActive = pathname === link.href;
@@ -82,7 +84,7 @@ export function Navigation() {
                   )}
                 >
                   <Icon className="h-4 w-4" />
-                  <span className="hidden sm:inline">{link.label}</span>
+                  <span>{link.label}</span>
                 </Link>
               );
             })}
@@ -95,7 +97,7 @@ export function Navigation() {
               className="flex items-center space-x-2 px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground"
             >
               <BookOpen className="h-4 w-4" />
-              <span className="hidden sm:inline">使い方</span>
+              <span>使い方</span>
             </Button>
 
             {/* DB接続状態 */}
@@ -103,31 +105,100 @@ export function Navigation() {
               variant="ghost"
               size="sm"
               onClick={() => setDbDialogOpen(true)}
-              className="ml-2 sm:ml-4 flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="ml-4 flex items-center gap-2 px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground"
               title="データベース接続設定"
             >
               <Database className="h-4 w-4" />
               {dbConnected === null ? (
-                <Badge
-                  variant="secondary"
-                  className="text-xs hidden sm:inline-flex"
-                >
+                <Badge variant="secondary" className="text-xs">
                   確認中
                 </Badge>
               ) : dbConnected ? (
                 <Badge className="bg-green-500 hover:bg-green-600 text-xs">
-                  <span className="hidden sm:inline">接続中</span>
-                  <span className="sm:hidden">●</span>
+                  接続中
                 </Badge>
               ) : (
                 <Badge variant="destructive" className="text-xs">
-                  <span className="hidden sm:inline">未接続</span>
-                  <span className="sm:hidden">●</span>
+                  未接続
                 </Badge>
               )}
             </Button>
           </div>
+
+          {/* モバイルメニュー */}
+          <div className="flex md:hidden items-center space-x-2">
+            {/* DB接続状態（モバイル） */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setDbDialogOpen(true)}
+              className="flex items-center gap-1 px-2 py-2"
+              title="データベース接続設定"
+            >
+              <Database className="h-4 w-4" />
+              {dbConnected === null ? (
+                <Badge variant="secondary" className="text-xs h-2 w-2 p-0 rounded-full" />
+              ) : dbConnected ? (
+                <Badge className="bg-green-500 h-2 w-2 p-0 rounded-full" />
+              ) : (
+                <Badge variant="destructive" className="h-2 w-2 p-0 rounded-full" />
+              )}
+            </Button>
+
+            {/* ハンバーガーメニュー */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2"
+            >
+              {mobileMenuOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <Menu className="h-5 w-5" />
+              )}
+            </Button>
+          </div>
         </div>
+
+        {/* モバイルメニュードロップダウン */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t py-2 space-y-1">
+            {links.map((link) => {
+              const Icon = link.icon;
+              const isActive = pathname === link.href;
+
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={cn(
+                    'flex items-center space-x-3 px-4 py-3 rounded-md text-sm font-medium transition-colors',
+                    isActive
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  )}
+                >
+                  <Icon className="h-5 w-5" />
+                  <span>{link.label}</span>
+                </Link>
+              );
+            })}
+
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setReadmeOpen(true);
+                setMobileMenuOpen(false);
+              }}
+              className="w-full justify-start flex items-center space-x-3 px-4 py-3 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              <BookOpen className="h-5 w-5" />
+              <span>使い方</span>
+            </Button>
+          </div>
+        )}
       </div>
       <ReadmeDialog open={readmeOpen} onOpenChange={setReadmeOpen} />
       <DatabaseConnectionDialog

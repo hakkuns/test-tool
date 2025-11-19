@@ -148,8 +148,6 @@ db.version(3)
     for (const id of toDelete) {
       await trans.table('scenarios').delete(id);
     }
-
-    console.log(`Removed ${toDelete.length} duplicate scenarios`);
   });
 
 // バージョン4: 強制的にクリーンアップ
@@ -179,12 +177,6 @@ db.version(4)
 
     for (const id of toDelete) {
       await trans.table('scenarios').delete(id);
-    }
-
-    if (toDelete.length > 0) {
-      console.log(
-        `Version 4: Removed ${toDelete.length} remaining duplicate scenarios`
-      );
     }
   });
 

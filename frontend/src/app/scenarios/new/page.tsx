@@ -286,13 +286,7 @@ export default function NewScenarioPage() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">新しいシナリオを作成</h1>
-          <p className="text-muted-foreground mt-2">
-            テストシナリオを作成し、API、テーブル、データ、モックを設定します
-          </p>
-        </div>
+      <div className="mb-6 flex items-end justify-end">
         <div className="flex gap-2">
           <Button type="button" variant="outline" onClick={handleImportJSON}>
             <Upload className="h-4 w-4 mr-2" />
@@ -482,7 +476,7 @@ export default function NewScenarioPage() {
             <Button
               type="button"
               variant="secondary"
-              onClick={() => router.push('/api-test')}
+              onClick={() => router.push(`/api-test?scenario=${createdScenarioId}`)}
             >
               API Test
             </Button>

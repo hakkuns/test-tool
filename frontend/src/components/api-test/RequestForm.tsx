@@ -14,9 +14,14 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, RefreshCw, Copy, Check } from 'lucide-react';
 import { ConstantsTooltip } from '@/components/ui/constants-tooltip';
 import type { TestScenario } from '@/types/scenario';
+import {
+  replaceConstantsInHeaders,
+  replaceConstantsInObject,
+} from '@/utils/constants';
+import { toast } from 'sonner';
 
 interface HeaderEntry {
   key: string;
@@ -33,12 +38,14 @@ interface RequestFormProps {
   }) => Promise<void>;
   isLoading?: boolean;
   initialData?: TestScenario;
+  originalScenario?: TestScenario;
 }
 
 export function RequestForm({
   onSubmit,
   isLoading,
   initialData,
+  originalScenario,
 }: RequestFormProps) {
   const [method, setMethod] = useState('GET');
   const [url, setUrl] = useState('http://localhost:8080/api/');
@@ -46,7 +53,45 @@ export function RequestForm({
     { key: 'Content-Type', value: 'application/json' },
   ]);
   const [body, setBody] = useState('{\n  \n}');
-  const [timeout, setTimeout] = useState('30000');
+  const [requestTimeout, setRequestTimeout] = useState('30000');
+  const [copiedCurl, setCopiedCurl] = useState(false);
+
+  // curlコマンドを生成
+  const generateCurlCommand = () => {
+    let curl = `curl -X ${method}`;
+    
+    // URL
+    curl += ` '${url}'`;
+    
+    // ヘッダー
+    for (const header of headers) {
+      if (header.key && header.value) {
+        curl += ` \\\n  -H '${header.key}: ${header.value}'`;
+      }
+    }
+    
+    // ボディ（GET/HEAD以外）
+    if (method !== 'GET' && method !== 'HEAD' && body.trim()) {
+      const escapedBody = body.replace(/'/g, "'\\''");
+      curl += ` \\\n  -d '${escapedBody}'`;
+    }
+    
+    return curl;
+  };
+
+  // curlコマンドをクリップボードにコピー
+  const handleCopyCurl = async () => {
+    try {
+      const curlCommand = generateCurlCommand();
+      await navigator.clipboard.writeText(curlCommand);
+      setCopiedCurl(true);
+      toast.success('curlコマンドをコピーしました');
+      setTimeout(() => setCopiedCurl(false), 2000);
+    } catch (err) {
+      toast.error('コピーに失敗しました');
+      console.error('Failed to copy:', err);
+    }
+  };
 
   // シナリオから初期値を設定
   useEffect(() => {
@@ -95,6 +140,34 @@ export function RequestForm({
     setHeaders(newHeaders);
   };
 
+  const handleRefreshConstants = () => {
+    // 元のシナリオから定数パターンを取得して再変換
+    if (!originalScenario?.testSettings) {
+      return;
+    }
+
+    // 元のヘッダーから定数を再変換
+    if (originalScenario.testSettings.headers) {
+      const originalHeaders = Object.entries(
+        originalScenario.testSettings.headers
+      ).map(([key, value]) => ({ key, value }));
+      const convertedHeaders = replaceConstantsInHeaders(originalHeaders);
+      setHeaders(convertedHeaders);
+    }
+
+    // 元のボディから定数を再変換
+    if (originalScenario.testSettings.body) {
+      try {
+        const parsedBody = JSON.parse(originalScenario.testSettings.body);
+        const convertedBodyObj = replaceConstantsInObject(parsedBody);
+        setBody(JSON.stringify(convertedBodyObj, null, 2));
+      } catch {
+        // JSONでない場合はそのまま
+        setBody(originalScenario.testSettings.body);
+      }
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -115,22 +188,58 @@ export function RequestForm({
       url,
       headers: headersObj,
       body: requestBody,
-      timeout: Number.parseInt(timeout),
+      timeout: Number.parseInt(requestTimeout),
     });
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>リクエスト設定</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle>リクエスト設定</CardTitle>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleCopyCurl}
+              className="flex items-center gap-1"
+              title="curlコマンドをコピー"
+            >
+              {copiedCurl ? (
+                <>
+                  <Check className="h-4 w-4" />
+                  コピー済み
+                </>
+              ) : (
+                <>
+                  <Copy className="h-4 w-4" />
+                  curl
+                </>
+              )}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleRefreshConstants}
+              disabled={!originalScenario?.testSettings}
+              className="flex items-center gap-1"
+              title="定数を再変換（$TIMESTAMP等の値を更新）"
+            >
+              <RefreshCw className="h-4 w-4" />
+              定数を再変換
+            </Button>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Method & URL */}
+          {/* メソッド & URL */}
           <div className="flex gap-2">
             <div className="w-40">
               <Label htmlFor="method" className="mb-2 block">
-                Method
+                メソッド
               </Label>
               <Select value={method} onValueChange={setMethod}>
                 <SelectTrigger id="method">
@@ -165,16 +274,16 @@ export function RequestForm({
 
           <Tabs defaultValue="headers">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="headers">Headers</TabsTrigger>
-              <TabsTrigger value="body">Body</TabsTrigger>
-              <TabsTrigger value="settings">Settings</TabsTrigger>
+              <TabsTrigger value="headers">ヘッダー</TabsTrigger>
+              <TabsTrigger value="body">ボディ</TabsTrigger>
+              <TabsTrigger value="settings">設定</TabsTrigger>
             </TabsList>
 
-            {/* Headers Tab */}
+            {/* ヘッダータブ */}
             <TabsContent value="headers" className="space-y-2">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
-                  <Label>Headers</Label>
+                  <Label>ヘッダー</Label>
                   <ConstantsTooltip />
                 </div>
                 <Button
@@ -185,7 +294,7 @@ export function RequestForm({
                   className="flex items-center gap-1"
                 >
                   <Plus className="h-4 w-4" />
-                  Add
+                  追加
                 </Button>
               </div>
 
@@ -193,7 +302,7 @@ export function RequestForm({
                 {headers.map((header, index) => (
                   <div key={index} className="flex gap-2">
                     <Input
-                      placeholder="Key"
+                      placeholder="キー"
                       value={header.key}
                       onChange={(e) =>
                         handleHeaderChange(index, 'key', e.target.value)
@@ -201,7 +310,7 @@ export function RequestForm({
                       className="flex-1"
                     />
                     <Input
-                      placeholder="Value"
+                      placeholder="値"
                       value={header.value}
                       onChange={(e) =>
                         handleHeaderChange(index, 'value', e.target.value)
@@ -221,7 +330,7 @@ export function RequestForm({
               </div>
             </TabsContent>
 
-            {/* Body Tab */}
+            {/* ボディタブ */}
             <TabsContent value="body" className="space-y-4 mt-2">
               {(method === 'GET' || method === 'HEAD') ? (
                 <p className="text-sm text-muted-foreground py-8 text-center">
@@ -244,15 +353,15 @@ export function RequestForm({
               )}
             </TabsContent>
 
-            {/* Settings Tab */}
+            {/* 設定タブ */}
             <TabsContent value="settings" className="space-y-2">
               <div className="space-y-2">
-                <Label htmlFor="timeout">Timeout (ms)</Label>
+                <Label htmlFor="timeout">タイムアウト (ミリ秒)</Label>
                 <Input
                   id="timeout"
                   type="number"
-                  value={timeout}
-                  onChange={(e) => setTimeout(e.target.value)}
+                  value={requestTimeout}
+                  onChange={(e) => setRequestTimeout(e.target.value)}
                   min="0"
                   max="300000"
                   step="1000"
@@ -265,7 +374,7 @@ export function RequestForm({
           </Tabs>
 
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? 'Sending...' : 'Send Request'}
+            {isLoading ? '送信中...' : 'リクエストを送信'}
           </Button>
         </form>
       </CardContent>

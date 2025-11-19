@@ -36,7 +36,7 @@ proxyRouter.post('/request', async (c) => {
         // localhost:ポート を <container-name>:ポート に変換
         targetUrl = url.replace(
           /^(https?:\/\/)?localhost(:\d+)?/i,
-          (match, protocol = 'http://', port = '') => {
+          (_match, protocol = 'http://', port = '') => {
             const actualProtocol = protocol || 'http://';
             return `${actualProtocol}${targetContainer}${port}`;
           }
@@ -48,27 +48,13 @@ proxyRouter.post('/request', async (c) => {
 
         targetUrl = url.replace(
           /^(https?:\/\/)?localhost(:\d+)?/i,
-          (match, protocol = 'http://', port = '') => {
+          (_match, protocol = 'http://', port = '') => {
             const actualProtocol = protocol || 'http://';
             return `${actualProtocol}${hostIp}${port}`;
           }
         );
       }
-
-      if (targetUrl !== url) {
-        console.log(`URL converted: ${url} -> ${targetUrl}`);
-      }
     }
-
-    // リクエスト情報をログ出力
-    console.log('Proxy request:', {
-      method,
-      url: targetUrl,
-      originalUrl: url !== targetUrl ? url : undefined,
-      headers: Object.keys(headers),
-      hasBody: !!requestBody,
-      timeout,
-    });
 
     // AbortControllerでタイムアウト設定
     const controller = new AbortController();
@@ -100,9 +86,7 @@ proxyRouter.post('/request', async (c) => {
       }
 
       // リクエスト実行
-      console.log('Attempting to fetch:', targetUrl);
       const response = await fetch(targetUrl, fetchOptions);
-      console.log('Fetch successful, status:', response.status);
 
       clearTimeout(timeoutId);
 

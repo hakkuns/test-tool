@@ -125,7 +125,6 @@ export default function ScenarioDetailPage() {
   useEffect(() => {
     // 初期データのロードが完了してから変更を監視
     if (initialDataLoaded && !isLoading) {
-      console.log('Change detected, setting hasUnsavedChanges to true');
       setHasUnsavedChanges(true);
     }
   }, [
@@ -147,12 +146,9 @@ export default function ScenarioDetailPage() {
 
   // ページ離脱時の警告
   useEffect(() => {
-    console.log('hasUnsavedChanges:', hasUnsavedChanges);
-
     // ブラウザのページ離脱時の警告
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasUnsavedChanges) {
-        console.log('Preventing unload');
         e.preventDefault();
         e.returnValue = '';
       }
@@ -496,7 +492,7 @@ export default function ScenarioDetailPage() {
             <Button
               type="button"
               variant="secondary"
-              onClick={() => router.push('/api-test')}
+              onClick={() => router.push(`/api-test?scenario=${id}`)}
             >
               API Test
             </Button>

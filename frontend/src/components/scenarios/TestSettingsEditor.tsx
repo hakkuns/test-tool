@@ -106,17 +106,17 @@ export function TestSettingsEditor({
       <CardContent>
         <Tabs defaultValue="headers">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="headers">Headers</TabsTrigger>
+            <TabsTrigger value="headers">ヘッダー</TabsTrigger>
             <TabsTrigger value="body" disabled={!bodyAllowed} title={!bodyAllowed ? `${method}メソッドではボディを送信できません` : ''}>
-              Body
+              ボディ
             </TabsTrigger>
           </TabsList>
 
-          {/* Headers Tab */}
+          {/* ヘッダータブ */}
           <TabsContent value="headers" className="space-y-2">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
-                <Label>Headers</Label>
+                <Label>ヘッダー</Label>
                 <ConstantsTooltip />
               </div>
               <Button
@@ -127,7 +127,7 @@ export function TestSettingsEditor({
                 className="flex items-center gap-1"
               >
                 <Plus className="h-4 w-4" />
-                Add
+                追加
               </Button>
             </div>
 
@@ -135,7 +135,7 @@ export function TestSettingsEditor({
               {headerEntries.map((header, index) => (
                 <div key={index} className="flex gap-2">
                   <Input
-                    placeholder="Key"
+                    placeholder="キー"
                     value={header.key}
                     onChange={(e) =>
                       handleHeaderChange(index, 'key', e.target.value)
@@ -143,7 +143,7 @@ export function TestSettingsEditor({
                     className="flex-1"
                   />
                   <Input
-                    placeholder="Value"
+                    placeholder="値"
                     value={header.value}
                     onChange={(e) =>
                       handleHeaderChange(index, 'value', e.target.value)
@@ -163,7 +163,7 @@ export function TestSettingsEditor({
             </div>
           </TabsContent>
 
-          {/* Body Tab */}
+          {/* ボディタブ */}
           <TabsContent value="body" className="space-y-4 mt-2">
             <div className="space-y-2">
               <div className="flex items-center gap-2">

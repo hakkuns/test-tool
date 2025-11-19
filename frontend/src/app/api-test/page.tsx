@@ -32,7 +32,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PlayCircle, Loader2, CheckCircle2, XCircle, Edit } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   replaceConstantsInHeaders,
   replaceConstantsInObject,
@@ -61,6 +61,7 @@ function calculateScenarioHash(scenario: TestScenario): string {
 
 export default function ApiTestPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const [response, setResponse] = useState<any>(null);
   const [error, setError] = useState<any>(null);
@@ -74,12 +75,24 @@ export default function ApiTestPage() {
   const [groupFilter, setGroupFilter] = useState<string>('all');
 
   // シナリオ一覧を取得（useQuery）
-  const { data: scenarios = [], isLoading: isScenariosLoading } = useQuery<
+  const { data: scenarios = [], isLoading: isScenariosLoading, dataUpdatedAt } = useQuery<
     TestScenario[]
   >({
     queryKey: ['scenarios'],
     queryFn: async () => {
       const data = await scenariosApi.getAll();
+      // デバッグログ
+      if (process.env.NODE_ENV === 'development') {
+        console.log('シナリオ一覧取得:', {
+          count: data.length,
+          scenariosWithGroup: data.filter((s) => s.groupId).map((s) => ({
+            id: s.id,
+            name: s.name,
+            groupId: s.groupId,
+            groupIdType: typeof s.groupId,
+          })),
+        });
+      }
       return data;
     },
   });
@@ -89,6 +102,17 @@ export default function ApiTestPage() {
     queryKey: ['scenario-groups'],
     queryFn: async () => {
       const data = await groupsApi.getAll();
+      // デバッグログ
+      if (process.env.NODE_ENV === 'development') {
+        console.log('グループ一覧取得:', {
+          count: data.length,
+          groups: data.map((g) => ({
+            id: g.id,
+            name: g.name,
+            idType: typeof g.id,
+          })),
+        });
+      }
       return data;
     },
   });
@@ -101,7 +125,25 @@ export default function ApiTestPage() {
     if (groupFilter === 'ungrouped') {
       return scenarios.filter((s) => !s.groupId);
     }
-    return scenarios.filter((s) => s.groupId === groupFilter);
+    // groupIdとgroupFilterの両方を比較（型変換なしで直接比較）
+    const filtered = scenarios.filter((s) => s.groupId === groupFilter);
+
+    // デバッグログ（開発中のみ）
+    if (process.env.NODE_ENV === 'development' && filtered.length === 0 && scenarios.some((s) => s.groupId)) {
+      console.log('グループフィルタリングデバッグ:', {
+        groupFilter,
+        groupFilterType: typeof groupFilter,
+        totalScenarios: scenarios.length,
+        scenariosWithGroupId: scenarios.filter((s) => s.groupId).map((s) => ({
+          name: s.name,
+          groupId: s.groupId,
+          groupIdType: typeof s.groupId,
+          match: s.groupId === groupFilter,
+        })),
+      });
+    }
+
+    return filtered;
   }, [scenarios, groupFilter]);
 
   // モックエンドポイント一覧を取得（useQuery）
@@ -125,6 +167,12 @@ export default function ApiTestPage() {
           return scenario?.tableData?.map((td) => td.tableName) || [];
         })()
       : [];
+
+  // 元のシナリオ（定数パターンを含む）を取得
+  const originalScenario = useMemo(() => {
+    if (!selectedScenarioId || !isApplied) return undefined;
+    return scenarios.find((s) => s.id === selectedScenarioId);
+  }, [selectedScenarioId, isApplied, scenarios]);
 
   // 選択されたシナリオの定数を変換
   const convertedScenario = useMemo(() => {
@@ -170,25 +218,44 @@ export default function ApiTestPage() {
       }
     }
 
+    // クエリパラメータからシナリオIDを取得
+    const scenarioIdFromQuery = searchParams.get('scenario');
+
     // 適用中のシナリオを確認
     const appliedScenarioId = localStorage.getItem('appliedScenarioId');
     const savedHash = localStorage.getItem('appliedScenarioHash');
-    if (appliedScenarioId) {
+
+    // クエリパラメータにシナリオIDがある場合は優先
+    if (scenarioIdFromQuery) {
+      setSelectedScenarioId(scenarioIdFromQuery);
+      // クエリパラメータのシナリオが適用済みか確認
+      if (scenarioIdFromQuery === appliedScenarioId) {
+        setIsApplied(true);
+        if (savedHash) {
+          setAppliedScenarioHash(savedHash);
+        }
+      } else {
+        setIsApplied(false);
+      }
+    } else if (appliedScenarioId) {
+      // クエリパラメータがない場合は、適用中のシナリオを選択
       setSelectedScenarioId(appliedScenarioId);
       setIsApplied(true);
       if (savedHash) {
         setAppliedScenarioHash(savedHash);
       }
     }
-  }, []);
+  }, [searchParams]);
 
-  // シナリオが読み込まれた後、選択されたシナリオが存在するか確認
+  // シナリオが読み込まれた後、適用済みシナリオが存在するか確認
   useEffect(() => {
-    // シナリオのロードが完了した後にチェック
-    if (!isScenariosLoading && selectedScenarioId) {
+    // シナリオのロードが完了し、かつデータが存在する場合のみチェック
+    // dataUpdatedAtが0でない（データが取得済み）かつローディングが完了している場合
+    // 適用済みシナリオのみをチェック（未適用のシナリオは選択しているだけなのでチェック不要）
+    if (!isScenariosLoading && dataUpdatedAt > 0 && selectedScenarioId && isApplied) {
       const scenarioExists = scenarios.some((s) => s.id === selectedScenarioId);
       if (!scenarioExists) {
-        // シナリオが存在しない場合、リセット
+        // 適用済みシナリオが存在しない場合、リセット
         setSelectedScenarioId('');
         setIsApplied(false);
         setAppliedScenarioHash('');
@@ -197,7 +264,7 @@ export default function ApiTestPage() {
         toast.error('適用されていたシナリオが削除されました');
       }
     }
-  }, [scenarios, selectedScenarioId, isScenariosLoading]);
+  }, [scenarios, selectedScenarioId, isScenariosLoading, dataUpdatedAt, isApplied]);
 
   // 履歴をLocalStorageに保存
   const saveHistory = (newHistory: HistoryItem[]) => {
@@ -238,7 +305,7 @@ export default function ApiTestPage() {
     onSuccess: async (result, variables) => {
       if (result.success && result.response) {
         setResponse(result.response);
-        toast.success('Request completed successfully');
+        toast.success('リクエストが正常に完了しました');
 
         // レスポンス受信後にモックログを取得
         try {
@@ -273,19 +340,19 @@ export default function ApiTestPage() {
         saveHistory(newHistory);
       } else {
         setError(result);
-        toast.error('Request failed');
+        toast.error('リクエストに失敗しました');
       }
     },
     onError: (err) => {
       console.error('Request error:', err);
       const errorData = {
-        error: 'Request failed',
-        message: err instanceof Error ? err.message : 'Unknown error',
+        error: 'リクエストに失敗しました',
+        message: err instanceof Error ? err.message : '不明なエラー',
         duration: 0,
         timestamp: new Date().toISOString(),
       };
       setError(errorData);
-      toast.error('Request failed');
+      toast.error('リクエストに失敗しました');
     },
   });
 
@@ -318,14 +385,14 @@ export default function ApiTestPage() {
   const handleDeleteHistory = (id: string) => {
     const newHistory = history.filter((item) => item.id !== id);
     saveHistory(newHistory);
-    toast.success('History item deleted');
+    toast.success('履歴項目を削除しました');
   };
 
   // 全履歴削除
   const handleClearHistory = () => {
-    if (confirm('Are you sure you want to clear all history?')) {
+    if (confirm('すべての履歴を削除してよろしいですか?')) {
       saveHistory([]);
-      toast.success('History cleared');
+      toast.success('履歴をクリアしました');
     }
   };
 
@@ -433,11 +500,17 @@ export default function ApiTestPage() {
                 <SelectValue placeholder="シナリオを選択..." />
               </SelectTrigger>
               <SelectContent className="min-w-[300px]">
-                {filteredScenarios.map((scenario) => (
-                  <SelectItem key={scenario.id} value={scenario.id}>
-                    {scenario.name}
-                  </SelectItem>
-                ))}
+                {filteredScenarios.length > 0 ? (
+                  filteredScenarios.map((scenario) => (
+                    <SelectItem key={scenario.id} value={scenario.id}>
+                      {scenario.name}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <div className="px-2 py-6 text-center text-sm text-muted-foreground">
+                    このグループにシナリオがありません
+                  </div>
+                )}
               </SelectContent>
             </Select>
             <Button
@@ -500,6 +573,7 @@ export default function ApiTestPage() {
             onSubmit={handleSubmit}
             isLoading={requestMutation.isPending}
             initialData={convertedScenario}
+            originalScenario={originalScenario}
           />
           <TableList tables={tables} />
           <MockEndpointList endpoints={mockEndpoints} />
@@ -513,7 +587,7 @@ export default function ApiTestPage() {
 
         {/* 右側: レスポンス表示 */}
         <div className="space-y-6">
-          <ResponseViewer response={response} error={error} />
+          <ResponseViewer response={response} error={error} isLoading={requestMutation.isPending} />
           <MockLogViewer logs={mockLogs} endpoints={mockEndpoints} />
         </div>
       </div>

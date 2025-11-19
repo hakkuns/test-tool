@@ -16,7 +16,7 @@ export function MockLogViewer({ logs, endpoints }: MockLogViewerProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Mock Endpoint Logs</CardTitle>
+          <CardTitle>モックエンドポイントログ</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-center text-muted-foreground">
@@ -34,6 +34,23 @@ export function MockLogViewer({ logs, endpoints }: MockLogViewerProps) {
     return 'bg-red-500'
   }
 
+  const getMethodColor = (method: string) => {
+    switch (method) {
+      case 'GET':
+        return 'bg-blue-500 text-white border-blue-500'
+      case 'POST':
+        return 'bg-green-500 text-white border-green-500'
+      case 'PUT':
+        return 'bg-yellow-500 text-white border-yellow-500'
+      case 'PATCH':
+        return 'bg-purple-500 text-white border-purple-500'
+      case 'DELETE':
+        return 'bg-red-500 text-white border-red-500'
+      default:
+        return 'bg-gray-500 text-white border-gray-500'
+    }
+  }
+
   const formatJson = (data: any) => {
     if (typeof data === 'string') {
       try {
@@ -48,7 +65,7 @@ export function MockLogViewer({ logs, endpoints }: MockLogViewerProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Mock Endpoint Logs ({logs.length})</CardTitle>
+        <CardTitle>モックエンドポイントログ ({logs.length})</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
@@ -63,7 +80,7 @@ export function MockLogViewer({ logs, endpoints }: MockLogViewerProps) {
                   <div className="flex items-start justify-between gap-2">
                     <div className="space-y-1 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <Badge variant="outline" className="font-mono">
+                        <Badge className={`font-mono ${getMethodColor(log.method)}`}>
                           {log.method}
                         </Badge>
                         {log.matchedEndpointName && (
@@ -90,10 +107,10 @@ export function MockLogViewer({ logs, endpoints }: MockLogViewerProps) {
                 <CardContent className="pt-0">
                   <Tabs defaultValue="response" className="w-full">
                     <TabsList className="grid w-full grid-cols-4">
-                      <TabsTrigger value="response">Response</TabsTrigger>
-                      <TabsTrigger value="request">Request</TabsTrigger>
-                      <TabsTrigger value="query">Query</TabsTrigger>
-                      <TabsTrigger value="headers">Headers</TabsTrigger>
+                      <TabsTrigger value="response">レスポンス</TabsTrigger>
+                      <TabsTrigger value="request">リクエスト</TabsTrigger>
+                      <TabsTrigger value="query">クエリパラメータ</TabsTrigger>
+                      <TabsTrigger value="headers">ヘッダー</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="response">
@@ -101,7 +118,7 @@ export function MockLogViewer({ logs, endpoints }: MockLogViewerProps) {
                         <pre className="p-4 text-xs font-mono">
                           {log.responseBody
                             ? formatJson(log.responseBody)
-                            : 'No response body'}
+                            : 'レスポンスボディなし'}
                         </pre>
                       </ScrollArea>
                     </TabsContent>
@@ -109,7 +126,7 @@ export function MockLogViewer({ logs, endpoints }: MockLogViewerProps) {
                     <TabsContent value="request">
                       <ScrollArea className="h-48 w-full rounded border">
                         <pre className="p-4 text-xs font-mono">
-                          {log.body ? formatJson(log.body) : 'No request body'}
+                          {log.body ? formatJson(log.body) : 'リクエストボディなし'}
                         </pre>
                       </ScrollArea>
                     </TabsContent>
@@ -127,7 +144,7 @@ export function MockLogViewer({ logs, endpoints }: MockLogViewerProps) {
                           </div>
                         ) : (
                           <div className="p-4 text-sm text-muted-foreground">
-                            No query parameters
+                            クエリパラメータなし
                           </div>
                         )}
                       </ScrollArea>
@@ -148,7 +165,7 @@ export function MockLogViewer({ logs, endpoints }: MockLogViewerProps) {
                           </div>
                         ) : (
                           <div className="p-4 text-sm text-muted-foreground">
-                            No headers
+                            ヘッダーなし
                           </div>
                         )}
                       </ScrollArea>

@@ -98,13 +98,11 @@ export default function Home() {
     try {
       setIsLoading(true);
       const scenariosData = await scenariosApi.getAll();
-      console.log('Fetched scenarios:', scenariosData);
 
       // グループ取得は失敗しても続行
       let groupsData: ScenarioGroup[] = [];
       try {
         groupsData = await groupsApi.getAll();
-        console.log('Fetched groups:', groupsData);
       } catch (groupError) {
         console.warn(
           'Failed to fetch groups, continuing without groups:',
@@ -165,14 +163,12 @@ export default function Home() {
           name: groupName,
           description: groupDescription,
         });
-        console.log('Group updated:', updated);
         toast.success('グループを更新しました');
       } else {
         const created = await groupsApi.create({
           name: groupName,
           description: groupDescription,
         });
-        console.log('Group created:', created);
         toast.success('グループを作成しました');
       }
       setGroupDialogOpen(false);
@@ -203,6 +199,62 @@ export default function Home() {
     }
   };
 
+  // グループエクスポート
+  const handleExportGroup = async (groupId: string, groupName: string) => {
+    try {
+      const exportData = await groupsApi.exportGroup(groupId);
+      const json = JSON.stringify(exportData, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `group_${groupName}_${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success('グループをエクスポートしました');
+    } catch (error) {
+      toast.error('グループのエクスポートに失敗しました');
+      console.error(error);
+    }
+  };
+
+  // グループインポート
+  const handleImportGroup = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const exportData = JSON.parse(text);
+
+      // グループファイルのフォーマットを検証
+      if (!exportData.group || !exportData.scenarios) {
+        toast.error('グループインポートファイルの形式が正しくありません');
+        event.target.value = '';
+        return;
+      }
+
+      if (!exportData.group.name) {
+        toast.error('グループ名が見つかりません');
+        event.target.value = '';
+        return;
+      }
+
+      const result = await groupsApi.importGroup(exportData);
+      toast.success(
+        `グループ「${result.group.name}」をインポートしました（${result.scenarios.length}個のシナリオ）`
+      );
+      await fetchData();
+    } catch (error) {
+      toast.error('グループのインポートに失敗しました');
+      console.error(error);
+    }
+
+    event.target.value = '';
+  };
+
   // シナリオ削除
   const handleDelete = async () => {
     if (!scenarioToDelete) return;
@@ -230,14 +282,23 @@ export default function Home() {
         name: `${name}のコピー`,
         description: original.description,
         targetApi: original.targetApi,
-        tables: original.tables,
-        tableData: original.tableData,
-        mockApis: original.mockApis,
-        tags: original.tags,
+        tables: original.tables || [],
+        tableData: original.tableData || [],
+        mockApis: original.mockApis || [],
+        testSettings: original.testSettings,
+        expectedResponse: original.expectedResponse,
+        tags: original.tags || [],
         groupId: original.groupId,
       });
       toast.success('シナリオをコピーしました');
       await fetchData();
+      
+      // コピー後、コピー元のグループにフィルターを切り替える
+      if (original.groupId) {
+        setSelectedGroupFilter(original.groupId);
+      } else {
+        setSelectedGroupFilter('ungrouped');
+      }
     } catch (error) {
       toast.error('シナリオのコピーに失敗しました');
       console.error(error);
@@ -262,6 +323,28 @@ export default function Home() {
     if (!file) return;
 
     try {
+      const text = await file.text();
+      const exportData = JSON.parse(text);
+
+      // フォーマットを検証
+      // グループファイルの場合はエラー
+      if (exportData.group && exportData.scenarios) {
+        toast.error('グループファイルです。「グループインポート」を使用してください');
+        event.target.value = '';
+        return;
+      }
+
+      // シナリオファイルの検証
+      const dataArray = Array.isArray(exportData) ? exportData : [exportData];
+      for (const data of dataArray) {
+        const scenario = data.scenario || data;
+        if (!scenario || !scenario.name) {
+          toast.error('シナリオインポートファイルの形式が正しくありません');
+          event.target.value = '';
+          return;
+        }
+      }
+
       await scenariosApi.importFromFile(file);
       toast.success('シナリオをインポートしました');
       await fetchData();
@@ -436,10 +519,6 @@ export default function Home() {
   const shouldShowUngrouped =
     selectedGroupFilter === 'all' || selectedGroupFilter === 'ungrouped';
 
-  console.log('Total scenarios:', scenarios.length);
-  console.log('Ungrouped scenarios:', ungroupedScenarios.length);
-  console.log('Grouped scenarios:', groupedScenarios);
-
   if (isLoading) {
     return (
       <div className="container mx-auto p-6">
@@ -489,11 +568,34 @@ export default function Home() {
           </SelectContent>
         </Select>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => openGroupDialog()} size="default">
-            <FolderPlus className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">グループ作成</span>
-            <span className="sm:hidden">グループ</span>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="default">
+                <FolderPlus className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">グループ</span>
+                <span className="sm:hidden">Group</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => openGroupDialog()}>
+                <FolderPlus className="h-4 w-4 mr-2" />
+                グループ作成
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <label htmlFor="import-group-file" className="cursor-pointer">
+                  <Upload className="h-4 w-4 mr-2" />
+                  グループインポート
+                </label>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <input
+            id="import-group-file"
+            type="file"
+            accept=".json"
+            onChange={handleImportGroup}
+            className="hidden"
+          />
           <label htmlFor="import-file">
             <Button variant="outline" asChild size="default">
               <span>
@@ -590,8 +692,18 @@ export default function Home() {
                   <Button
                     size="sm"
                     variant="ghost"
+                    onClick={() => handleExportGroup(group.id, group.name)}
+                    className="h-8 w-8 p-0"
+                    title="グループをエクスポート"
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
                     onClick={() => openGroupDialog(group)}
                     className="h-8 w-8 p-0"
+                    title="グループを編集"
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
@@ -600,6 +712,7 @@ export default function Home() {
                     variant="ghost"
                     onClick={() => handleDeleteGroup(group.id)}
                     className="h-8 w-8 p-0"
+                    title="グループを削除"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -821,7 +934,7 @@ function ScenarioCard({
       </CardHeader>
       <CardContent className="flex flex-col flex-1">
         {/* タグ */}
-        {scenario.tags.length > 0 && (
+        {scenario.tags && scenario.tags.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-3">
             {scenario.tags.map((tag) => (
               <Badge key={tag} variant="secondary" className="text-xs">
@@ -838,17 +951,17 @@ function ScenarioCard({
         <div className="flex items-center justify-end gap-4 text-xs text-muted-foreground mb-3">
           <div className="flex items-center gap-1">
             <Table className="h-3.5 w-3.5" />
-            <span className="font-medium">{scenario.tableData.length}</span>
+            <span className="font-medium">{scenario.tableData?.length || 0}</span>
           </div>
           <div className="flex items-center gap-1">
             <Rows className="h-3.5 w-3.5" />
             <span className="font-medium">
-              {scenario.tableData.reduce((sum, t) => sum + t.rows.length, 0)}
+              {scenario.tableData?.reduce((sum, t) => sum + t.rows.length, 0) || 0}
             </span>
           </div>
           <div className="flex items-center gap-1">
             <Network className="h-3.5 w-3.5" />
-            <span className="font-medium">{scenario.mockApis.length}</span>
+            <span className="font-medium">{scenario.mockApis?.length || 0}</span>
           </div>
           
           {/* テスト結果 */}
