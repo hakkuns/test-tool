@@ -80,7 +80,20 @@ export default function Home() {
   const router = useRouter();
   const [scenarios, setScenarios] = useState<TestScenario[]>([]);
   const [groups, setGroups] = useState<ScenarioGroup[]>([]);
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => {
+    // localStorageから展開状態を復元
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("expandedGroups");
+      if (saved) {
+        try {
+          return new Set(JSON.parse(saved));
+        } catch (error) {
+          console.error("Failed to parse expandedGroups from localStorage:", error);
+        }
+      }
+    }
+    return new Set();
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [scenarioToDelete, setScenarioToDelete] = useState<string | null>(null);
@@ -136,6 +149,10 @@ export default function Home() {
       newExpanded.add(groupId);
     }
     setExpandedGroups(newExpanded);
+    // localStorageに保存
+    if (typeof window !== "undefined") {
+      localStorage.setItem("expandedGroups", JSON.stringify(Array.from(newExpanded)));
+    }
   };
 
   // グループ作成ダイアログを開く
@@ -818,22 +835,24 @@ export default function Home() {
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium mb-2 block">
-                グループ名
+                グループ名 ({groupName.length}/100)
               </label>
               <Input
                 value={groupName}
                 onChange={(e) => setGroupName(e.target.value)}
                 placeholder="例: ユーザーAPI"
+                maxLength={100}
               />
             </div>
             <div>
               <label className="text-sm font-medium mb-2 block">
-                説明（任意）
+                説明（任意） ({groupDescription.length}/500)
               </label>
               <Textarea
                 value={groupDescription}
                 onChange={(e) => setGroupDescription(e.target.value)}
                 placeholder="グループの説明"
+                maxLength={500}
               />
             </div>
           </div>
@@ -893,13 +912,13 @@ function ScenarioCard({
   router: any;
 }) {
   return (
-    <Card className="hover:shadow-lg transition-shadow flex flex-col">
-      <CardHeader>
-        <CardTitle className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-2 flex-1">
+    <Card className="hover:shadow-lg transition-shadow flex flex-col overflow-hidden">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between gap-2 min-w-0">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
             <button
               onClick={() => onToggleFavorite(scenario.id)}
-              className="hover:scale-110 transition-transform"
+              className="hover:scale-110 transition-transform flex-shrink-0"
             >
               {scenario.isFavorite ? (
                 <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
@@ -907,11 +926,13 @@ function ScenarioCard({
                 <StarOff className="h-5 w-5 text-muted-foreground" />
               )}
             </button>
-            <span className="flex-1">{scenario.name}</span>
+            <CardTitle className="truncate text-lg font-semibold" title={scenario.name}>
+              {scenario.name}
+            </CardTitle>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0">
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -940,9 +961,9 @@ function ScenarioCard({
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-        </CardTitle>
+        </div>
         {scenario.description && (
-          <CardDescription>{scenario.description}</CardDescription>
+          <CardDescription className="line-clamp-2 break-words mt-1.5" title={scenario.description}>{scenario.description}</CardDescription>
         )}
       </CardHeader>
       <CardContent className="flex flex-col flex-1">
