@@ -392,9 +392,10 @@ export default function Home() {
     }
 
     try {
+      const scenario = scenarios.find((s) => s.id === id);
       const result = await scenariosApi.apply(id);
       toast.success(
-        `シナリオを適用しました\nテーブル: ${result.tablesCreated}個\nデータ: ${result.dataInserted}行\nモックAPI: ${result.mocksConfigured}個`,
+        `シナリオを適用しました\nテーブル: ${scenario?.tableData?.length || 0}個\nデータ: ${result.dataInserted}行\nモックAPI: ${result.mocksConfigured}個`,
       );
     } catch (error) {
       toast.error("シナリオの適用に失敗しました");

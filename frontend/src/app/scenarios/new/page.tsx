@@ -480,7 +480,7 @@ export default function NewScenarioPage() {
                 router.push(`/api-test?scenario=${createdScenarioId}`)
               }
             >
-              API Test
+              APIテスト
             </Button>
           )}
         </div>

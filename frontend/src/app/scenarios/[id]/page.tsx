@@ -323,7 +323,7 @@ export default function ScenarioDetailPage() {
             </Badge>
           )}
         </div>
-        <Button
+        {/* <Button
           type="button"
           variant="secondary"
           onClick={handleApply}
@@ -331,7 +331,7 @@ export default function ScenarioDetailPage() {
         >
           <Play className="h-4 w-4 mr-2" />
           {isApplying ? "適用中..." : "シナリオを適用"}
-        </Button>
+        </Button> */}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -495,7 +495,7 @@ export default function ScenarioDetailPage() {
               variant="secondary"
               onClick={() => router.push(`/api-test?scenario=${id}`)}
             >
-              API Test
+              APIテスト
             </Button>
           )}
         </div>
