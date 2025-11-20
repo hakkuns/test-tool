@@ -246,12 +246,15 @@ class MockService {
     endpoint: MockEndpoint,
     params: Record<string, string>
   ): { status: number; headers: Record<string, string>; body: any } {
+    // 値のマッピングを共有して、ヘッダーとボディで同じ定数は同じ値になるようにする
+    const valueMap = new Map<string, string>()
+
     // 定数を変換
     let headers = endpoint.response.headers
-      ? replaceConstantsInHeaders(endpoint.response.headers)
+      ? replaceConstantsInHeaders(endpoint.response.headers, valueMap)
       : {}
     let body = endpoint.response.body
-      ? replaceConstantsInObject(endpoint.response.body)
+      ? replaceConstantsInObject(endpoint.response.body, valueMap)
       : null
 
     // パスパラメータを補間

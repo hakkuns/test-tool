@@ -55,15 +55,28 @@ const CONSTANT_GENERATORS: Record<string, () => string> = {
 /**
  * 文字列内の定数($XXX)を実際の値に変換する
  * @param value 変換対象の文字列
+ * @param valueMap 定数パターンと生成された値のマッピング（オプション）
  * @returns 定数が変換された文字列
  */
-export function replaceConstants(value: string): string {
+export function replaceConstants(
+  value: string,
+  valueMap?: Map<string, string>
+): string {
   let result = value;
 
   // 各定数パターンをチェックして置換
   for (const [constant, generator] of Object.entries(CONSTANT_GENERATORS)) {
     if (result.includes(constant)) {
-      const generatedValue = generator();
+      // valuemapがある場合は、既に生成された値を再利用
+      let generatedValue: string;
+      if (valueMap) {
+        if (!valueMap.has(constant)) {
+          valueMap.set(constant, generator());
+        }
+        generatedValue = valueMap.get(constant)!;
+      } else {
+        generatedValue = generator();
+      }
       result = result.replaceAll(constant, generatedValue);
     }
   }
@@ -74,25 +87,29 @@ export function replaceConstants(value: string): string {
 /**
  * オブジェクト内の全ての文字列値に対して定数変換を適用
  * @param obj 変換対象のオブジェクト
+ * @param valueMap 定数パターンと生成された値のマッピング（オプション）
  * @returns 定数が変換されたオブジェクト
  */
-export function replaceConstantsInObject<T>(obj: T): T {
+export function replaceConstantsInObject<T>(
+  obj: T,
+  valueMap?: Map<string, string>
+): T {
   if (obj === null || obj === undefined) {
     return obj;
   }
 
   if (typeof obj === 'string') {
-    return replaceConstants(obj) as T;
+    return replaceConstants(obj, valueMap) as T;
   }
 
   if (Array.isArray(obj)) {
-    return obj.map((item) => replaceConstantsInObject(item)) as T;
+    return obj.map((item) => replaceConstantsInObject(item, valueMap)) as T;
   }
 
   if (typeof obj === 'object') {
     const result: any = {};
     for (const [key, value] of Object.entries(obj)) {
-      result[key] = replaceConstantsInObject(value);
+      result[key] = replaceConstantsInObject(value, valueMap);
     }
     return result as T;
   }
@@ -104,11 +121,12 @@ export function replaceConstantsInObject<T>(obj: T): T {
  * ヘッダーオブジェクト内の定数を変換
  */
 export function replaceConstantsInHeaders(
-  headers: Record<string, string>
+  headers: Record<string, string>,
+  valueMap?: Map<string, string>
 ): Record<string, string> {
   const result: Record<string, string> = {};
   for (const [key, value] of Object.entries(headers)) {
-    result[key] = replaceConstants(value);
+    result[key] = replaceConstants(value, valueMap);
   }
   return result;
 }

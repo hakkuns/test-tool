@@ -62,6 +62,11 @@ export function MockLogViewer({ logs, endpoints }: MockLogViewerProps) {
     return JSON.stringify(data, null, 2);
   };
 
+  // ログを古い順（昇順）にソート - アクセスされた順
+  const sortedLogs = [...logs].sort((a, b) => {
+    return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+  });
+
   return (
     <Card>
       <CardHeader>
@@ -69,7 +74,7 @@ export function MockLogViewer({ logs, endpoints }: MockLogViewerProps) {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {logs.map((log) => {
+          {sortedLogs.map((log) => {
             // 対応するエンドポイントを探す
             const endpoint = endpoints.find(
               (ep) => ep.id === log.matchedEndpointId,

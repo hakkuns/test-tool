@@ -190,16 +190,19 @@ function ApiTestPageContent() {
     const scenario = scenarios.find((s) => s.id === selectedScenarioId);
     if (!scenario) return undefined;
 
+    // 値のマッピングを共有して、ヘッダーとボディで同じ定数は同じ値になるようにする
+    const valueMap = new Map<string, string>();
+
     // testSettingsの定数を変換
     const convertedHeaders = scenario.testSettings?.headers
-      ? replaceConstantsInHeaders(scenario.testSettings.headers)
+      ? replaceConstantsInHeaders(scenario.testSettings.headers, valueMap)
       : {};
 
     let convertedBody = scenario.testSettings?.body || "";
     if (convertedBody) {
       try {
         const parsedBody = JSON.parse(convertedBody);
-        const convertedBodyObj = replaceConstantsInObject(parsedBody);
+        const convertedBodyObj = replaceConstantsInObject(parsedBody, valueMap);
         convertedBody = JSON.stringify(convertedBodyObj, null, 2);
       } catch {
         // JSONでない場合はそのまま

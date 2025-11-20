@@ -260,15 +260,18 @@ export default function ScenarioDetailPage() {
 
     setIsApplying(true);
     try {
+      // 値のマッピングを共有して、ヘッダーとボディで同じ定数は同じ値になるようにする
+      const valueMap = new Map<string, string>();
+
       // テスト設定の定数を変換してフォームに反映
-      const convertedHeaders = replaceConstantsInHeaders(testHeaders);
+      const convertedHeaders = replaceConstantsInHeaders(testHeaders, valueMap);
       setTestHeaders(convertedHeaders);
 
       let convertedBody = testBody;
       if (testBody) {
         try {
           const parsedBody = JSON.parse(testBody);
-          const convertedBodyObj = replaceConstantsInObject(parsedBody);
+          const convertedBodyObj = replaceConstantsInObject(parsedBody, valueMap);
           convertedBody = JSON.stringify(convertedBodyObj, null, 2);
           setTestBody(convertedBody);
         } catch {
@@ -339,23 +342,25 @@ export default function ScenarioDetailPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">シナリオ名 *</Label>
+              <Label htmlFor="name">シナリオ名 * ({name.length}/100)</Label>
               <Input
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
+                maxLength={100}
                 placeholder="ユーザー登録テスト"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="description">説明</Label>
+              <Label htmlFor="description">説明 ({description.length}/500)</Label>
               <Textarea
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="このシナリオの概要を入力..."
                 rows={3}
+                maxLength={500}
               />
             </div>
             <div className="space-y-2">

@@ -146,20 +146,23 @@ export function RequestForm({
       return;
     }
 
+    // 値のマッピングを共有して、ヘッダーとボディで同じ定数は同じ値になるようにする
+    const valueMap = new Map<string, string>();
+
     // 元のヘッダーから定数を再変換
     if (originalScenario.testSettings.headers) {
       const originalHeaders = Object.entries(
         originalScenario.testSettings.headers,
       ).map(([key, value]) => ({ key, value }));
-      const convertedHeaders = replaceConstantsInHeaders(originalHeaders);
+      const convertedHeaders = replaceConstantsInHeaders(originalHeaders, valueMap);
       setHeaders(convertedHeaders);
     }
 
-    // 元のボディから定数を再変換
+    // 元のボディから定数を再変換（同じvalueMapを使用）
     if (originalScenario.testSettings.body) {
       try {
         const parsedBody = JSON.parse(originalScenario.testSettings.body);
-        const convertedBodyObj = replaceConstantsInObject(parsedBody);
+        const convertedBodyObj = replaceConstantsInObject(parsedBody, valueMap);
         setBody(JSON.stringify(convertedBodyObj, null, 2));
       } catch {
         // JSONでない場合はそのまま
