@@ -47,7 +47,7 @@ export function RequestForm({
   initialData,
   originalScenario,
 }: RequestFormProps) {
-  const [method, setMethod] = useState("GET");
+  const [method, setMethod] = useState<string>("GET");
   const [url, setUrl] = useState("http://localhost:8080/api/");
   const [headers, setHeaders] = useState<HeaderEntry[]>([
     { key: "Content-Type", value: "application/json" },
@@ -55,6 +55,7 @@ export function RequestForm({
   const [body, setBody] = useState("{\n  \n}");
   const [requestTimeout, setRequestTimeout] = useState("30000");
   const [copiedCurl, setCopiedCurl] = useState(false);
+  const [lastAppliedScenarioId, setLastAppliedScenarioId] = useState<string | undefined>(undefined);
 
   // curlコマンドを生成
   const generateCurlCommand = () => {
@@ -95,12 +96,15 @@ export function RequestForm({
 
   // シナリオから初期値を設定
   useEffect(() => {
-    if (initialData) {
+    if (initialData && initialData.id !== lastAppliedScenarioId) {
+      // 新しいシナリオが適用された場合のみ更新
+      console.log("Setting method from initialData:", initialData.targetApi.method);
       setMethod(initialData.targetApi.method);
       setUrl(initialData.targetApi.url);
 
       // testSettingsからヘッダーとボディを設定
       if (initialData.testSettings) {
+        // ヘッダーを設定
         if (initialData.testSettings.headers) {
           const headerEntries = Object.entries(
             initialData.testSettings.headers,
@@ -110,17 +114,27 @@ export function RequestForm({
               ? headerEntries
               : [{ key: "Content-Type", value: "application/json" }],
           );
+        } else {
+          // testSettingsはあるがheadersがない場合もデフォルト
+          setHeaders([{ key: "Content-Type", value: "application/json" }]);
         }
+
+        // ボディを設定
         if (initialData.testSettings.body) {
           setBody(initialData.testSettings.body);
+        } else {
+          // testSettingsはあるがbodyがない場合もデフォルト
+          setBody("{\n  \n}");
         }
       } else {
         // testSettingsがない場合はデフォルト
         setHeaders([{ key: "Content-Type", value: "application/json" }]);
         setBody("{\n  \n}");
       }
+
+      setLastAppliedScenarioId(initialData.id);
     }
-  }, [initialData]);
+  }, [initialData, lastAppliedScenarioId]);
 
   const handleAddHeader = () => {
     setHeaders([...headers, { key: "", value: "" }]);
@@ -242,11 +256,11 @@ export function RequestForm({
           <div className="flex gap-2">
             <div className="w-40">
               <Label htmlFor="method" className="mb-2 block">
-                メソッド
+                メソッド {method && `(${method})`}
               </Label>
-              <Select value={method} onValueChange={setMethod}>
+              <Select key={`method-${lastAppliedScenarioId}`} value={method} onValueChange={setMethod}>
                 <SelectTrigger id="method">
-                  <SelectValue />
+                  <SelectValue placeholder="メソッドを選択" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="GET">GET</SelectItem>

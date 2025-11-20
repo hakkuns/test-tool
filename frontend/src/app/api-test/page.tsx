@@ -69,7 +69,7 @@ function ApiTestPageContent() {
 
   // シナリオ関連
   const [selectedScenarioId, setSelectedScenarioId] = useState<string>("");
-  const [isApplied, setIsApplied] = useState(false);
+  const [appliedScenarioId, setAppliedScenarioId] = useState<string>("");
   const [appliedScenarioHash, setAppliedScenarioHash] = useState<string>("");
   const [groupFilter, setGroupFilter] = useState<string>("all");
 
@@ -168,27 +168,29 @@ function ApiTestPageContent() {
   const mockEndpoints = mockEndpointsData?.data || [];
 
   // シナリオで実際にデータが追加されたテーブル一覧を取得
-  const tables =
-    selectedScenarioId && isApplied
-      ? (() => {
-          const scenario = scenarios.find((s) => s.id === selectedScenarioId);
-          // tableDataに存在するテーブル名のみを返す（参照のみのテーブルも含む）
-          return scenario?.tableData?.map((td) => td.tableName) || [];
-        })()
-      : [];
+  const tables = appliedScenarioId
+    ? (() => {
+        const scenario = scenarios.find((s) => s.id === appliedScenarioId);
+        // tableDataに存在するテーブル名のみを返す（参照のみのテーブルも含む）
+        return scenario?.tableData?.map((td) => td.tableName) || [];
+      })()
+    : [];
 
   // 元のシナリオ（定数パターンを含む）を取得
   const originalScenario = useMemo(() => {
-    if (!selectedScenarioId || !isApplied) return undefined;
-    return scenarios.find((s) => s.id === selectedScenarioId);
-  }, [selectedScenarioId, isApplied, scenarios]);
+    if (!appliedScenarioId) return undefined;
+    return scenarios.find((s) => s.id === appliedScenarioId);
+  }, [appliedScenarioId, scenarios]);
 
   // 選択されたシナリオの定数を変換
   const convertedScenario = useMemo(() => {
-    if (!selectedScenarioId || !isApplied) return undefined;
+    if (!appliedScenarioId) return undefined;
 
-    const scenario = scenarios.find((s) => s.id === selectedScenarioId);
-    if (!scenario) return undefined;
+    const scenario = scenarios.find((s) => s.id === appliedScenarioId);
+    if (!scenario) {
+      // シナリオデータが読み込まれていない場合はnullを返す（undefinedと区別）
+      return null;
+    }
 
     // 値のマッピングを共有して、ヘッダーとボディで同じ定数は同じ値になるようにする
     const valueMap = new Map<string, string>();
@@ -217,7 +219,7 @@ function ApiTestPageContent() {
         body: convertedBody,
       },
     };
-  }, [selectedScenarioId, isApplied, scenarios]);
+  }, [appliedScenarioId, scenarios]);
 
   // 履歴をLocalStorageから読み込み
   useEffect(() => {
@@ -234,28 +236,23 @@ function ApiTestPageContent() {
     const scenarioIdFromQuery = searchParams.get("scenario");
 
     // 適用中のシナリオを確認
-    const appliedScenarioId = localStorage.getItem("appliedScenarioId");
+    const savedAppliedScenarioId = localStorage.getItem("appliedScenarioId");
     const savedHash = localStorage.getItem("appliedScenarioHash");
 
-    // クエリパラメータにシナリオIDがある場合は優先
-    if (scenarioIdFromQuery) {
-      setSelectedScenarioId(scenarioIdFromQuery);
-      // クエリパラメータのシナリオが適用済みか確認
-      if (scenarioIdFromQuery === appliedScenarioId) {
-        setIsApplied(true);
-        if (savedHash) {
-          setAppliedScenarioHash(savedHash);
-        }
-      } else {
-        setIsApplied(false);
-      }
-    } else if (appliedScenarioId) {
-      // クエリパラメータがない場合は、適用中のシナリオを選択
-      setSelectedScenarioId(appliedScenarioId);
-      setIsApplied(true);
+    // 適用中のシナリオを復元
+    if (savedAppliedScenarioId) {
+      setAppliedScenarioId(savedAppliedScenarioId);
       if (savedHash) {
         setAppliedScenarioHash(savedHash);
       }
+    }
+
+    // クエリパラメータにシナリオIDがある場合は選択状態にする
+    if (scenarioIdFromQuery) {
+      setSelectedScenarioId(scenarioIdFromQuery);
+    } else if (savedAppliedScenarioId) {
+      // クエリパラメータがない場合は、適用中のシナリオを選択
+      setSelectedScenarioId(savedAppliedScenarioId);
     }
   }, [searchParams]);
 
@@ -263,18 +260,17 @@ function ApiTestPageContent() {
   useEffect(() => {
     // シナリオのロードが完了し、かつデータが存在する場合のみチェック
     // dataUpdatedAtが0でない（データが取得済み）かつローディングが完了している場合
-    // 適用済みシナリオのみをチェック（未適用のシナリオは選択しているだけなのでチェック不要）
+    // 適用済みシナリオのみをチェック
     if (
       !isScenariosLoading &&
       dataUpdatedAt > 0 &&
-      selectedScenarioId &&
-      isApplied
+      appliedScenarioId
     ) {
-      const scenarioExists = scenarios.some((s) => s.id === selectedScenarioId);
+      const scenarioExists = scenarios.some((s) => s.id === appliedScenarioId);
       if (!scenarioExists) {
         // 適用済みシナリオが存在しない場合、リセット
         setSelectedScenarioId("");
-        setIsApplied(false);
+        setAppliedScenarioId("");
         setAppliedScenarioHash("");
         localStorage.removeItem("appliedScenarioId");
         localStorage.removeItem("appliedScenarioHash");
@@ -283,10 +279,9 @@ function ApiTestPageContent() {
     }
   }, [
     scenarios,
-    selectedScenarioId,
+    appliedScenarioId,
     isScenariosLoading,
     dataUpdatedAt,
-    isApplied,
   ]);
 
   // 履歴をLocalStorageに保存
@@ -350,8 +345,8 @@ function ApiTestPageContent() {
           timeout: variables.timeout,
           timestamp: new Date().toISOString(),
           scenarioName:
-            selectedScenarioId && isApplied
-              ? scenarios.find((s) => s.id === selectedScenarioId)?.name
+            appliedScenarioId
+              ? scenarios.find((s) => s.id === appliedScenarioId)?.name
               : undefined,
           response: {
             status: result.response.status,
@@ -431,7 +426,7 @@ function ApiTestPageContent() {
 
       localStorage.setItem("appliedScenarioId", scenarioId);
       localStorage.setItem("appliedScenarioHash", hash);
-      setIsApplied(true);
+      setAppliedScenarioId(scenarioId);
       setAppliedScenarioHash(hash);
 
       // モックエンドポイントとシナリオ一覧を即座に再取得
@@ -441,7 +436,7 @@ function ApiTestPageContent() {
       ]);
 
       toast.success(
-        `シナリオを適用しました\nテーブル: ${result.tablesCreated}個\nデータ: ${result.dataInserted}行\nモックAPI: ${result.mocksConfigured}個`,
+        `シナリオを適用しました\nテーブル: ${scenario?.tableData?.length || 0}個\nデータ: ${result.dataInserted}行\nモックAPI: ${result.mocksConfigured}個`,
       );
 
       // シナリオにテスト設定がある場合は通知
@@ -454,7 +449,6 @@ function ApiTestPageContent() {
       toast.error(
         error instanceof Error ? error.message : "シナリオの適用に失敗しました",
       );
-      setIsApplied(false);
     },
   });
 
@@ -470,119 +464,142 @@ function ApiTestPageContent() {
 
   // シナリオが更新されたかどうかを判定
   const isScenarioModified = useMemo(() => {
-    if (!selectedScenarioId || !isApplied || !appliedScenarioHash) {
+    if (!appliedScenarioId || !appliedScenarioHash) {
       return false;
     }
 
-    const currentScenario = scenarios.find((s) => s.id === selectedScenarioId);
+    const currentScenario = scenarios.find((s) => s.id === appliedScenarioId);
     if (!currentScenario) {
       return false;
     }
 
     const currentHash = calculateScenarioHash(currentScenario);
     return currentHash !== appliedScenarioHash;
-  }, [selectedScenarioId, isApplied, appliedScenarioHash, scenarios]);
+  }, [appliedScenarioId, appliedScenarioHash, scenarios]);
 
   return (
     <div className="container mx-auto p-8 space-y-6">
       {/* シナリオから適用 - 1行に配置 */}
-      <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg">
-        <Select value={groupFilter} onValueChange={setGroupFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="グループ" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">すべて</SelectItem>
-            <SelectItem value="ungrouped">未分類</SelectItem>
-            {groups.map((group) => (
-              <SelectItem key={group.id} value={group.id}>
-                {group.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
-          value={selectedScenarioId}
-          onValueChange={(value) => {
-            const appliedScenarioId = localStorage.getItem("appliedScenarioId");
-            setSelectedScenarioId(value);
-
-            // 現在適用中のシナリオを選択した場合は、適用済み状態を維持
-            if (value === appliedScenarioId) {
-              setIsApplied(true);
-            } else {
-              // 別のシナリオを選択した場合は、未適用状態にする
-              setIsApplied(false);
-            }
-          }}
-        >
-          <SelectTrigger className="flex-1">
-            <SelectValue placeholder="シナリオを選択..." />
-          </SelectTrigger>
-          <SelectContent className="min-w-[300px]">
-            {filteredScenarios.length > 0 ? (
-              filteredScenarios.map((scenario) => (
-                <SelectItem key={scenario.id} value={scenario.id}>
-                  {scenario.name}
+      <div className="flex flex-col gap-3 p-4 bg-muted/50 rounded-lg">
+        <div className="flex items-center gap-2">
+          <Select value={groupFilter} onValueChange={setGroupFilter}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="グループ" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">すべて</SelectItem>
+              <SelectItem value="ungrouped">未分類</SelectItem>
+              {groups.map((group) => (
+                <SelectItem key={group.id} value={group.id} title={group.name}>
+                  {group.name.length > 15
+                    ? `${group.name.substring(0, 15)}...`
+                    : group.name}
                 </SelectItem>
-              ))
-            ) : (
-              <div className="px-2 py-6 text-center text-sm text-muted-foreground">
-                このグループにシナリオがありません
-              </div>
-            )}
-          </SelectContent>
-        </Select>
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => router.push(`/scenarios/${selectedScenarioId}`)}
-          disabled={!selectedScenarioId}
-          title="シナリオを編集"
-        >
-          <Edit className="h-4 w-4" />
-        </Button>
-        <Button
-          onClick={handleApplyScenario}
-          disabled={!selectedScenarioId || applyScenarioMutation.isPending}
-        >
-          {applyScenarioMutation.isPending ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              適用中...
-            </>
-          ) : (
-            <>
-              <PlayCircle className="h-4 w-4 mr-2" />
-              適用
-            </>
-          )}
-        </Button>
-        {selectedScenarioId && (
-          <div className="flex items-center gap-2">
-            {isApplied ? (
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={selectedScenarioId}
+            onValueChange={(value) => {
+              setSelectedScenarioId(value);
+              // 選択しただけでは適用状態は変更しない
+              // 適用ボタンを押した時のみ適用される
+            }}
+          >
+            <SelectTrigger className="flex-1 min-w-0">
+              <SelectValue placeholder="シナリオを選択..." />
+            </SelectTrigger>
+            <SelectContent className="max-w-[400px]">
+              {filteredScenarios.length > 0 ? (
+                filteredScenarios.map((scenario) => (
+                  <SelectItem key={scenario.id} value={scenario.id} title={scenario.name}>
+                    {scenario.name.length > 40
+                      ? `${scenario.name.substring(0, 40)}...`
+                      : scenario.name}
+                  </SelectItem>
+                ))
+              ) : (
+                <div className="px-2 py-6 text-center text-sm text-muted-foreground">
+                  このグループにシナリオがありません
+                </div>
+              )}
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => router.push(`/scenarios/${selectedScenarioId}`)}
+            disabled={!selectedScenarioId}
+            title="シナリオを編集"
+            className="flex-shrink-0"
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button
+            onClick={handleApplyScenario}
+            disabled={!selectedScenarioId || applyScenarioMutation.isPending}
+            className="flex-shrink-0"
+          >
+            {applyScenarioMutation.isPending ? (
               <>
-                <Badge className="bg-green-500">
-                  <CheckCircle2 className="h-3 w-3 mr-1" />
-                  適用済み
-                </Badge>
-                {isScenarioModified && (
-                  <Badge
-                    variant="outline"
-                    className="border-yellow-500 text-yellow-700 bg-yellow-50"
-                  >
-                    再適用が必要
-                  </Badge>
-                )}
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                適用中...
               </>
             ) : (
+              <>
+                <PlayCircle className="h-4 w-4 mr-2" />
+                適用
+              </>
+            )}
+          </Button>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          {appliedScenarioId && selectedScenarioId !== appliedScenarioId ? (
+            <>
+              <Badge
+                variant="outline"
+                className="border-blue-500 text-blue-700 bg-blue-50"
+              >
+                別のシナリオを選択中
+              </Badge>
+              <Badge className="bg-green-500">
+                <CheckCircle2 className="h-3 w-3 mr-1" />
+                適用中: {scenarios.find((s) => s.id === appliedScenarioId)?.name.substring(0, 20) || ""}
+                {(scenarios.find((s) => s.id === appliedScenarioId)?.name.length || 0) > 20 ? "..." : ""}
+              </Badge>
+              {isScenarioModified && (
+                <Badge
+                  variant="outline"
+                  className="border-yellow-500 text-yellow-700 bg-yellow-50"
+                >
+                  再適用が必要
+                </Badge>
+              )}
+            </>
+          ) : appliedScenarioId ? (
+            <>
+              <Badge className="bg-green-500">
+                <CheckCircle2 className="h-3 w-3 mr-1" />
+                適用済み
+              </Badge>
+              {isScenarioModified && (
+                <Badge
+                  variant="outline"
+                  className="border-yellow-500 text-yellow-700 bg-yellow-50"
+                >
+                  再適用が必要
+                </Badge>
+              )}
+            </>
+          ) : (
+            selectedScenarioId && (
               <Badge variant="secondary">
                 <XCircle className="h-3 w-3 mr-1" />
                 未適用
               </Badge>
-            )}
-          </div>
-        )}
+            )
+          )}
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -591,7 +608,7 @@ function ApiTestPageContent() {
           <RequestForm
             onSubmit={handleSubmit}
             isLoading={requestMutation.isPending}
-            initialData={convertedScenario}
+            initialData={convertedScenario === null ? undefined : convertedScenario}
             originalScenario={originalScenario}
           />
           <TableList tables={tables} />
