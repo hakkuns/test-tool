@@ -31,6 +31,35 @@ export function JsonEditor({
     onChange(value);
   };
 
+  const handleBeforeMount = (monaco: any) => {
+    // カスタムテーマを定義
+    monaco.editor.defineTheme("custom-light", {
+      base: "vs",
+      inherit: true,
+      rules: [],
+      colors: {
+        "editor.background": "#fafafa",
+        "editor.selectionBackground": "#3b82f680",
+        "editor.selectionHighlightBackground": "#3b82f640",
+        "editor.inactiveSelectionBackground": "#3b82f660",
+        "editor.lineHighlightBackground": "#e5e7eb",
+      },
+    });
+
+    monaco.editor.defineTheme("custom-dark", {
+      base: "vs-dark",
+      inherit: true,
+      rules: [],
+      colors: {
+        "editor.background": "#18181b",
+        "editor.selectionBackground": "#3b82f680",
+        "editor.selectionHighlightBackground": "#3b82f640",
+        "editor.inactiveSelectionBackground": "#3b82f660",
+        "editor.lineHighlightBackground": "#3f3f46",
+      },
+    });
+  };
+
   const handleEditorDidMount = (editor: editor.IStandaloneCodeEditor) => {
     editorRef.current = editor;
   };
@@ -66,14 +95,12 @@ export function JsonEditor({
           .monaco-editor,
           .monaco-editor-background,
           .monaco-editor .inputarea.ime-input,
-          .monaco-editor .view-line,
           .monaco-editor .lines-content {
             background-color: rgb(250 250 250) !important;
           }
           .dark .monaco-editor,
           .dark .monaco-editor-background,
           .dark .monaco-editor .inputarea.ime-input,
-          .dark .monaco-editor .view-line,
           .dark .monaco-editor .lines-content {
             background-color: rgb(24 24 27) !important;
           }
@@ -87,20 +114,7 @@ export function JsonEditor({
           .dark .monaco-editor .margin-view-overlays {
             background-color: rgb(39 39 42) !important;
           }
-          .monaco-editor .selected-text {
-            background-color: rgba(173, 214, 255, 0.3) !important;
-          }
-          .dark .monaco-editor .selected-text {
-            background-color: rgba(173, 214, 255, 0.15) !important;
-          }
-          .monaco-editor .view-overlays .current-line,
-          .monaco-editor .view-overlays .current-line-exact {
-            background-color: rgb(229 231 235) !important;
-          }
-          .dark .monaco-editor .view-overlays .current-line,
-          .dark .monaco-editor .view-overlays .current-line-exact {
-            background-color: rgb(63 63 70) !important;
-          }
+          /* 現在行のハイライト - 行番号を含む */
           .monaco-editor .margin-view-overlays .current-line-margin,
           .monaco-editor .margin-view-overlays .current-line-margin-both {
             background-color: rgb(229 231 235) !important;
@@ -123,8 +137,9 @@ export function JsonEditor({
           defaultLanguage="json"
           value={value}
           onChange={handleEditorChange}
+          beforeMount={handleBeforeMount}
           onMount={handleEditorDidMount}
-          theme={theme === "dark" ? "vs-dark" : "light"}
+          theme={theme === "dark" ? "custom-dark" : "custom-light"}
           options={{
             minimap: { enabled: false },
             fontSize: 14,
@@ -151,6 +166,7 @@ export function JsonEditor({
               verticalScrollbarSize: 14,
               horizontalScrollbarSize: 14,
               useShadows: true,
+              alwaysConsumeMouseWheel: false,
             },
             overviewRulerLanes: 0,
             hideCursorInOverviewRuler: true,
