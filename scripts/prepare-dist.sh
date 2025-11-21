@@ -92,11 +92,12 @@ services:
     env_file:
       - backend/.env
     networks:
-      - ${EXTERNAL_NETWORK}
+      - external-network
     restart: unless-stopped
 
 networks:
-  ${EXTERNAL_NETWORK}:
+  external-network:
+    name: ${EXTERNAL_NETWORK}
     external: true
 EOF
 
