@@ -72,6 +72,9 @@ function ApiTestPageContent() {
   const [appliedScenarioId, setAppliedScenarioId] = useState<string>("");
   const [appliedScenarioHash, setAppliedScenarioHash] = useState<string>("");
   const [groupFilter, setGroupFilter] = useState<string>("all");
+  const [convertedScenario, setConvertedScenario] = useState<any>(undefined);
+  const [originalScenario, setOriginalScenario] = useState<TestScenario | undefined>(undefined);
+  const [isScenarioModified, setIsScenarioModified] = useState(false);
 
   // シナリオ一覧を取得（useQuery）
   const {
@@ -173,48 +176,63 @@ function ApiTestPageContent() {
       })()
     : [];
 
-  // 元のシナリオ（定数パターンを含む）を取得
-  const originalScenario = !appliedScenarioId
-    ? undefined
-    : scenarios.find((s) => s.id === appliedScenarioId);
+  // シナリオデータの更新を監視して状態を更新
+  useEffect(() => {
+    if (!appliedScenarioId) {
+      setOriginalScenario(undefined);
+      setConvertedScenario(undefined);
+      setIsScenarioModified(false);
+      return;
+    }
 
-  // 選択されたシナリオの定数を変換
-  let convertedScenario: any = undefined;
-  if (appliedScenarioId) {
     const scenario = scenarios.find((s) => s.id === appliedScenarioId);
+
+    // 元のシナリオを設定
+    setOriginalScenario(scenario);
+
     if (!scenario) {
       // シナリオデータが読み込まれていない場合はnullを返す（undefinedと区別）
-      convertedScenario = null;
-    } else {
-      // 値のマッピングを共有して、ヘッダーとボディで同じ定数は同じ値になるようにする
-      const valueMap = new Map<string, string>();
-
-      // testSettingsの定数を変換
-      const convertedHeaders = scenario.testSettings?.headers
-        ? replaceConstantsInHeaders(scenario.testSettings.headers, valueMap)
-        : {};
-
-      let convertedBody = scenario.testSettings?.body || "";
-      if (convertedBody) {
-        try {
-          const parsedBody = JSON.parse(convertedBody);
-          const convertedBodyObj = replaceConstantsInObject(parsedBody, valueMap);
-          convertedBody = JSON.stringify(convertedBodyObj, null, 2);
-        } catch {
-          // JSONでない場合はそのまま
-        }
-      }
-
-      convertedScenario = {
-        ...scenario,
-        testSettings: {
-          ...scenario.testSettings,
-          headers: convertedHeaders,
-          body: convertedBody,
-        },
-      };
+      setConvertedScenario(null);
+      setIsScenarioModified(false);
+      return;
     }
-  }
+
+    // 値のマッピングを共有して、ヘッダーとボディで同じ定数は同じ値になるようにする
+    const valueMap = new Map<string, string>();
+
+    // testSettingsの定数を変換
+    const convertedHeaders = scenario.testSettings?.headers
+      ? replaceConstantsInHeaders(scenario.testSettings.headers, valueMap)
+      : {};
+
+    let convertedBody = scenario.testSettings?.body || "";
+    if (convertedBody) {
+      try {
+        const parsedBody = JSON.parse(convertedBody);
+        const convertedBodyObj = replaceConstantsInObject(parsedBody, valueMap);
+        convertedBody = JSON.stringify(convertedBodyObj, null, 2);
+      } catch {
+        // JSONでない場合はそのまま
+      }
+    }
+
+    setConvertedScenario({
+      ...scenario,
+      testSettings: {
+        ...scenario.testSettings,
+        headers: convertedHeaders,
+        body: convertedBody,
+      },
+    });
+
+    // シナリオが更新されたかどうかを判定
+    if (appliedScenarioHash) {
+      const currentHash = calculateScenarioHash(scenario);
+      setIsScenarioModified(currentHash !== appliedScenarioHash);
+    } else {
+      setIsScenarioModified(false);
+    }
+  }, [appliedScenarioId, appliedScenarioHash, scenarios]);
 
   // 履歴をLocalStorageから読み込み
   useEffect(() => {
@@ -457,16 +475,6 @@ function ApiTestPageContent() {
 
     applyScenarioMutation.mutate(selectedScenarioId);
   };
-
-  // シナリオが更新されたかどうかを判定
-  let isScenarioModified = false;
-  if (appliedScenarioId && appliedScenarioHash) {
-    const currentScenario = scenarios.find((s) => s.id === appliedScenarioId);
-    if (currentScenario) {
-      const currentHash = calculateScenarioHash(currentScenario);
-      isScenarioModified = currentHash !== appliedScenarioHash;
-    }
-  }
 
   return (
     <div className="container mx-auto p-8 space-y-6">
