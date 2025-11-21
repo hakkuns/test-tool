@@ -420,20 +420,21 @@ function ApiTestPageContent() {
       return await scenariosApi.apply(scenarioId);
     },
     onSuccess: async (result, scenarioId) => {
-      // 適用成功後、シナリオのハッシュを計算してLocalStorageに保存
-      const scenario = scenarios.find((s) => s.id === scenarioId);
+      // モックエンドポイントとシナリオ一覧を即座に再取得
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["mock-endpoints"] }),
+        queryClient.invalidateQueries({ queryKey: ["scenarios"] }),
+      ]);
+
+      // 再取得後の最新データを取得
+      const updatedScenarios = queryClient.getQueryData<TestScenario[]>(["scenarios"]);
+      const scenario = updatedScenarios?.find((s) => s.id === scenarioId);
       const hash = scenario ? calculateScenarioHash(scenario) : "";
 
       localStorage.setItem("appliedScenarioId", scenarioId);
       localStorage.setItem("appliedScenarioHash", hash);
       setAppliedScenarioId(scenarioId);
       setAppliedScenarioHash(hash);
-
-      // モックエンドポイントとシナリオ一覧を即座に再取得
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["mock-endpoints"] }),
-        queryClient.invalidateQueries({ queryKey: ["scenarios"] }),
-      ]);
 
       toast.success(
         `シナリオを適用しました\nテーブル: ${scenario?.tableData?.length || 0}個\nデータ: ${result.dataInserted}行\nモックAPI: ${result.mocksConfigured}個`,
