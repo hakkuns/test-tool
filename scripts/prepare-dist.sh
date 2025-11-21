@@ -79,8 +79,6 @@ chmod +x "${PACKAGE_DIR}/docker/start.sh"
 
 # Create docker-compose for deployment
 cat > "${PACKAGE_DIR}/docker-compose.yml" << 'EOF'
-version: '3.8'
-
 services:
   postgres-test-helper:
     build: .
@@ -88,12 +86,6 @@ services:
     ports:
       - "3000:3000"
       - "3001:3001"
-    environment:
-      - NODE_ENV=production
-      - DATABASE_URL=${DATABASE_URL}
-      - DOCKER_HOST_IP=${DOCKER_HOST_IP:-172.19.0.1}
-      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
-      - TARGET_API_CONTAINER=${TARGET_API_CONTAINER:-}
     env_file:
       - backend/.env
     networks:
