@@ -9,7 +9,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -136,26 +135,7 @@ export function ApiTestSection({
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="flex items-center gap-2">
-              API テスト実行
-              {isApplied ? (
-                <Badge
-                  variant="outline"
-                  className="bg-green-50 text-green-700 border-green-200"
-                >
-                  <CheckCircle2 className="h-3 w-3 mr-1" />
-                  適用済み
-                </Badge>
-              ) : (
-                <Badge
-                  variant="outline"
-                  className="bg-gray-50 text-gray-700 border-gray-200"
-                >
-                  <XCircle className="h-3 w-3 mr-1" />
-                  未適用
-                </Badge>
-              )}
-            </CardTitle>
+            <CardTitle>API テスト実行</CardTitle>
             <CardDescription>
               シナリオを適用してからAPIテストを実行できます
             </CardDescription>
@@ -181,9 +161,28 @@ export function ApiTestSection({
       <CardContent className="space-y-4">
         {/* API情報 */}
         <div className="bg-muted p-4 rounded-lg space-y-2">
-          <div className="flex items-center gap-2">
-            <Badge>{targetApi.method}</Badge>
-            <code className="text-sm">{targetApi.url}</code>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Badge>{targetApi.method}</Badge>
+              <code className="text-sm">{targetApi.url}</code>
+            </div>
+            {isApplied ? (
+              <Badge
+                variant="outline"
+                className="bg-green-50 text-green-700 border-green-200"
+              >
+                <CheckCircle2 className="h-3 w-3 mr-1" />
+                適用済み
+              </Badge>
+            ) : (
+              <Badge
+                variant="outline"
+                className="bg-gray-50 text-gray-700 border-gray-200"
+              >
+                <XCircle className="h-3 w-3 mr-1" />
+                未適用
+              </Badge>
+            )}
           </div>
         </div>
 

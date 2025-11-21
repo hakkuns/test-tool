@@ -39,6 +39,7 @@ interface RequestFormProps {
   isLoading?: boolean;
   initialData?: TestScenario;
   originalScenario?: TestScenario;
+  statusBadges?: React.ReactNode;
 }
 
 export function RequestForm({
@@ -46,6 +47,7 @@ export function RequestForm({
   isLoading,
   initialData,
   originalScenario,
+  statusBadges,
 }: RequestFormProps) {
   const [method, setMethod] = useState<string>("GET");
   const [url, setUrl] = useState("http://localhost:8080/api/");
@@ -211,7 +213,12 @@ export function RequestForm({
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="space-y-3">
+        {statusBadges && (
+          <div className="flex items-center gap-2 flex-wrap">
+            {statusBadges}
+          </div>
+        )}
         <div className="flex items-center justify-between">
           <CardTitle>リクエスト設定</CardTitle>
           <div className="flex items-center gap-2">

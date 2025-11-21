@@ -553,53 +553,6 @@ function ApiTestPageContent() {
             )}
           </Button>
         </div>
-        <div className="flex items-center gap-2 flex-wrap justify-end">
-          {appliedScenarioId && selectedScenarioId !== appliedScenarioId ? (
-            <>
-              <Badge
-                variant="outline"
-                className="border-blue-500 text-blue-700 bg-blue-50"
-              >
-                別のシナリオを選択中
-              </Badge>
-              <Badge className="bg-green-500">
-                <CheckCircle2 className="h-3 w-3 mr-1" />
-                適用中: {scenarios.find((s) => s.id === appliedScenarioId)?.name.substring(0, 20) || ""}
-                {(scenarios.find((s) => s.id === appliedScenarioId)?.name.length || 0) > 20 ? "..." : ""}
-              </Badge>
-              {isScenarioModified && (
-                <Badge
-                  variant="outline"
-                  className="border-yellow-500 text-yellow-700 bg-yellow-50"
-                >
-                  再適用が必要
-                </Badge>
-              )}
-            </>
-          ) : appliedScenarioId ? (
-            <>
-              <Badge className="bg-green-500">
-                <CheckCircle2 className="h-3 w-3 mr-1" />
-                適用済み
-              </Badge>
-              {isScenarioModified && (
-                <Badge
-                  variant="outline"
-                  className="border-yellow-500 text-yellow-700 bg-yellow-50"
-                >
-                  再適用が必要
-                </Badge>
-              )}
-            </>
-          ) : (
-            selectedScenarioId && (
-              <Badge variant="secondary">
-                <XCircle className="h-3 w-3 mr-1" />
-                未適用
-              </Badge>
-            )
-          )}
-        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -610,6 +563,55 @@ function ApiTestPageContent() {
             isLoading={requestMutation.isPending}
             initialData={convertedScenario === null ? undefined : convertedScenario}
             originalScenario={originalScenario}
+            statusBadges={
+              <>
+                {appliedScenarioId && selectedScenarioId !== appliedScenarioId ? (
+                  <>
+                    <Badge
+                      variant="outline"
+                      className="border-blue-500 text-blue-700 bg-blue-50"
+                    >
+                      別のシナリオを選択中
+                    </Badge>
+                    <Badge className="bg-green-500">
+                      <CheckCircle2 className="h-3 w-3 mr-1" />
+                      適用中: {scenarios.find((s) => s.id === appliedScenarioId)?.name.substring(0, 20) || ""}
+                      {(scenarios.find((s) => s.id === appliedScenarioId)?.name.length || 0) > 20 ? "..." : ""}
+                    </Badge>
+                    {isScenarioModified && (
+                      <Badge
+                        variant="outline"
+                        className="border-yellow-500 text-yellow-700 bg-yellow-50"
+                      >
+                        再適用が必要
+                      </Badge>
+                    )}
+                  </>
+                ) : appliedScenarioId ? (
+                  <>
+                    <Badge className="bg-green-500">
+                      <CheckCircle2 className="h-3 w-3 mr-1" />
+                      適用済み
+                    </Badge>
+                    {isScenarioModified && (
+                      <Badge
+                        variant="outline"
+                        className="border-yellow-500 text-yellow-700 bg-yellow-50"
+                      >
+                        再適用が必要
+                      </Badge>
+                    )}
+                  </>
+                ) : (
+                  selectedScenarioId && (
+                    <Badge variant="secondary">
+                      <XCircle className="h-3 w-3 mr-1" />
+                      未適用
+                    </Badge>
+                  )
+                )}
+              </>
+            }
           />
           <TableList tables={tables} />
           <MockEndpointList endpoints={mockEndpoints} />
