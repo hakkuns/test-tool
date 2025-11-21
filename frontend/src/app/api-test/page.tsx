@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Edit, Loader2, PlayCircle, XCircle } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -121,39 +121,36 @@ function ApiTestPageContent() {
   });
 
   // フィルタリングされたシナリオ
-  const filteredScenarios = useMemo(() => {
-    if (groupFilter === "all") {
-      return scenarios;
-    }
+  let filteredScenarios = scenarios;
+  if (groupFilter !== "all") {
     if (groupFilter === "ungrouped") {
-      return scenarios.filter((s) => !s.groupId);
-    }
-    // groupIdとgroupFilterの両方を比較（型変換なしで直接比較）
-    const filtered = scenarios.filter((s) => s.groupId === groupFilter);
+      filteredScenarios = scenarios.filter((s) => !s.groupId);
+    } else {
+      // groupIdとgroupFilterの両方を比較（型変換なしで直接比較）
+      filteredScenarios = scenarios.filter((s) => s.groupId === groupFilter);
 
-    // デバッグログ（開発中のみ）
-    if (
-      process.env.NODE_ENV === "development" &&
-      filtered.length === 0 &&
-      scenarios.some((s) => s.groupId)
-    ) {
-      console.log("グループフィルタリングデバッグ:", {
-        groupFilter,
-        groupFilterType: typeof groupFilter,
-        totalScenarios: scenarios.length,
-        scenariosWithGroupId: scenarios
-          .filter((s) => s.groupId)
-          .map((s) => ({
-            name: s.name,
-            groupId: s.groupId,
-            groupIdType: typeof s.groupId,
-            match: s.groupId === groupFilter,
-          })),
-      });
+      // デバッグログ（開発中のみ）
+      if (
+        process.env.NODE_ENV === "development" &&
+        filteredScenarios.length === 0 &&
+        scenarios.some((s) => s.groupId)
+      ) {
+        console.log("グループフィルタリングデバッグ:", {
+          groupFilter,
+          groupFilterType: typeof groupFilter,
+          totalScenarios: scenarios.length,
+          scenariosWithGroupId: scenarios
+            .filter((s) => s.groupId)
+            .map((s) => ({
+              name: s.name,
+              groupId: s.groupId,
+              groupIdType: typeof s.groupId,
+              match: s.groupId === groupFilter,
+            })),
+        });
+      }
     }
-
-    return filtered;
-  }, [scenarios, groupFilter]);
+  }
 
   // モックエンドポイント一覧を取得（useQuery）
   const { data: mockEndpointsData } = useQuery({
@@ -177,49 +174,47 @@ function ApiTestPageContent() {
     : [];
 
   // 元のシナリオ（定数パターンを含む）を取得
-  const originalScenario = useMemo(() => {
-    if (!appliedScenarioId) return undefined;
-    return scenarios.find((s) => s.id === appliedScenarioId);
-  }, [appliedScenarioId, scenarios]);
+  const originalScenario = !appliedScenarioId
+    ? undefined
+    : scenarios.find((s) => s.id === appliedScenarioId);
 
   // 選択されたシナリオの定数を変換
-  const convertedScenario = useMemo(() => {
-    if (!appliedScenarioId) return undefined;
-
+  let convertedScenario: any = undefined;
+  if (appliedScenarioId) {
     const scenario = scenarios.find((s) => s.id === appliedScenarioId);
     if (!scenario) {
       // シナリオデータが読み込まれていない場合はnullを返す（undefinedと区別）
-      return null;
-    }
+      convertedScenario = null;
+    } else {
+      // 値のマッピングを共有して、ヘッダーとボディで同じ定数は同じ値になるようにする
+      const valueMap = new Map<string, string>();
 
-    // 値のマッピングを共有して、ヘッダーとボディで同じ定数は同じ値になるようにする
-    const valueMap = new Map<string, string>();
+      // testSettingsの定数を変換
+      const convertedHeaders = scenario.testSettings?.headers
+        ? replaceConstantsInHeaders(scenario.testSettings.headers, valueMap)
+        : {};
 
-    // testSettingsの定数を変換
-    const convertedHeaders = scenario.testSettings?.headers
-      ? replaceConstantsInHeaders(scenario.testSettings.headers, valueMap)
-      : {};
-
-    let convertedBody = scenario.testSettings?.body || "";
-    if (convertedBody) {
-      try {
-        const parsedBody = JSON.parse(convertedBody);
-        const convertedBodyObj = replaceConstantsInObject(parsedBody, valueMap);
-        convertedBody = JSON.stringify(convertedBodyObj, null, 2);
-      } catch {
-        // JSONでない場合はそのまま
+      let convertedBody = scenario.testSettings?.body || "";
+      if (convertedBody) {
+        try {
+          const parsedBody = JSON.parse(convertedBody);
+          const convertedBodyObj = replaceConstantsInObject(parsedBody, valueMap);
+          convertedBody = JSON.stringify(convertedBodyObj, null, 2);
+        } catch {
+          // JSONでない場合はそのまま
+        }
       }
-    }
 
-    return {
-      ...scenario,
-      testSettings: {
-        ...scenario.testSettings,
-        headers: convertedHeaders,
-        body: convertedBody,
-      },
-    };
-  }, [appliedScenarioId, scenarios]);
+      convertedScenario = {
+        ...scenario,
+        testSettings: {
+          ...scenario.testSettings,
+          headers: convertedHeaders,
+          body: convertedBody,
+        },
+      };
+    }
+  }
 
   // 履歴をLocalStorageから読み込み
   useEffect(() => {
@@ -464,19 +459,14 @@ function ApiTestPageContent() {
   };
 
   // シナリオが更新されたかどうかを判定
-  const isScenarioModified = useMemo(() => {
-    if (!appliedScenarioId || !appliedScenarioHash) {
-      return false;
-    }
-
+  let isScenarioModified = false;
+  if (appliedScenarioId && appliedScenarioHash) {
     const currentScenario = scenarios.find((s) => s.id === appliedScenarioId);
-    if (!currentScenario) {
-      return false;
+    if (currentScenario) {
+      const currentHash = calculateScenarioHash(currentScenario);
+      isScenarioModified = currentHash !== appliedScenarioHash;
     }
-
-    const currentHash = calculateScenarioHash(currentScenario);
-    return currentHash !== appliedScenarioHash;
-  }, [appliedScenarioId, appliedScenarioHash, scenarios, scenarios.length, dataUpdatedAt]);
+  }
 
   return (
     <div className="container mx-auto p-8 space-y-6">

@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Code2, FileText, Copy, Check, Download } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import Editor from "@monaco-editor/react";
 import { useTheme } from "next-themes";
@@ -29,28 +29,28 @@ function JsonViewer({ data, label }: { data: any; label: string }) {
   const [copied, setCopied] = useState(false);
   const { theme } = useTheme();
 
-  const formattedData = useMemo(() => {
-    if (typeof data === "string") {
-      try {
-        return JSON.stringify(JSON.parse(data), null, 2);
-      } catch {
-        return data;
-      }
-    }
-    return JSON.stringify(data, null, 2);
-  }, [data]);
-
-  const isValidJson = useMemo(() => {
+  let formattedData = "";
+  if (typeof data === "string") {
     try {
-      if (!data) return false;
+      formattedData = JSON.stringify(JSON.parse(data), null, 2);
+    } catch {
+      formattedData = data;
+    }
+  } else {
+    formattedData = JSON.stringify(data, null, 2);
+  }
+
+  let isValidJson = false;
+  try {
+    if (data) {
       if (typeof data === "string") {
         JSON.parse(data);
       }
-      return true;
-    } catch {
-      return false;
+      isValidJson = true;
     }
-  }, [data]);
+  } catch {
+    isValidJson = false;
+  }
 
   const handleCopy = async () => {
     try {

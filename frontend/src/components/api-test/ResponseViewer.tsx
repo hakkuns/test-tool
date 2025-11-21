@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Copy, Check, Download, Loader2, Code2, FileText } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import Editor from "@monaco-editor/react";
 import { useTheme } from "next-themes";
@@ -126,22 +126,19 @@ export function ResponseViewer({
     return JSON.stringify(body, null, 2);
   };
 
-  const formattedBody = useMemo(() => {
-    if (!response) return "";
-    return formatBody(response.body);
-  }, [response]);
+  const formattedBody = !response ? "" : formatBody(response.body);
 
-  const isValidJson = useMemo(() => {
-    try {
-      if (!response?.body) return false;
+  let isValidJson = false;
+  try {
+    if (response?.body) {
       if (typeof response.body === "string") {
         JSON.parse(response.body);
       }
-      return true;
-    } catch {
-      return false;
+      isValidJson = true;
     }
-  }, [response]);
+  } catch {
+    isValidJson = false;
+  }
 
   const handleCopyBody = async () => {
     try {
