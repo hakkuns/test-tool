@@ -77,6 +77,9 @@ cp "${PROJECT_ROOT}/docker/Dockerfile.dist" "${PACKAGE_DIR}/Dockerfile"
 cp "${PROJECT_ROOT}/docker/start.sh" "${PACKAGE_DIR}/docker/"
 chmod +x "${PACKAGE_DIR}/docker/start.sh"
 
+# Copy .env.example to .env for docker-compose
+cp "${PROJECT_ROOT}/.env.example" "${PACKAGE_DIR}/.env"
+
 # Create docker-compose for deployment
 cat > "${PACKAGE_DIR}/docker-compose.yml" << 'EOF'
 services:
@@ -89,12 +92,12 @@ services:
     env_file:
       - backend/.env
     networks:
-      - app-network
+      - ${EXTERNAL_NETWORK}
     restart: unless-stopped
 
 networks:
-  app-network:
-    driver: bridge
+  ${EXTERNAL_NETWORK}:
+    external: true
 EOF
 
 # Copy documentation
@@ -145,7 +148,10 @@ echo "📂 Location: ${DIST_DIR}/${PACKAGE_NAME}.tar.gz"
 echo ""
 echo "To deploy:"
 echo "  1. Extract: tar -xzf ${PACKAGE_NAME}.tar.gz"
-echo "  2. Configure: Edit backend/.env with your settings"
-echo "  3. Build: docker-compose build"
-echo "  4. Run: docker-compose up -d"
+echo "  2. Configure:"
+echo "     - Edit .env to set EXTERNAL_NETWORK name"
+echo "     - Edit backend/.env with your database and API settings"
+echo "  3. Create network: docker network create <network_name>"
+echo "  4. Build: docker-compose build"
+echo "  5. Run: docker-compose up -d"
 echo ""

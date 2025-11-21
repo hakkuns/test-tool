@@ -21,6 +21,30 @@ cd testing-assistant-suite-YYYYMMDD_HHMMSS
 
 ### 2. 環境設定
 
+#### 2-1. Docker Composeの設定
+
+`.env`ファイルを編集し、外部Dockerネットワーク名を設定します:
+
+```bash
+# 必須: 接続先の外部Dockerネットワーク名
+EXTERNAL_NETWORK=my_shared_network
+```
+
+#### 2-2. 外部ネットワークの準備
+
+指定したDockerネットワークが存在しない場合は作成します:
+
+```bash
+docker network create my_shared_network
+```
+
+既存のネットワークを確認:
+```bash
+docker network ls
+```
+
+#### 2-3. バックエンドの設定
+
 `backend/.env`ファイルを編集し、PostgreSQLデータベースの接続情報を設定します:
 
 ```bash
@@ -39,9 +63,13 @@ TARGET_API_CONTAINER=
 
 **重要な設定項目:**
 
-- `DATABASE_URL`: テスト対象のPostgreSQLデータベース接続文字列
-- `ENCRYPTION_KEY`: データベース内で暗号化されたデータを復号化するためのキー
-- `DOCKER_HOST_IP`: Dockerコンテナからホストマシン上のサービスにアクセスする場合のIPアドレス
+- **`.env`ファイル（ルート）:**
+  - `EXTERNAL_NETWORK`: このアプリケーションが接続する外部Dockerネットワーク名（必須）
+
+- **`backend/.env`ファイル:**
+  - `DATABASE_URL`: テスト対象のPostgreSQLデータベース接続文字列
+  - `ENCRYPTION_KEY`: データベース内で暗号化されたデータを復号化するためのキー
+  - `DOCKER_HOST_IP`: Dockerコンテナからホストマシン上のサービスにアクセスする場合のIPアドレス
 
 ### 3. Dockerイメージのビルド
 
@@ -158,11 +186,53 @@ DATABASE_URL=postgresql://username:password@172.19.0.1:5432/database
 TARGET_API_CONTAINER=my-spring-api
 ```
 
+**注意**: プロキシ先のコンテナは、同じ外部ネットワーク（`.env`の`EXTERNAL_NETWORK`で指定）に接続されている必要があります。
+
+### 外部ネットワークのトラブルシューティング
+
+#### ネットワークが存在しない
+
+エラー: `network my_shared_network declared as external, but could not be found`
+
+対処法:
+```bash
+docker network create my_shared_network
+```
+
+#### 他のコンテナと通信できない
+
+1. 両方のコンテナが同じネットワークに接続されているか確認:
+   ```bash
+   docker network inspect my_shared_network
+   ```
+
+2. コンテナ名でpingできるか確認:
+   ```bash
+   docker exec -it testing-assistant-suite ping other-container-name
+   ```
+
+## ファイル構成
+
+配布パッケージには以下の設定ファイルが含まれています:
+
+```
+testing-assistant-suite-YYYYMMDD_HHMMSS/
+├── .env                    # Docker Compose用の設定（EXTERNAL_NETWORK）
+├── docker-compose.yml      # コンテナ構成定義
+├── backend/
+│   └── .env                # バックエンドアプリケーションの環境変数
+└── ...
+```
+
+- **`.env`**: Docker Composeが読み込む設定ファイル。ネットワーク名などの変数展開に使用
+- **`backend/.env`**: コンテナ内のアプリケーションに渡される環境変数
+
 ## セキュリティに関する注意事項
 
 1. **ENCRYPTION_KEY**: 本番環境では、強力でランダムな文字列を使用してください
 2. **DATABASE_URL**: 認証情報を含むため、`.env`ファイルの権限を適切に設定してください
 3. **ポート公開**: 必要に応じて、外部からのアクセスを制限してください
+4. **外部ネットワーク**: 信頼できるコンテナのみが接続されているネットワークを使用してください
 
 ## アップデート手順
 
@@ -175,14 +245,26 @@ TARGET_API_CONTAINER=my-spring-api
 
 2. 新しいパッケージを展開
 
-3. 旧バージョンの`.env`設定を新バージョンにコピー
+3. 旧バージョンの設定ファイルを新バージョンにコピー:
+   ```bash
+   # ルートの.env（EXTERNAL_NETWORK設定）
+   cp old-version/.env new-version/.env
 
-4. イメージを再ビルド:
+   # バックエンドの.env（データベース設定等）
+   cp old-version/backend/.env new-version/backend/.env
+   ```
+
+4. 新バージョンのディレクトリに移動:
+   ```bash
+   cd new-version
+   ```
+
+5. イメージを再ビルド:
    ```bash
    docker-compose build --no-cache
    ```
 
-5. コンテナを起動:
+6. コンテナを起動:
    ```bash
    docker-compose up -d
    ```
