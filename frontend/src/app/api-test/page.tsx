@@ -476,7 +476,7 @@ function ApiTestPageContent() {
 
     const currentHash = calculateScenarioHash(currentScenario);
     return currentHash !== appliedScenarioHash;
-  }, [appliedScenarioId, appliedScenarioHash, scenarios]);
+  }, [appliedScenarioId, appliedScenarioHash, scenarios, scenarios.length, dataUpdatedAt]);
 
   return (
     <div className="container mx-auto p-8 space-y-6">
