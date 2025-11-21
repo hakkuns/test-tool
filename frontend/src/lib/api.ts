@@ -34,13 +34,16 @@ export async function checkHealth() {
 }
 
 // プロキシを通じてSpring Boot APIにリクエスト
-export async function proxyRequest(data: {
-  method: string;
-  url: string;
-  headers: Record<string, string>;
-  body?: any;
-  timeout?: number;
-}) {
+export async function proxyRequest(
+  data: {
+    method: string;
+    url: string;
+    headers: Record<string, string>;
+    body?: any;
+    timeout?: number;
+  },
+  signal?: AbortSignal,
+) {
   return fetchAPI<{
     success: boolean;
     response?: {
@@ -58,6 +61,7 @@ export async function proxyRequest(data: {
   }>("/api/proxy/request", {
     method: "POST",
     body: JSON.stringify(data),
+    signal,
   });
 }
 

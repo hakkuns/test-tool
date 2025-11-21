@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { Copy, Check, Download, Loader2, Code2, FileText } from "lucide-react";
+import { Copy, Check, Download, Loader2, Code2, FileText, XCircle } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import Editor from "@monaco-editor/react";
@@ -33,12 +33,14 @@ interface ResponseViewerProps {
     timestamp: string;
   } | null;
   isLoading?: boolean;
+  onCancel?: () => void;
 }
 
 export function ResponseViewer({
   response,
   error,
   isLoading,
+  onCancel,
 }: ResponseViewerProps) {
   const [copiedBody, setCopiedBody] = useState(false);
   const [copiedHeaders, setCopiedHeaders] = useState(false);
@@ -58,6 +60,16 @@ export function ResponseViewer({
           <p className="text-center text-muted-foreground font-medium">
             リクエストを送信中...
           </p>
+          {onCancel && (
+            <Button
+              variant="destructive"
+              onClick={onCancel}
+              className="mt-4"
+            >
+              <XCircle className="h-4 w-4 mr-2" />
+              キャンセル
+            </Button>
+          )}
         </CardContent>
       </Card>
     );

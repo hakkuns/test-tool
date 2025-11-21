@@ -66,6 +66,7 @@ function ApiTestPageContent() {
   const [error, setError] = useState<any>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [mockLogs, setMockLogs] = useState<MockRequestLog[]>([]);
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
 
   // シナリオ関連
   const [selectedScenarioId, setSelectedScenarioId] = useState<string>("");
@@ -315,6 +316,10 @@ function ApiTestPageContent() {
       // リクエスト送信前にモックログをクリア
       await clearMockLogs();
 
+      // 新しいAbortControllerを作成
+      const controller = new AbortController();
+      setAbortController(controller);
+
       // ボディをパース
       let parsedBody: any = undefined;
       if (data.body) {
@@ -325,13 +330,20 @@ function ApiTestPageContent() {
         }
       }
 
-      return await proxyRequest({
-        method: data.method,
-        url: data.url,
-        headers: data.headers,
-        body: parsedBody,
-        timeout: data.timeout,
-      });
+      try {
+        return await proxyRequest(
+          {
+            method: data.method,
+            url: data.url,
+            headers: data.headers,
+            body: parsedBody,
+            timeout: data.timeout,
+          },
+          controller.signal,
+        );
+      } finally {
+        setAbortController(null);
+      }
     },
     onSuccess: async (result, variables) => {
       if (result.success && result.response) {
@@ -376,6 +388,14 @@ function ApiTestPageContent() {
     },
     onError: (err) => {
       console.error("Request error:", err);
+
+      // キャンセルエラーの場合は特別な処理
+      if (err instanceof Error && err.name === 'AbortError') {
+        setAbortController(null);
+        toast.info("リクエストをキャンセルしました");
+        return;
+      }
+
       const errorData = {
         error: "リクエストに失敗しました",
         message: err instanceof Error ? err.message : "不明なエラー",
@@ -399,6 +419,14 @@ function ApiTestPageContent() {
     setError(null);
     setMockLogs([]);
     requestMutation.mutate(data);
+  };
+
+  // リクエストキャンセル
+  const handleCancelRequest = () => {
+    if (abortController) {
+      abortController.abort();
+      setAbortController(null);
+    }
   };
 
   // 履歴から再実行
@@ -564,6 +592,7 @@ function ApiTestPageContent() {
         {/* 左側: リクエストフォーム */}
         <div className="space-y-6">
           <RequestForm
+            key={appliedScenarioHash || 'no-scenario'}
             onSubmit={handleSubmit}
             isLoading={requestMutation.isPending}
             initialData={convertedScenario === null ? undefined : convertedScenario}
@@ -634,6 +663,7 @@ function ApiTestPageContent() {
             response={response}
             error={error}
             isLoading={requestMutation.isPending}
+            onCancel={handleCancelRequest}
           />
           <MockLogViewer logs={mockLogs} endpoints={mockEndpoints} />
         </div>
