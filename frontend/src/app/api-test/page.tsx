@@ -232,7 +232,7 @@ function ApiTestPageContent() {
     } else {
       setIsScenarioModified(false);
     }
-  }, [appliedScenarioId, appliedScenarioHash, scenarios]);
+  }, [appliedScenarioId, appliedScenarioHash, scenarios, dataUpdatedAt]);
 
   // 履歴をLocalStorageから読み込み
   useEffect(() => {
@@ -433,20 +433,26 @@ function ApiTestPageContent() {
       return await scenariosApi.apply(scenarioId);
     },
     onSuccess: async (result, scenarioId) => {
-      // モックエンドポイントとシナリオ一覧を即座に再取得
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["mock-endpoints"] }),
-        queryClient.invalidateQueries({ queryKey: ["scenarios"] }),
-      ]);
+      // 先にLocalStorageとStateを更新（useEffectが反応するように）
+      localStorage.setItem("appliedScenarioId", scenarioId);
+      setAppliedScenarioId(scenarioId);
 
-      // 再取得後の最新データを取得
+      // モックエンドポイントとシナリオ一覧を強制的に再取得
+      // refetchQueriesの完了を確実に待つ
+      await queryClient.refetchQueries({ queryKey: ["mock-endpoints"] });
+      await queryClient.refetchQueries({ queryKey: ["scenarios"] });
+
+      // 再取得後、最新データを取得してハッシュを計算
       const updatedScenarios = queryClient.getQueryData<TestScenario[]>(["scenarios"]);
       const scenario = updatedScenarios?.find((s) => s.id === scenarioId);
-      const hash = scenario ? calculateScenarioHash(scenario) : "";
 
-      localStorage.setItem("appliedScenarioId", scenarioId);
+      if (!scenario) {
+        toast.error("シナリオデータの取得に失敗しました");
+        return;
+      }
+
+      const hash = calculateScenarioHash(scenario);
       localStorage.setItem("appliedScenarioHash", hash);
-      setAppliedScenarioId(scenarioId);
       setAppliedScenarioHash(hash);
 
       toast.success(
