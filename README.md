@@ -247,7 +247,7 @@ ENCRYPTION_KEY=your-secret-encryption-key-here
 
 ```
 
-postgres-test-helper/
+testing-assistant-suite/
 ├── README.md
 ├── PROJECT_PLAN.md
 ├── package.json # ルートワークスペース

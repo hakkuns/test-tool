@@ -1,5 +1,5 @@
 {
-  "name": "postgres-test-helper-backend",
+  "name": "testing-assistant-suite-backend",
   "version": "1.0.0",
   "type": "module",
   "description": "Backend API for PostgreSQL Test Helper",

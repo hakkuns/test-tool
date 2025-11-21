@@ -15,8 +15,8 @@
 配布されたアーカイブを展開します:
 
 ```bash
-tar -xzf postgres-test-helper-YYYYMMDD_HHMMSS.tar.gz
-cd postgres-test-helper-YYYYMMDD_HHMMSS
+tar -xzf testing-assistant-suite-YYYYMMDD_HHMMSS.tar.gz
+cd testing-assistant-suite-YYYYMMDD_HHMMSS
 ```
 
 ### 2. 環境設定
@@ -76,7 +76,7 @@ curl http://localhost:3001/health
 docker-compose logs -f
 
 # バックエンドのログのみ
-docker logs postgres-test-helper -f
+docker logs testing-assistant-suite -f
 ```
 
 ### コンテナの停止
@@ -128,7 +128,7 @@ docker-compose down -v
 2. データベースサーバーが起動しているか確認します
 3. ネットワーク接続を確認します:
    ```bash
-   docker exec -it postgres-test-helper ping <database-host>
+   docker exec -it testing-assistant-suite ping <database-host>
    ```
 
 ### ホストマシンのPostgreSQLに接続する場合

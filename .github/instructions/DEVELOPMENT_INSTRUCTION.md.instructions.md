@@ -55,7 +55,7 @@ Spring Boot + PostgreSQL APIバックエンドサーバーのローカル環境�
 ## 📁 プロジェクトディレクトリ構成
 
 ```
-postgres-test-helper/
+testing-assistant-suite/
 ├── README.md
 ├── DEVELOPMENT_INSTRUCTIONS.md  # このファイル
 ├── docker-compose.yml
@@ -170,8 +170,8 @@ postgres-test-helper/
 
 ```bash
 # 1. プロジェクトルート作成
-mkdir postgres-test-helper
-cd postgres-test-helper
+mkdir testing-assistant-suite
+cd testing-assistant-suite
 
 # 2. Docker Compose設定
 cat > docker-compose.yml << 'EOF'
@@ -179,7 +179,7 @@ version: '3.8'
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: postgres-test-helper
+    container_name: testing-assistant-suite
     environment:
       POSTGRES_DB: testdb
       POSTGRES_USER: postgres
@@ -1607,11 +1607,11 @@ export function RequestHistory({ onSelectRequest }: RequestHistoryProps) {
 ```typescript
 // localStorage keys
 const STORAGE_KEYS = {
-  DDL: 'postgres-test-helper:ddl',
-  DATA: 'postgres-test-helper:data',
-  MOCK: 'postgres-test-helper:mock',
-  API_HISTORY: 'postgres-test-helper:api-history',
-  API_ENV: 'postgres-test-helper:api-env',
+  DDL: 'testing-assistant-suite:ddl',
+  DATA: 'testing-assistant-suite:data',
+  MOCK: 'testing-assistant-suite:mock',
+  API_HISTORY: 'testing-assistant-suite:api-history',
+  API_ENV: 'testing-assistant-suite:api-env',
 };
 
 // DDL保存形式
@@ -2504,7 +2504,7 @@ export function cn(...inputs: ClassValue[]) {
 
 ```json
 {
-  "name": "postgres-test-helper-backend",
+  "name": "testing-assistant-suite-backend",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
@@ -2536,7 +2536,7 @@ export function cn(...inputs: ClassValue[]) {
 
 ```json
 {
-  "name": "postgres-test-helper-frontend",
+  "name": "testing-assistant-suite-frontend",
   "version": "1.0.0",
   "scripts": {
     "dev": "next dev",
@@ -2649,7 +2649,7 @@ export function cn(...inputs: ClassValue[]) {
    ```bash
    # Dockerコンテナの状態確認
    docker ps
-   docker logs postgres-test-helper
+   docker logs testing-assistant-suite
    
    # ポート競合確認
    lsof -i :5432
@@ -2763,7 +2763,7 @@ services:
   
   postgres:
     image: postgres:16-alpine
-    container_name: postgres-test-helper
+    container_name: testing-assistant-suite
     environment:
       POSTGRES_DB: testdb
       POSTGRES_USER: postgres

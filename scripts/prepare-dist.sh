@@ -8,7 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 DIST_DIR="${PROJECT_ROOT}/dist"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-PACKAGE_NAME="postgres-test-helper-${TIMESTAMP}"
+PACKAGE_NAME="testing-assistant-suite-${TIMESTAMP}"
 PACKAGE_DIR="${DIST_DIR}/${PACKAGE_NAME}"
 
 echo "=================================================="
@@ -80,9 +80,9 @@ chmod +x "${PACKAGE_DIR}/docker/start.sh"
 # Create docker-compose for deployment
 cat > "${PACKAGE_DIR}/docker-compose.yml" << 'EOF'
 services:
-  postgres-test-helper:
+  testing-assistant-suite:
     build: .
-    container_name: postgres-test-helper
+    container_name: testing-assistant-suite
     ports:
       - "3000:3000"
       - "3001:3001"

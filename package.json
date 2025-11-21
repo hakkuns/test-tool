@@ -1,5 +1,5 @@
 {
-  "name": "postgres-test-helper",
+  "name": "testing-assistant-suite",
   "version": "1.0.0",
   "private": true,
   "scripts": {
