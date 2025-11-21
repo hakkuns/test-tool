@@ -6,7 +6,9 @@ FROM node:22-alpine
 WORKDIR /app
 
 # Install pnpm
-RUN corepack enable && corepack prepare pnpm@10.18.1 --activate
+RUN corepack enable && \
+    NODE_TLS_REJECT_UNAUTHORIZED=0 corepack prepare pnpm@10.18.1 --activate || \
+    (apk add --no-cache ca-certificates npm && npm install -g pnpm@10.18.1)
 
 # Copy workspace configuration
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
@@ -17,6 +19,9 @@ COPY backend ./backend
 # Copy frontend (pre-built)
 COPY frontend ./frontend
 
+# Configure pnpm to skip SSL verification for certificate issues
+RUN pnpm config set strict-ssl false
+
 # Install production dependencies
 RUN pnpm install --frozen-lockfile --prod
 
@@ -26,6 +31,9 @@ RUN chmod +x ./start.sh
 
 # Expose ports
 EXPOSE 3000 3001
+
+# Set environment variables to disable SSL verification for Node.js
+ENV NODE_TLS_REJECT_UNAUTHORIZED=0
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
