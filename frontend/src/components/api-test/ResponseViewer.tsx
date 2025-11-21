@@ -5,9 +5,17 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { Copy, Check, FileJson, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { Copy, Check, Download, Loader2, Code2, FileText } from "lucide-react";
+import { useState, useMemo } from "react";
 import { toast } from "sonner";
+import Editor from "@monaco-editor/react";
+import { useTheme } from "next-themes";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface ResponseViewerProps {
   response: {
@@ -34,6 +42,8 @@ export function ResponseViewer({
 }: ResponseViewerProps) {
   const [copiedBody, setCopiedBody] = useState(false);
   const [copiedHeaders, setCopiedHeaders] = useState(false);
+  const [viewMode, setViewMode] = useState<"editor" | "text">("editor");
+  const { theme } = useTheme();
 
   if (isLoading) {
     return (
@@ -116,6 +126,23 @@ export function ResponseViewer({
     return JSON.stringify(body, null, 2);
   };
 
+  const formattedBody = useMemo(() => {
+    if (!response) return "";
+    return formatBody(response.body);
+  }, [response]);
+
+  const isValidJson = useMemo(() => {
+    try {
+      if (!response?.body) return false;
+      if (typeof response.body === "string") {
+        JSON.parse(response.body);
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  }, [response]);
+
   const handleCopyBody = async () => {
     try {
       const formattedBody = formatBody(response.body);
@@ -188,62 +215,122 @@ export function ResponseViewer({
 
           {/* ボディタブ */}
           <TabsContent value="body" className="space-y-2">
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleCopyBody}
-                className="flex-1"
-              >
-                {copiedBody ? (
-                  <>
-                    <Check className="h-4 w-4 mr-2" />
-                    コピー済み
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-4 w-4 mr-2" />
-                    コピー
-                  </>
+            <div className="flex justify-end gap-1">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={handleCopyBody}
+                      className="h-8 w-8"
+                    >
+                      {copiedBody ? (
+                        <Check className="h-4 w-4" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{copiedBody ? "コピー済み" : "コピー"}</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={handleOpenInVSCode}
+                      className="h-8 w-8"
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>ダウンロード</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                {isValidJson && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => setViewMode(viewMode === "editor" ? "text" : "editor")}
+                        className="h-8 w-8"
+                      >
+                        {viewMode === "editor" ? (
+                          <FileText className="h-4 w-4" />
+                        ) : (
+                          <Code2 className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{viewMode === "editor" ? "テキスト表示" : "エディター表示"}</p>
+                    </TooltipContent>
+                  </Tooltip>
                 )}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleOpenInVSCode}
-                className="flex-1"
-              >
-                <FileJson className="h-4 w-4 mr-2" />
-                ダウンロード
-              </Button>
+              </TooltipProvider>
             </div>
-            <ScrollArea className="h-96 w-full rounded border">
-              <pre className="p-4 text-sm font-mono whitespace-pre overflow-x-auto">
-                {formatBody(response.body)}
-              </pre>
-            </ScrollArea>
+            {viewMode === "editor" && isValidJson ? (
+              <div className="h-96 w-full rounded border overflow-hidden">
+                <Editor
+                  height="100%"
+                  language="json"
+                  value={formattedBody}
+                  theme={theme === "dark" ? "vs-dark" : "light"}
+                  options={{
+                    readOnly: true,
+                    minimap: { enabled: false },
+                    scrollBeyondLastLine: false,
+                    fontSize: 13,
+                    lineNumbers: "on",
+                    folding: true,
+                    automaticLayout: true,
+                    wordWrap: "on",
+                    formatOnPaste: true,
+                    formatOnType: true,
+                  }}
+                />
+              </div>
+            ) : (
+              <ScrollArea className="h-96 w-full rounded border">
+                <pre className="p-4 text-sm font-mono whitespace-pre overflow-x-auto">
+                  {formattedBody}
+                </pre>
+              </ScrollArea>
+            )}
           </TabsContent>
 
           {/* ヘッダータブ */}
           <TabsContent value="headers" className="space-y-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleCopyHeaders}
-              className="w-full"
-            >
-              {copiedHeaders ? (
-                <>
-                  <Check className="h-4 w-4 mr-2" />
-                  コピー済み
-                </>
-              ) : (
-                <>
-                  <Copy className="h-4 w-4 mr-2" />
-                  コピー
-                </>
-              )}
-            </Button>
+            <div className="flex justify-end">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={handleCopyHeaders}
+                      className="h-8 w-8"
+                    >
+                      {copiedHeaders ? (
+                        <Check className="h-4 w-4" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{copiedHeaders ? "コピー済み" : "コピー"}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             <ScrollArea className="h-96 w-full rounded border">
               <div className="p-4 space-y-2">
                 {Object.entries(response.headers).map(([key, value]) => (

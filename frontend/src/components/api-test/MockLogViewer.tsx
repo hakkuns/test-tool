@@ -4,11 +4,183 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
+import { Code2, FileText, Copy, Check, Download } from "lucide-react";
+import { useState, useMemo } from "react";
+import { toast } from "sonner";
+import Editor from "@monaco-editor/react";
+import { useTheme } from "next-themes";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { MockRequestLog, MockEndpoint } from "@/lib/api";
 
 interface MockLogViewerProps {
   logs: MockRequestLog[];
   endpoints: MockEndpoint[];
+}
+
+// JSONエディターコンポーネント
+function JsonViewer({ data, label }: { data: any; label: string }) {
+  const [viewMode, setViewMode] = useState<"editor" | "text">("editor");
+  const [copied, setCopied] = useState(false);
+  const { theme } = useTheme();
+
+  const formattedData = useMemo(() => {
+    if (typeof data === "string") {
+      try {
+        return JSON.stringify(JSON.parse(data), null, 2);
+      } catch {
+        return data;
+      }
+    }
+    return JSON.stringify(data, null, 2);
+  }, [data]);
+
+  const isValidJson = useMemo(() => {
+    try {
+      if (!data) return false;
+      if (typeof data === "string") {
+        JSON.parse(data);
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  }, [data]);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(formattedData);
+      setCopied(true);
+      toast.success(`${label}をコピーしました`);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      toast.error("コピーに失敗しました");
+    }
+  };
+
+  const handleDownload = () => {
+    try {
+      const blob = new Blob([formattedData], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${label.replace(/\s/g, "-")}-${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success(`${label}をダウンロードしました`);
+    } catch (err) {
+      toast.error("ダウンロードに失敗しました");
+    }
+  };
+
+  if (!data) {
+    return (
+      <div className="p-4 text-sm text-muted-foreground">
+        {label}なし
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex justify-end gap-1">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={handleCopy}
+                className="h-7 w-7"
+              >
+                {copied ? (
+                  <Check className="h-3.5 w-3.5" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5" />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{copied ? "コピー済み" : "コピー"}</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={handleDownload}
+                className="h-7 w-7"
+              >
+                <Download className="h-3.5 w-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>ダウンロード</p>
+            </TooltipContent>
+          </Tooltip>
+
+          {isValidJson && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => setViewMode(viewMode === "editor" ? "text" : "editor")}
+                  className="h-7 w-7"
+                >
+                  {viewMode === "editor" ? (
+                    <FileText className="h-3.5 w-3.5" />
+                  ) : (
+                    <Code2 className="h-3.5 w-3.5" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{viewMode === "editor" ? "テキスト表示" : "エディター表示"}</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </TooltipProvider>
+      </div>
+      {viewMode === "editor" && isValidJson ? (
+        <div className="h-48 w-full rounded border overflow-hidden">
+          <Editor
+            height="100%"
+            language="json"
+            value={formattedData}
+            theme={theme === "dark" ? "vs-dark" : "light"}
+            options={{
+              readOnly: true,
+              minimap: { enabled: false },
+              scrollBeyondLastLine: false,
+              fontSize: 12,
+              lineNumbers: "on",
+              folding: true,
+              automaticLayout: true,
+              wordWrap: "on",
+              formatOnPaste: true,
+              formatOnType: true,
+            }}
+          />
+        </div>
+      ) : (
+        <ScrollArea className="h-48 w-full rounded border">
+          <pre className="p-4 text-xs font-mono">
+            {formattedData}
+          </pre>
+        </ScrollArea>
+      )}
+    </div>
+  );
 }
 
 export function MockLogViewer({ logs, endpoints }: MockLogViewerProps) {
@@ -49,17 +221,6 @@ export function MockLogViewer({ logs, endpoints }: MockLogViewerProps) {
       default:
         return "bg-gray-500 text-white border-gray-500";
     }
-  };
-
-  const formatJson = (data: any) => {
-    if (typeof data === "string") {
-      try {
-        return JSON.stringify(JSON.parse(data), null, 2);
-      } catch {
-        return data;
-      }
-    }
-    return JSON.stringify(data, null, 2);
   };
 
   // ログを古い順（昇順）にソート - アクセスされた順
@@ -127,23 +288,17 @@ export function MockLogViewer({ logs, endpoints }: MockLogViewerProps) {
                     </TabsList>
 
                     <TabsContent value="response">
-                      <ScrollArea className="h-48 w-full rounded border">
-                        <pre className="p-4 text-xs font-mono">
-                          {log.responseBody
-                            ? formatJson(log.responseBody)
-                            : "レスポンスボディなし"}
-                        </pre>
-                      </ScrollArea>
+                      <JsonViewer
+                        data={log.responseBody}
+                        label="レスポンスボディ"
+                      />
                     </TabsContent>
 
                     <TabsContent value="request">
-                      <ScrollArea className="h-48 w-full rounded border">
-                        <pre className="p-4 text-xs font-mono">
-                          {log.body
-                            ? formatJson(log.body)
-                            : "リクエストボディなし"}
-                        </pre>
-                      </ScrollArea>
+                      <JsonViewer
+                        data={log.body}
+                        label="リクエストボディ"
+                      />
                     </TabsContent>
 
                     <TabsContent value="query">
