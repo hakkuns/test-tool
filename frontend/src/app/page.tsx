@@ -164,6 +164,7 @@ export default function Home() {
                         onToggleFavorite={toggleFavorite}
                         onUpdateTestResult={updateTestResult}
                         onEdit={(id) => router.push(`/scenarios/${id}`)}
+                        onApiTest={(id) => router.push(`/api-test?scenario=${id}`)}
                       />
                     ))}
                   </div>
@@ -201,6 +202,7 @@ export default function Home() {
                     onToggleFavorite={toggleFavorite}
                     onUpdateTestResult={updateTestResult}
                     onEdit={(id) => router.push(`/scenarios/${id}`)}
+                    onApiTest={(id) => router.push(`/api-test?scenario=${id}`)}
                   />
                 ))}
               </div>

@@ -295,7 +295,7 @@ export function ResponseViewer({
                   options={{
                     readOnly: true,
                     minimap: { enabled: false },
-                    scrollBeyondLastLine: false,
+                    scrollBeyondLastLine: true,
                     fontSize: 13,
                     lineNumbers: "on",
                     folding: true,
@@ -303,6 +303,12 @@ export function ResponseViewer({
                     wordWrap: "on",
                     formatOnPaste: true,
                     formatOnType: true,
+                    scrollbar: {
+                      vertical: "visible",
+                      horizontal: "visible",
+                      verticalScrollbarSize: 10,
+                      horizontalScrollbarSize: 10,
+                    },
                   }}
                 />
               </div>

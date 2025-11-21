@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Database, TestTube, Home, BookOpen, Menu, X } from "lucide-react";
+import { Database, FlaskConical, Home, BookOpen, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,7 +43,7 @@ export function Navigation() {
     {
       href: "/api-test",
       label: "APIテスト",
-      icon: TestTube,
+      icon: FlaskConical,
     },
   ];
 

@@ -29,6 +29,8 @@ import {
   CircleX,
   CircleHelp,
   Copy,
+  Circle,
+  FlaskConical,
 } from "lucide-react";
 import type { TestScenario, ScenarioGroup } from "@/types/scenario";
 
@@ -45,6 +47,7 @@ interface ScenarioCardProps {
   onDelete: (id: string) => void;
   onMoveToGroup: (scenarioId: string, groupId: string | undefined) => void;
   onEdit: (id: string) => void;
+  onApiTest: (id: string) => void;
 }
 
 export function ScenarioCard({
@@ -57,7 +60,14 @@ export function ScenarioCard({
   onDelete,
   onMoveToGroup,
   onEdit,
+  onApiTest,
 }: ScenarioCardProps) {
+  // LocalStorageから適用中のシナリオIDを取得
+  const appliedScenarioId = typeof window !== "undefined"
+    ? localStorage.getItem("appliedScenarioId")
+    : null;
+  const isApplied = appliedScenarioId === scenario.id;
+
   return (
     <Card className="hover:shadow-lg transition-shadow flex flex-col overflow-hidden">
       <CardHeader className="pb-3">
@@ -162,6 +172,13 @@ export function ScenarioCard({
             </span>
           </div>
 
+          {/* 適応状態 */}
+          {isApplied && (
+            <div className="flex items-center gap-1" title="適用中">
+              <Circle className="h-3 w-3 fill-green-500 text-green-500" />
+            </div>
+          )}
+
           {/* テスト結果 */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -202,6 +219,14 @@ export function ScenarioCard({
 
         {/* アクション - アイコンのみ */}
         <div className="flex items-center gap-2 pt-3 border-t">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => onApiTest(scenario.id)}
+            title="APIテスト"
+          >
+            <FlaskConical className="h-4 w-4" />
+          </Button>
           <Button
             size="sm"
             variant="ghost"

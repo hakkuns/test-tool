@@ -323,18 +323,40 @@ export default function ScenarioDetailPage() {
             </Badge>
           )}
         </div>
-        {/* <Button
-          type="button"
-          variant="secondary"
-          onClick={handleApply}
-          disabled={isApplying}
-        >
-          <Play className="h-4 w-4 mr-2" />
-          {isApplying ? "適用中..." : "シナリオを適用"}
-        </Button> */}
+        <div className="flex gap-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              if (
+                hasUnsavedChanges &&
+                !confirm("変更が保存されていません。このページを離れますか？")
+              ) {
+                return;
+              }
+              router.back();
+            }}
+            disabled={isSubmitting}
+          >
+            キャンセル
+          </Button>
+          <Button type="submit" form="scenario-edit-form" disabled={isSubmitting}>
+            <Save className="h-4 w-4 mr-2" />
+            {isSubmitting ? "更新中..." : "更新"}
+          </Button>
+          {isUpdated && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => router.push(`/api-test?scenario=${id}`)}
+            >
+              APIテスト
+            </Button>
+          )}
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form id="scenario-edit-form" onSubmit={handleSubmit} className="space-y-6">
         {/* 基本情報 */}
         <Card>
           <CardHeader>

@@ -165,7 +165,7 @@ export function useGroups() {
       createMutation.mutateAsync({ name, description }),
     updateGroup: (id: string, name: string, description: string) =>
       updateMutation.mutateAsync({ id, name, description }),
-    deleteGroup: (groupId: string) => deleteMutation.mutate(groupId),
+    deleteGroup: (groupId: string) => deleteMutation.mutateAsync(groupId),
     exportGroup,
     importGroup,
   };

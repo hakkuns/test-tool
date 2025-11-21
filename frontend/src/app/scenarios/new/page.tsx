@@ -25,7 +25,6 @@ import { ScenarioDataEditor } from "@/components/scenarios/ScenarioDataEditor";
 import { ScenarioMocksEditor } from "@/components/scenarios/ScenarioMocksEditor";
 import { TestSettingsEditor } from "@/components/scenarios/TestSettingsEditor";
 import { scenariosApi, groupsApi } from "@/lib/api/scenarios";
-import { FileJson, Upload } from "lucide-react";
 import type {
   CreateScenarioInput,
   DDLTable,
@@ -143,91 +142,6 @@ export default function NewScenarioPage() {
     setTags(tags.filter((t) => t !== tag));
   };
 
-  const handleImportJSON = () => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = ".json";
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-
-      try {
-        const text = await file.text();
-        const data = JSON.parse(text);
-
-        // エクスポート形式（scenario プロパティを持つ）かどうかチェック
-        const scenarioData = data.scenario || data;
-
-        // シナリオ全体のインポート
-        if (scenarioData.name) setName(scenarioData.name);
-        if (scenarioData.description) setDescription(scenarioData.description);
-        if (scenarioData.groupId) setGroupId(scenarioData.groupId);
-        if (scenarioData.tags) setTags(scenarioData.tags);
-        if (scenarioData.targetApi) {
-          if (scenarioData.targetApi.method)
-            setTargetApiMethod(scenarioData.targetApi.method);
-          if (scenarioData.targetApi.url)
-            setTargetApiUrl(scenarioData.targetApi.url);
-          if (scenarioData.targetApi.headers)
-            setTargetApiHeaders(scenarioData.targetApi.headers);
-          if (scenarioData.targetApi.body)
-            setTargetApiBody(scenarioData.targetApi.body);
-        }
-        if (scenarioData.tables) setTables(scenarioData.tables);
-        if (scenarioData.tableData) setTableData(scenarioData.tableData);
-        if (scenarioData.mockApis) setMockApis(scenarioData.mockApis);
-        if (scenarioData.testSettings) {
-          setTestHeaders(scenarioData.testSettings.headers || {});
-          setTestBody(scenarioData.testSettings.body || "");
-        }
-
-        toast.success("シナリオをインポートしました");
-      } catch (error) {
-        console.error("Import error:", error);
-        toast.error("JSONの読み込みに失敗しました");
-      }
-    };
-    input.click();
-  };
-
-  const handleExportJSON = () => {
-    const data: Omit<CreateScenarioInput, "id" | "createdAt" | "updatedAt"> = {
-      name,
-      description: description || undefined,
-      targetApi: {
-        method: targetApiMethod,
-        url: targetApiUrl,
-        headers:
-          Object.keys(targetApiHeaders).length > 0
-            ? targetApiHeaders
-            : undefined,
-        body: targetApiBody,
-      },
-      tables,
-      tableData,
-      mockApis,
-      testSettings:
-        Object.keys(testHeaders).length > 0 || testBody
-          ? {
-              headers:
-                Object.keys(testHeaders).length > 0 ? testHeaders : undefined,
-              body: testBody || undefined,
-            }
-          : undefined,
-      tags,
-    };
-
-    const json = JSON.stringify(data, null, 2);
-    const blob = new Blob([json], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `scenario-${name || "new"}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("シナリオをエクスポートしました");
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -286,20 +200,41 @@ export default function NewScenarioPage() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <div className="mb-6 flex items-end justify-end">
-        <div className="flex gap-2">
-          <Button type="button" variant="outline" onClick={handleImportJSON}>
-            <Upload className="h-4 w-4 mr-2" />
-            JSON インポート
-          </Button>
-          <Button type="button" variant="outline" onClick={handleExportJSON}>
-            <FileJson className="h-4 w-4 mr-2" />
-            JSON エクスポート
-          </Button>
-        </div>
-      </div>
-
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* アクションボタン - 上部 */}
+        <div className="flex gap-4 justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              if (
+                hasUnsavedChanges &&
+                !confirm("変更が保存されていません。このページを離れますか？")
+              ) {
+                return;
+              }
+              router.back();
+            }}
+            disabled={isSubmitting}
+          >
+            キャンセル
+          </Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "作成中..." : "作成"}
+          </Button>
+          {isCreated && createdScenarioId && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() =>
+                router.push(`/api-test?scenario=${createdScenarioId}`)
+              }
+            >
+              APIテスト
+            </Button>
+          )}
+        </div>
+
         {/* 基本情報 */}
         <Card>
           <CardHeader>
@@ -307,23 +242,25 @@ export default function NewScenarioPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">シナリオ名 *</Label>
+              <Label htmlFor="name">シナリオ名 * ({name.length}/100)</Label>
               <Input
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
+                maxLength={100}
                 placeholder="ユーザー登録テスト"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="description">説明</Label>
+              <Label htmlFor="description">説明 ({description.length}/500)</Label>
               <Textarea
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="このシナリオの概要を入力..."
                 rows={3}
+                maxLength={500}
               />
             </div>
             <div className="space-y-2">
@@ -450,40 +387,6 @@ export default function NewScenarioPage() {
 
         {/* モックAPI */}
         <ScenarioMocksEditor mocks={mockApis} onChange={setMockApis} />
-
-        {/* アクション */}
-        <div className="flex gap-4 justify-end mt-8">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              if (
-                hasUnsavedChanges &&
-                !confirm("変更が保存されていません。このページを離れますか？")
-              ) {
-                return;
-              }
-              router.back();
-            }}
-            disabled={isSubmitting}
-          >
-            キャンセル
-          </Button>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "作成中..." : "作成"}
-          </Button>
-          {isCreated && createdScenarioId && (
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() =>
-                router.push(`/api-test?scenario=${createdScenarioId}`)
-              }
-            >
-              APIテスト
-            </Button>
-          )}
-        </div>
       </form>
     </div>
   );
