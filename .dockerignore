@@ -1,0 +1,46 @@
+# Dependencies (will be installed during build)
+node_modules
+**/node_modules
+
+# Build outputs (will be created during build)
+dist/
+.next
+.turbo
+**/.turbo
+
+# Environment files (contains secrets)
+.env
+.env.local
+.env.*.local
+
+# Git
+.git
+.gitignore
+.github
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Test
+coverage
+.nyc_output
+
+# Misc
+.DS_Store
+*.pem
+.devcontainer
+docs
+
+# TypeScript build info
+*.tsbuildinfo
