@@ -3,18 +3,20 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Database, FlaskConical, Home, BookOpen, Menu, X } from "lucide-react";
+import { Database, FlaskConical, Home, BookOpen, Menu, X, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { checkDatabaseConnection } from "@/lib/api";
 import { ReadmeDialog } from "@/components/ReadmeDialog";
 import { DatabaseConnectionDialog } from "@/components/DatabaseConnectionDialog";
+import { VersionDialog } from "@/components/VersionDialog";
 
 export function Navigation() {
   const pathname = usePathname();
   const [dbConnected, setDbConnected] = useState<boolean | null>(null);
   const [readmeOpen, setReadmeOpen] = useState(false);
+  const [versionOpen, setVersionOpen] = useState(false);
   const [dbDialogOpen, setDbDialogOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -91,6 +93,17 @@ export function Navigation() {
             >
               <BookOpen className="h-4 w-4" />
               <span>使い方</span>
+            </Button>
+
+            {/* バージョン情報ボタン */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setVersionOpen(true)}
+              className="flex items-center space-x-2 px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              <Info className="h-4 w-4" />
+              <span>バージョン</span>
             </Button>
 
             {/* DB接続状態 */}
@@ -196,10 +209,23 @@ export function Navigation() {
               <BookOpen className="h-5 w-5" />
               <span>使い方</span>
             </Button>
+
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setVersionOpen(true);
+                setMobileMenuOpen(false);
+              }}
+              className="w-full justify-start flex items-center space-x-3 px-4 py-3 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              <Info className="h-5 w-5" />
+              <span>バージョン情報</span>
+            </Button>
           </div>
         )}
       </div>
       <ReadmeDialog open={readmeOpen} onOpenChange={setReadmeOpen} />
+      <VersionDialog open={versionOpen} onOpenChange={setVersionOpen} />
       <DatabaseConnectionDialog
         open={dbDialogOpen}
         onOpenChange={setDbDialogOpen}

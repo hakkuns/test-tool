@@ -1,302 +1,229 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { ArrowLeft, Save, Play, CheckCircle2 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { ScenarioTablesEditor } from "@/components/scenarios/ScenarioTablesEditor";
 import { ScenarioDataEditor } from "@/components/scenarios/ScenarioDataEditor";
 import { ScenarioMocksEditor } from "@/components/scenarios/ScenarioMocksEditor";
 import { TestSettingsEditor } from "@/components/scenarios/TestSettingsEditor";
-import { scenariosApi } from "@/lib/api/scenarios";
-import type {
-  TestScenario,
-  UpdateScenarioInput,
-  DDLTable,
-  TableData,
-  MockEndpoint,
-} from "@/types/scenario";
-import { toast } from "sonner";
-import {
-  replaceConstantsInHeaders,
-  replaceConstantsInObject,
-} from "@/utils/constants";
+import { BasicInfoSection } from "@/components/scenarios/BasicInfoSection";
+import { TargetApiSection } from "@/components/scenarios/TargetApiSection";
+import { ScenarioDetailHeader } from "@/components/scenarios/ScenarioDetailHeader";
+import { ScenarioDetailActions } from "@/components/scenarios/ScenarioDetailActions";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useScenarioDetail } from "@/hooks/useScenarioDetail";
+import { useScenarioDetailForm } from "@/hooks/useScenarioDetailForm";
+import { useScenarioForm } from "@/hooks/useScenarioForm";
+import { useScenarioDetailActions } from "@/hooks/useScenarioDetailActions";
+import { useConfirmDialog } from "@/hooks/useConfirmDialog";
 
-export default function ScenarioDetailPage() {
+// フォーム本体（ローディング完了後のみレンダリング）
+function ScenarioForm({ id, scenarioData, initialIsApplied }: {
+  id: string;
+  scenarioData: any;
+  initialIsApplied: boolean;
+}) {
   const router = useRouter();
-  const params = useParams();
-  const queryClient = useQueryClient();
-  const id = params?.id as string;
 
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isApplying, setIsApplying] = useState(false);
-  const [isApplied, setIsApplied] = useState(false);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [initialDataLoaded, setInitialDataLoaded] = useState(false);
-  const [isUpdated, setIsUpdated] = useState(false);
-
-  // Basic info
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
+  // Tag input state
   const [tagInput, setTagInput] = useState("");
 
-  // Target API
-  const [targetApiPath, setTargetApiPath] = useState("");
-  const [targetApiMethod, setTargetApiMethod] = useState<
-    "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "HEAD" | "OPTIONS"
-  >("GET");
-  const [targetApiUrl, setTargetApiUrl] = useState("");
-  const [targetApiHeaders, setTargetApiHeaders] = useState<
-    Record<string, string>
-  >({});
-  const [targetApiBody, setTargetApiBody] = useState<any>();
+  // Confirm dialogs
+  const { dialogState: leaveDialogState, confirm: confirmLeave, handleCancel: handleLeaveCancel } = useConfirmDialog();
+  const { dialogState: applyDialogState, confirm: confirmApply, handleCancel: handleApplyCancel } = useConfirmDialog();
 
-  // Tables, data, mocks
-  const [tables, setTables] = useState<DDLTable[]>([]);
-  const [tableData, setTableData] = useState<TableData[]>([]);
-  const [mockApis, setMockApis] = useState<MockEndpoint[]>([]);
+  // Editable form state (ローディング完了後のみ呼ばれる)
+  const formState = useScenarioDetailForm(scenarioData);
 
-  // Test settings
-  const [testHeaders, setTestHeaders] = useState<Record<string, string>>({});
-  const [testBody, setTestBody] = useState("");
+  // Wrapper function for leave confirmation dialog
+  const confirmLeaveDialog = async (message: string): Promise<boolean> => {
+    return confirmLeave({
+      title: "未保存の変更",
+      description: message,
+      confirmText: "移動",
+      cancelText: "キャンセル",
+      variant: "default",
+    });
+  };
 
-  // Load scenario
-  useEffect(() => {
-    if (!id) return;
+  // Wrapper function for apply confirmation dialog
+  const confirmApplyDialog = async (title: string, description: string): Promise<boolean> => {
+    return confirmApply({
+      title,
+      description,
+      confirmText: "適用",
+      cancelText: "キャンセル",
+      variant: "default",
+    });
+  };
 
-    const loadScenario = async () => {
-      setIsLoading(true);
-      try {
-        const data = await scenariosApi.getById(id);
-        setName(data.name);
-        setDescription(data.description || "");
-        setTags(data.tags || []);
-        setTargetApiMethod(data.targetApi.method);
-        setTargetApiUrl(data.targetApi.url || "");
-        setTargetApiHeaders(data.targetApi.headers || {});
-        setTargetApiBody(data.targetApi.body);
-        setTables(data.tables || []);
-        setTableData(data.tableData || []);
-        setMockApis(data.mockApis || []);
-        setTestHeaders(data.testSettings?.headers || {});
-        setTestBody(data.testSettings?.body || "");
+  // Form validation and unsaved changes tracking
+  const { hasUnsavedChanges, confirmLeave: confirmLeaveAction, resetUnsavedChanges } = useScenarioForm({
+    isLoading: false, // すでにローディング完了後
+    formValues: [
+      formState.name,
+      formState.description,
+      formState.tags,
+      formState.targetApiMethod,
+      formState.targetApiUrl,
+      formState.targetApiHeaders,
+      formState.targetApiBody,
+      formState.tables,
+      formState.tableData,
+      formState.mockApis,
+      formState.testHeaders,
+      formState.testBody,
+    ],
+    confirmLeaveDialog,
+  });
 
-        // 適用状態を確認
-        const appliedScenarioId = localStorage.getItem("appliedScenarioId");
-        setIsApplied(appliedScenarioId === id);
+  // Actions (submit, apply)
+  const {
+    isSubmitting,
+    isUpdated,
+    isApplied,
+    handleSubmit,
+    handleApply,
+  } = useScenarioDetailActions({
+    id,
+    ...formState,
+    resetUnsavedChanges,
+    confirmApplyDialog,
+  });
 
-        // 初期データのロード完了をマーク
-        setInitialDataLoaded(true);
-      } catch (error) {
-        console.error("Failed to load scenario:", error);
-        toast.error("シナリオが見つかりません");
-        // シナリオが見つからない場合はホームに戻る
-        router.push("/");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadScenario();
-  }, [id]);
-
-  // フォームの変更を監視
-  useEffect(() => {
-    // 初期データのロードが完了してから変更を監視
-    if (initialDataLoaded && !isLoading) {
-      setHasUnsavedChanges(true);
-    }
-  }, [
-    initialDataLoaded,
-    isLoading,
-    name,
-    description,
-    tags,
-    targetApiMethod,
-    targetApiUrl,
-    targetApiHeaders,
-    targetApiBody,
-    tables,
-    tableData,
-    mockApis,
-    testHeaders,
-    testBody,
-  ]);
-
-  // ページ離脱時の警告
-  useEffect(() => {
-    // ブラウザのページ離脱時の警告
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (hasUnsavedChanges) {
-        e.preventDefault();
-        e.returnValue = "";
-      }
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-
-    // リンククリックをインターセプト
-    const handleClick = (e: MouseEvent) => {
-      if (!hasUnsavedChanges) return;
-
-      const target = e.target as HTMLElement;
-      const link = target.closest("a");
-
-      if (link && link.href && !link.href.includes(`/scenarios/${id}`)) {
-        if (!confirm("変更が保存されていません。このページを離れますか？")) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-      }
-    };
-
-    document.addEventListener("click", handleClick, true);
-
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      document.removeEventListener("click", handleClick, true);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasUnsavedChanges, id]);
-
+  // Tag handlers
   const handleAddTag = () => {
-    if (tagInput.trim() && !tags.includes(tagInput.trim())) {
-      setTags([...tags, tagInput.trim()]);
+    if (tagInput.trim() && !formState.tags.includes(tagInput.trim())) {
+      formState.setTags([...formState.tags, tagInput.trim()]);
       setTagInput("");
     }
   };
 
   const handleRemoveTag = (tag: string) => {
-    setTags(tags.filter((t) => t !== tag));
+    formState.setTags(formState.tags.filter((t) => t !== tag));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!name.trim()) {
-      toast.error("シナリオ名を入力してください");
-      return;
-    }
-
-    if (!targetApiUrl.trim()) {
-      toast.error("対象APIのURLを入力してください");
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const update: UpdateScenarioInput = {
-        name,
-        description: description || undefined,
-        targetApi: {
-          method: targetApiMethod,
-          url: targetApiUrl,
-          headers:
-            Object.keys(targetApiHeaders).length > 0
-              ? targetApiHeaders
-              : undefined,
-          body: targetApiBody,
-        },
-        tables,
-        tableData,
-        mockApis,
-        testSettings:
-          Object.keys(testHeaders).length > 0 || testBody
-            ? {
-                headers:
-                  Object.keys(testHeaders).length > 0 ? testHeaders : undefined,
-                body: testBody || undefined,
-              }
-            : undefined,
-        tags,
-      };
-
-      await scenariosApi.update(id, update);
-
-      // React Queryのキャッシュを無効化してシナリオリストを更新
-      await queryClient.invalidateQueries({ queryKey: ["scenarios"] });
-
-      setHasUnsavedChanges(false);
-      setIsUpdated(true);
-      toast.success("シナリオを更新しました");
-    } catch (error) {
-      console.error("Failed to update scenario:", error);
-      toast.error("シナリオの更新に失敗しました");
-    } finally {
-      setIsSubmitting(false);
+  // Navigation handlers
+  const handleBack = async () => {
+    if (await confirmLeaveAction()) {
+      router.back();
     }
   };
 
-  const handleApply = async () => {
-    if (
-      !confirm(
-        "このシナリオを適用しますか？\nテーブル作成・データ投入・モックAPI設定が実行されます。",
-      )
-    ) {
-      return;
-    }
-
-    setIsApplying(true);
-    try {
-      // 値のマッピングを共有して、ヘッダーとボディで同じ定数は同じ値になるようにする
-      const valueMap = new Map<string, string>();
-
-      // テスト設定の定数を変換してフォームに反映
-      const convertedHeaders = replaceConstantsInHeaders(testHeaders, valueMap);
-      setTestHeaders(convertedHeaders);
-
-      let convertedBody = testBody;
-      if (testBody) {
-        try {
-          const parsedBody = JSON.parse(testBody);
-          const convertedBodyObj = replaceConstantsInObject(parsedBody, valueMap);
-          convertedBody = JSON.stringify(convertedBodyObj, null, 2);
-          setTestBody(convertedBody);
-        } catch {
-          // JSONでない場合はそのまま
-        }
-      }
-
-      const result = await scenariosApi.apply(id);
-
-      // 適用成功後、LocalStorageに保存
-      localStorage.setItem("appliedScenarioId", id);
-      setIsApplied(true);
-
-      toast.success(
-        `シナリオを適用しました\nテーブル: ${result.tablesCreated}個\nデータ: ${result.dataInserted}行\nモックAPI: ${result.mocksConfigured}個`,
-      );
-    } catch (error) {
-      console.error("Failed to apply scenario:", error);
-      toast.error(
-        error instanceof Error ? error.message : "シナリオの適用に失敗しました",
-      );
-    } finally {
-      setIsApplying(false);
+  const handleCancel = async () => {
+    if (await confirmLeaveAction()) {
+      router.back();
     }
   };
+
+  const handleApiTest = () => {
+    router.push(`/api-test?scenario=${id}`);
+  };
+
+  return (
+    <div className="container mx-auto p-6 space-y-6">
+      <ScenarioDetailHeader
+        isApplied={isApplied}
+        isSubmitting={isSubmitting}
+        isUpdated={isUpdated}
+        hasUnsavedChanges={hasUnsavedChanges}
+        scenarioId={id}
+        onBack={handleBack}
+        onCancel={handleCancel}
+        onApiTest={handleApiTest}
+      />
+
+      <form id="scenario-edit-form" onSubmit={handleSubmit} className="space-y-6">
+        {/* 基本情報 */}
+        <BasicInfoSection
+          name={formState.name}
+          description={formState.description}
+          tags={formState.tags}
+          tagInput={tagInput}
+          onNameChange={formState.setName}
+          onDescriptionChange={formState.setDescription}
+          onTagInputChange={setTagInput}
+          onAddTag={handleAddTag}
+          onRemoveTag={handleRemoveTag}
+        />
+
+        {/* 対象API */}
+        <TargetApiSection
+          method={formState.targetApiMethod}
+          url={formState.targetApiUrl}
+          onMethodChange={formState.setTargetApiMethod}
+          onUrlChange={formState.setTargetApiUrl}
+        />
+
+        {/* テスト設定 */}
+        <TestSettingsEditor
+          method={formState.targetApiMethod}
+          headers={formState.testHeaders}
+          body={formState.testBody}
+          onHeadersChange={formState.setTestHeaders}
+          onBodyChange={formState.setTestBody}
+        />
+
+        {/* テーブル定義 */}
+        <ScenarioTablesEditor
+          tables={formState.tables}
+          onChange={formState.setTables}
+        />
+
+        {/* テーブルデータ */}
+        <ScenarioDataEditor
+          tableData={formState.tableData}
+          availableTables={formState.tables.map((t) => t.name)}
+          onChange={formState.setTableData}
+        />
+
+        {/* モックAPI */}
+        <ScenarioMocksEditor
+          mocks={formState.mockApis}
+          onChange={formState.setMockApis}
+        />
+
+        {/* アクション */}
+        <ScenarioDetailActions
+          isSubmitting={isSubmitting}
+          isUpdated={isUpdated}
+          scenarioId={id}
+          onCancel={handleCancel}
+          onApiTest={handleApiTest}
+        />
+      </form>
+
+      {/* Confirm dialogs */}
+      <ConfirmDialog
+        open={leaveDialogState.open}
+        onOpenChange={handleLeaveCancel}
+        onConfirm={leaveDialogState.onConfirm}
+        title={leaveDialogState.title}
+        description={leaveDialogState.description}
+        confirmText={leaveDialogState.confirmText}
+        cancelText={leaveDialogState.cancelText}
+        variant={leaveDialogState.variant}
+      />
+      <ConfirmDialog
+        open={applyDialogState.open}
+        onOpenChange={handleApplyCancel}
+        onConfirm={applyDialogState.onConfirm}
+        title={applyDialogState.title}
+        description={applyDialogState.description}
+        confirmText={applyDialogState.confirmText}
+        cancelText={applyDialogState.cancelText}
+        variant={applyDialogState.variant}
+      />
+    </div>
+  );
+}
+
+export default function ScenarioDetailPage() {
+  const params = useParams();
+  const id = params?.id as string;
+
+  // Load scenario data with React Query
+  const { isLoading, isApplied: initialIsApplied, ...scenarioData } = useScenarioDetail(id);
 
   if (isLoading) {
     return (
@@ -308,220 +235,6 @@ export default function ScenarioDetailPage() {
     );
   }
 
-  return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            戻る
-          </Button>
-          {isApplied && (
-            <Badge className="bg-green-500 hover:bg-green-600">
-              <CheckCircle2 className="h-3 w-3 mr-1" />
-              適用中
-            </Badge>
-          )}
-        </div>
-        <div className="flex gap-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              if (
-                hasUnsavedChanges &&
-                !confirm("変更が保存されていません。このページを離れますか？")
-              ) {
-                return;
-              }
-              router.back();
-            }}
-            disabled={isSubmitting}
-          >
-            キャンセル
-          </Button>
-          <Button type="submit" form="scenario-edit-form" disabled={isSubmitting}>
-            <Save className="h-4 w-4 mr-2" />
-            {isSubmitting ? "更新中..." : "更新"}
-          </Button>
-          {isUpdated && (
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => router.push(`/api-test?scenario=${id}`)}
-            >
-              APIテスト
-            </Button>
-          )}
-        </div>
-      </div>
-
-      <form id="scenario-edit-form" onSubmit={handleSubmit} className="space-y-6">
-        {/* 基本情報 */}
-        <Card>
-          <CardHeader>
-            <CardTitle>基本情報</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">シナリオ名 * ({name.length}/100)</Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                maxLength={100}
-                placeholder="ユーザー登録テスト"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="description">説明 ({description.length}/500)</Label>
-              <Textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="このシナリオの概要を入力..."
-                rows={3}
-                maxLength={500}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>タグ</Label>
-              <div className="flex gap-2 mb-2">
-                <Input
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      handleAddTag();
-                    }
-                  }}
-                  placeholder="タグを入力してEnter"
-                />
-                <Button type="button" variant="outline" onClick={handleAddTag}>
-                  追加
-                </Button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-2 py-1 bg-secondary rounded-md text-sm cursor-pointer"
-                    onClick={() => handleRemoveTag(tag)}
-                  >
-                    {tag} ×
-                  </span>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* 対象API */}
-        <Card>
-          <CardHeader>
-            <CardTitle>対象API</CardTitle>
-            <CardDescription>
-              このシナリオでテストする対象のAPIエンドポイント
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex gap-4">
-              <div className="space-y-2 w-40">
-                <Label htmlFor="targetApiMethod">HTTPメソッド *</Label>
-                <Select
-                  value={targetApiMethod}
-                  onValueChange={(value) =>
-                    setTargetApiMethod(value as typeof targetApiMethod)
-                  }
-                >
-                  <SelectTrigger id="targetApiMethod">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="GET">GET</SelectItem>
-                    <SelectItem value="POST">POST</SelectItem>
-                    <SelectItem value="PUT">PUT</SelectItem>
-                    <SelectItem value="DELETE">DELETE</SelectItem>
-                    <SelectItem value="PATCH">PATCH</SelectItem>
-                    <SelectItem value="HEAD">HEAD</SelectItem>
-                    <SelectItem value="OPTIONS">OPTIONS</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex-1 space-y-2">
-                <Label htmlFor="targetApiUrl">URL *</Label>
-                <Input
-                  id="targetApiUrl"
-                  value={targetApiUrl}
-                  onChange={(e) => setTargetApiUrl(e.target.value)}
-                  required
-                  placeholder="http://localhost:8080/api/users"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  完全なURL（http://またはhttps://から始まる）を入力してください。
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* テスト設定 */}
-        <TestSettingsEditor
-          method={targetApiMethod}
-          headers={testHeaders}
-          body={testBody}
-          onHeadersChange={setTestHeaders}
-          onBodyChange={setTestBody}
-        />
-
-        {/* テーブル定義 */}
-        <ScenarioTablesEditor tables={tables} onChange={setTables} />
-
-        {/* テーブルデータ */}
-        <ScenarioDataEditor
-          tableData={tableData}
-          availableTables={tables.map((t) => t.name)}
-          onChange={setTableData}
-        />
-
-        {/* モックAPI */}
-        <ScenarioMocksEditor mocks={mockApis} onChange={setMockApis} />
-
-        {/* アクション */}
-        <div className="flex gap-4 justify-end mt-8">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              if (
-                hasUnsavedChanges &&
-                !confirm("変更が保存されていません。このページを離れますか？")
-              ) {
-                return;
-              }
-              router.back();
-            }}
-            disabled={isSubmitting}
-          >
-            キャンセル
-          </Button>
-          <Button type="submit" disabled={isSubmitting}>
-            <Save className="h-4 w-4 mr-2" />
-            {isSubmitting ? "更新中..." : "更新"}
-          </Button>
-          {isUpdated && (
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => router.push(`/api-test?scenario=${id}`)}
-            >
-              APIテスト
-            </Button>
-          )}
-        </div>
-      </form>
-    </div>
-  );
+  // ローディング完了後、ScenarioFormをレンダリング（フックは完全なデータで初期化される）
+  return <ScenarioForm id={id} scenarioData={scenarioData} initialIsApplied={initialIsApplied} />;
 }

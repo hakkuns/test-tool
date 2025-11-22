@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,6 +37,7 @@ import { toast } from "sonner";
 
 export default function NewScenarioPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [groups, setGroups] = useState<ScenarioGroup[]>([]);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -189,6 +191,10 @@ export default function NewScenarioPage() {
       setHasUnsavedChanges(false);
       setIsCreated(true);
       setCreatedScenarioId(result.id);
+
+      // React Queryのキャッシュを無効化して、APIテストページで最新のシナリオ一覧を取得できるようにする
+      await queryClient.invalidateQueries({ queryKey: ["scenarios"] });
+
       toast.success("シナリオを作成しました");
     } catch (error) {
       console.error("Failed to create scenario:", error);

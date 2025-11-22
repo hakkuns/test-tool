@@ -246,9 +246,6 @@ function ApiTestPageContent() {
       }
     }
 
-    // クエリパラメータからシナリオIDを取得
-    const scenarioIdFromQuery = searchParams.get("scenario");
-
     // 適用中のシナリオを確認
     const savedAppliedScenarioId = localStorage.getItem("appliedScenarioId");
     const savedHash = localStorage.getItem("appliedScenarioHash");
@@ -260,15 +257,35 @@ function ApiTestPageContent() {
         setAppliedScenarioHash(savedHash);
       }
     }
+  }, []);
 
-    // クエリパラメータにシナリオIDがある場合は選択状態にする
-    if (scenarioIdFromQuery) {
-      setSelectedScenarioId(scenarioIdFromQuery);
-    } else if (savedAppliedScenarioId) {
-      // クエリパラメータがない場合は、適用中のシナリオを選択
-      setSelectedScenarioId(savedAppliedScenarioId);
+  // シナリオ一覧が読み込まれた後、クエリパラメータまたは適用済みシナリオを選択
+  useEffect(() => {
+    // シナリオのロードが完了していない場合は何もしない
+    if (isScenariosLoading) {
+      return;
     }
-  }, [searchParams]);
+
+    // クエリパラメータからシナリオIDを取得
+    const scenarioIdFromQuery = searchParams.get("scenario");
+
+    if (scenarioIdFromQuery) {
+      // クエリパラメータにシナリオIDがある場合
+      const scenarioExists = scenarios.some((s) => s.id === scenarioIdFromQuery);
+      if (scenarioExists) {
+        setSelectedScenarioId(scenarioIdFromQuery);
+      } else {
+        // シナリオが存在しない場合は適用済みシナリオを選択
+        if (appliedScenarioId) {
+          setSelectedScenarioId(appliedScenarioId);
+        }
+      }
+    } else if (appliedScenarioId && !selectedScenarioId) {
+      // クエリパラメータがなく、まだ選択されていない場合のみ適用中のシナリオを選択
+      // すでに選択されている場合は何もしない（ユーザーの選択を尊重）
+      setSelectedScenarioId(appliedScenarioId);
+    }
+  }, [searchParams, scenarios, isScenariosLoading]);
 
   // シナリオが読み込まれた後、適用済みシナリオが存在するか確認
   useEffect(() => {
@@ -515,20 +532,48 @@ function ApiTestPageContent() {
       {/* シナリオから適用 - 1行に配置 */}
       <div className="flex flex-col gap-3 p-4 bg-muted/50 rounded-lg">
         <div className="flex items-center gap-2">
-          <Select value={groupFilter} onValueChange={setGroupFilter}>
+          <Select value={groupFilter} onValueChange={(value) => {
+            setGroupFilter(value);
+
+            // フィルター変更後のシナリオリストを計算
+            let newFilteredScenarios = scenarios;
+            if (value !== "all") {
+              if (value === "ungrouped") {
+                newFilteredScenarios = scenarios.filter((s) => !s.groupId);
+              } else {
+                newFilteredScenarios = scenarios.filter((s) => s.groupId === value);
+              }
+            }
+
+            // 選択中のシナリオがフィルター結果に含まれない場合、最新のシナリオを選択
+            if (selectedScenarioId && !newFilteredScenarios.some((s) => s.id === selectedScenarioId)) {
+              if (newFilteredScenarios.length > 0) {
+                const latestScenario = [...newFilteredScenarios].sort((a, b) => {
+                  const dateA = new Date(a.updatedAt || a.createdAt).getTime();
+                  const dateB = new Date(b.updatedAt || b.createdAt).getTime();
+                  return dateB - dateA;
+                })[0];
+                setSelectedScenarioId(latestScenario.id);
+              } else {
+                setSelectedScenarioId("");
+              }
+            }
+          }}>
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="グループ" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">すべて</SelectItem>
               <SelectItem value="ungrouped">未分類</SelectItem>
-              {groups.map((group) => (
-                <SelectItem key={group.id} value={group.id} title={group.name}>
-                  {group.name.length > 15
-                    ? `${group.name.substring(0, 15)}...`
-                    : group.name}
-                </SelectItem>
-              ))}
+              {groups
+                .filter((group) => scenarios.some((s) => s.groupId === group.id))
+                .map((group) => (
+                  <SelectItem key={group.id} value={group.id} title={group.name}>
+                    {group.name.length > 15
+                      ? `${group.name.substring(0, 15)}...`
+                      : group.name}
+                  </SelectItem>
+                ))}
             </SelectContent>
           </Select>
           <Select
